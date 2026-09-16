@@ -1,0 +1,262 @@
+/* ============================================
+   ESPECIALIDADES
+   Primary:   #2A168C  |  Secondary: #4122DD
+   ============================================ */
+
+.esp-section {
+  position: relative;
+  padding: 5rem 1.5rem;
+  background: #060312;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.esp-glow {
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border-radius: 50%;
+  filter: blur(140px);
+  pointer-events: none;
+  z-index: 0;
+}
+.esp-glow-l {
+  top: 0;
+  left: -250px;
+  background: rgba(65, 34, 221, 0.18);
+}
+.esp-glow-r {
+  bottom: 0;
+  right: -250px;
+  background: rgba(42, 22, 140, 0.28);
+}
+
+.esp-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* ── Shared header ── */
+.sec-head {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.sec-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 1rem;
+  border-radius: 9999px;
+  background: rgba(42, 22, 140, 0.30);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(65, 34, 221, 0.35);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #c5baff;
+  margin-bottom: 1.25rem;
+}
+
+.sec-tag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4122DD;
+  animation: esp-pulse 2s ease-in-out infinite;
+}
+
+@keyframes esp-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.sec-title {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.sec-accent {
+  color: #4122DD;
+}
+
+.sec-sub {
+  font-size: 1.05rem;
+  color: #c5baff;
+  opacity: 0.85;
+  max-width: 42rem;
+  margin: 0 auto;
+  line-height: 1.65;
+}
+
+/* ── Scroll container (mobile) ── */
+.esp-scroll-container {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: 0.5rem;
+}
+
+.esp-scroll-container::-webkit-scrollbar {
+  display: none;
+}
+
+/* ── Grid ── */
+.esp-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(260px, 1fr));
+  gap: 1.25rem;
+  min-width: max-content;
+}
+
+@media (min-width: 640px) {
+  .esp-scroll-container {
+    overflow-x: visible;
+  }
+  .esp-grid {
+    grid-template-columns: repeat(2, 1fr);
+    min-width: unset;
+  }
+}
+
+@media (min-width: 1024px) {
+  .esp-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* ── Card ── */
+.esp-card {
+  position: relative;
+  padding: 2rem 1.75rem;
+  border-radius: 1.25rem;
+  background: rgba(12, 6, 38, 0.80);
+  border: 1px solid rgba(65, 34, 221, 0.14);
+  backdrop-filter: blur(10px);
+  transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  overflow: hidden;
+}
+
+.esp-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(42, 22, 140, 0.08) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.esp-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(65, 34, 221, 0.38);
+  box-shadow: 0 16px 48px rgba(42, 22, 140, 0.28);
+}
+
+.esp-card:hover::before {
+  opacity: 1;
+}
+
+/* ── Featured card ── */
+.esp-card--featured {
+  border-color: rgba(65, 34, 221, 0.35);
+  background: rgba(42, 22, 140, 0.18);
+  box-shadow: 0 8px 32px rgba(42, 22, 140, 0.25);
+}
+
+.esp-featured-badge {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  padding: 0.2rem 0.7rem;
+  border-radius: 9999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: linear-gradient(135deg, #2A168C, #4122DD);
+  color: #fff;
+}
+
+/* ── Emoji ── */
+.esp-emoji-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  border-radius: 1rem;
+  background: rgba(42, 22, 140, 0.28);
+  border: 1px solid rgba(65, 34, 221, 0.28);
+  margin-bottom: 0.5rem;
+  transition: transform 0.3s ease;
+}
+
+.esp-card:hover .esp-emoji-wrap {
+  transform: scale(1.1) rotate(-5deg);
+}
+
+.esp-emoji {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+/* ── Number ── */
+.esp-num {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(65, 34, 221, 0.55);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 0.4rem;
+}
+
+/* ── Title ── */
+.esp-card-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 0.7rem;
+  letter-spacing: -0.01em;
+}
+
+/* ── Text ── */
+.esp-card-text {
+  font-size: 0.85rem;
+  color: #c5baff;
+  line-height: 1.7;
+  opacity: 0.85;
+  margin-bottom: 1.1rem;
+}
+
+/* ── List ── */
+.esp-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.esp-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+  color: #c5baff;
+  opacity: 0.75;
+}
+
+.esp-list li::before {
+  content: '→';
+  color: #4122DD;
+  flex-shrink: 0;
+  font-weight: 700;
+}

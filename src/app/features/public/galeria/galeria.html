@@ -1,0 +1,51 @@
+<!-- ===== GALERIA ===== -->
+<section class="gal-section">
+
+  <div class="gal-glow gal-glow-t"></div>
+  <div class="gal-glow gal-glow-b"></div>
+
+  <div class="gal-wrap">
+
+    <!-- ── Encabezado ── -->
+    <div class="sec-head">
+      <div class="sec-tag">
+        <span class="sec-tag-dot"></span>
+        Nuestro Trabajo
+      </div>
+      <h2 class="sec-title">Galería <span class="sec-accent">Alivet</span></h2>
+      <p class="sec-sub">Momentos reales de nuestro trabajo en campo y atención a animales en Tahuamanu</p>
+    </div>
+
+    <!-- ── Masonry Grid ── -->
+    <div class="gal-grid">
+
+      @for (foto of fotos; track foto.src) {
+      <div class="gal-item" [class.gal-item--tall]="foto.tall">
+        <img [src]="foto.src" [alt]="foto.alt" class="gal-img" />
+        <div class="gal-overlay">
+          <span class="gal-label">{{ foto.label }}</span>
+        </div>
+      </div>
+      }
+
+    </div>
+
+    <!-- Nota sobre imágenes placeholder -->
+    <p class="gal-note">
+      📸 Reemplaza estas imágenes con fotos reales de tu trabajo en campo y atención a animales.
+    </p>
+
+    <!-- ── CTA ── -->
+    <div class="gal-actions">
+      <a href="#contacto" class="gal-btn">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Ver todas las fotos
+      </a>
+    </div>
+
+  </div>
+</section>

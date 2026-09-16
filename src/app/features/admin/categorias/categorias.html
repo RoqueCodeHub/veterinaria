@@ -1,0 +1,130 @@
+<!-- Page Header -->
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Categorías</h1>
+        <p class="page-subtitle">Gestiona las categorías de productos</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Nueva Categoría
+    </button>
+</header>
+
+<!-- Error -->
+@if (error()) {
+<div class="error-banner">{{ error() }}</div>
+}
+
+<!-- Table Card -->
+<div class="table-card">
+    <div class="table-header">
+        <h2 class="table-title">Lista de Categorías</h2>
+        <span class="table-count">{{ categorias().length }} registros</span>
+    </div>
+
+    @if (loading()) {
+    <div class="loading-state">Cargando categorías...</div>
+    } @else if (categorias().length === 0) {
+    <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="40" height="40">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+        </svg>
+        <p>No hay categorías registradas</p>
+    </div>
+    } @else {
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Estado</th>
+                <th>Creado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (c of categorias(); track c.id) {
+            <tr>
+                <td class="id-cell">#{{ c.id }}</td>
+                <td class="nombre-cell">{{ c.nombre }}</td>
+                <td class="muted">{{ c.descripcion || '—' }}</td>
+                <td>
+                    <span class="badge" [class.badge-success]="c.activo" [class.badge-danger]="!c.activo">
+                        {{ c.activo ? 'Activa' : 'Inactiva' }}
+                    </span>
+                </td>
+                <td class="muted">{{ c.created_at | date:'dd/MM/yyyy' }}</td>
+                <td>
+                    <div class="actions">
+                        <button class="btn-icon btn-edit" (click)="openEdit(c)" title="Editar">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </button>
+                        <button class="btn-icon btn-delete" (click)="confirmDelete(c.id)" title="Eliminar">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+</div>
+
+<!-- Modal Crear / Editar -->
+@if (showModal()) {
+<div class="modal-overlay" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+        <h2 class="modal-title">{{ editingId() ? 'Editar Categoría' : 'Nueva Categoría' }}</h2>
+        <form (ngSubmit)="save()">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Nombre *</label>
+                    <input [(ngModel)]="form.nombre" name="nombre" required placeholder="Nombre de la categoría" />
+                </div>
+                <div class="form-group full">
+                    <label>Descripción</label>
+                    <textarea [(ngModel)]="form.descripcion" name="descripcion" rows="3"
+                        placeholder="Descripción de la categoría"></textarea>
+                </div>
+                <div class="form-group checks-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
+                        <span>Categoría activa</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
+                <button type="submit" class="btn-save" [disabled]="savingModal()">
+                    {{ savingModal() ? 'Guardando...' : 'Guardar' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+}
+
+<!-- Confirm Delete -->
+@if (deleteConfirmId()) {
+<div class="modal-overlay">
+    <div class="modal modal-sm">
+        <h2 class="modal-title">Eliminar Categoría</h2>
+        <p class="confirm-text">¿Estás seguro? Esta acción no se puede deshacer.</p>
+        <div class="modal-actions">
+            <button class="btn-cancel" (click)="cancelDelete()">Cancelar</button>
+            <button class="btn-danger-solid" (click)="doDelete()">Eliminar</button>
+        </div>
+    </div>
+</div>
+}

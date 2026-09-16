@@ -1,0 +1,221 @@
+/* ============================================
+   REDES SOCIALES
+   Primary:   #2A168C
+   Secondary: #4122DD
+   Dark bg:   #030109
+   ============================================ */
+
+.rs-section {
+    background: #030109;
+    padding: 5.5rem 1.5rem 6rem;
+    font-family: 'Inter', system-ui, sans-serif;
+    position: relative;
+}
+
+.rs-section::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 8%; right: 8%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(65, 34, 221, 0.18), transparent);
+}
+
+/* ── Encabezado ── */
+.rs-header {
+    max-width: 1100px;
+    margin: 0 auto 3.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.rs-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.32rem 0.9rem;
+    border-radius: 9999px;
+    background: rgba(42, 22, 140, 0.18);
+    border: 1px solid rgba(65, 34, 221, 0.28);
+    color: #4122DD;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    width: fit-content;
+}
+
+.rs-title {
+    font-size: clamp(2rem, 4.5vw, 3rem);
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.02em;
+    margin: 0;
+}
+
+.rs-title-accent {
+    color: #4122DD;
+}
+
+.rs-subtitle {
+    font-size: 0.95rem;
+    color: rgba(255, 255, 255, 0.45);
+    line-height: 1.6;
+    max-width: 460px;
+    margin: 0;
+}
+
+/* ── Grid ── */
+.rs-grid {
+    max-width: 1100px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+}
+
+@media (min-width: 640px) {
+    .rs-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (min-width: 1024px) {
+    .rs-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* ── Card ── */
+.rs-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    border-radius: 1.25rem;
+    border: 1px solid rgba(65, 34, 221, 0.09);
+    background: rgba(255, 255, 255, 0.025);
+    text-decoration: none;
+    overflow: hidden;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    cursor: pointer;
+}
+
+.rs-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(65, 34, 221, 0.22);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+/* Fondo con degradado de la plataforma */
+.rs-card-glow {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.rs-card:hover .rs-card-glow {
+    opacity: 1;
+}
+
+/* ── Ícono ── */
+.rs-icon-wrap {
+    flex-shrink: 0;
+    width: 52px;
+    height: 52px;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+}
+
+.rs-icon {
+    width: 24px;
+    height: 24px;
+    color: #fff;
+}
+
+/* ── Contenido ── */
+.rs-content {
+    flex: 1;
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+}
+
+.rs-platform-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.2rem;
+}
+
+.rs-platform {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0;
+}
+
+.rs-seguidores {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #4122DD;
+    white-space: nowrap;
+}
+
+.rs-handle {
+    font-size: 0.75rem;
+    color: rgba(65, 34, 221, 0.55);
+    margin: 0 0 0.4rem;
+    font-weight: 500;
+}
+
+.rs-desc {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.38);
+    line-height: 1.45;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ── Flecha ── */
+.rs-arrow {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(65, 34, 221, 0.06);
+    border: 1px solid rgba(65, 34, 221, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+    transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+.rs-arrow svg {
+    width: 14px;
+    height: 14px;
+    color: rgba(65, 34, 221, 0.60);
+    transition: color 0.25s ease;
+}
+
+.rs-card:hover .rs-arrow {
+    background: rgba(65, 34, 221, 0.14);
+    border-color: rgba(65, 34, 221, 0.35);
+}
+
+.rs-card:hover .rs-arrow svg {
+    color: #4122DD;
+}

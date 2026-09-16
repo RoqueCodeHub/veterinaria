@@ -1,0 +1,275 @@
+<!-- Page Header -->
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Ventas</h1>
+        <p class="page-subtitle">Registro y gestión de ventas</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Nueva Venta
+    </button>
+</header>
+
+<!-- Error -->
+@if (error()) {
+<div class="error-banner">{{ error() }}</div>
+}
+
+<!-- Table Card -->
+<div class="table-card">
+    <div class="table-header">
+        <h2 class="table-title">Historial de Ventas</h2>
+        <span class="table-count">{{ ventas().length }} registros</span>
+    </div>
+
+    @if (loading()) {
+    <div class="loading-state">Cargando ventas...</div>
+    } @else if (ventas().length === 0) {
+    <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="40" height="40">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <p>No hay ventas registradas</p>
+    </div>
+    } @else {
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Cliente</th>
+                <th>Trabajador</th>
+                <th>Items</th>
+                <th>Descuento</th>
+                <th>Total</th>
+                <th>Estado</th>
+                <th>Fecha</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (v of ventas(); track v.id) {
+            <tr>
+                <td class="id-cell">#{{ v.id }}</td>
+                <td>{{ v.cliente?.nombre_completo || '—' }}</td>
+                <td class="muted">{{ v.trabajador?.nombre_completo || '—' }}</td>
+                <td class="muted">{{ v.items.length }} producto(s)</td>
+                <td class="muted">{{ parseMoney(v.descuento) > 0 ? (parseMoney(v.descuento) | currency:'PEN':'S/ ') :
+                    '—' }}</td>
+                <td class="total-cell">{{ parseMoney(v.total) | currency:'PEN':'S/ ' }}</td>
+                <td>
+                    <span class="badge" [ngClass]="estadoBadgeClass(v.estado)">
+                        {{ v.estado }}
+                    </span>
+                </td>
+                <td class="muted">{{ v.fecha ? (v.fecha | date:'dd/MM/yyyy') : '—' }}</td>
+                <td>
+                    <div class="actions">
+                        <button class="btn-icon btn-view" (click)="openDetalle(v)" title="Ver detalle">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                        </button>
+                        @if (v.estado !== 'anulada') {
+                        <button class="btn-icon btn-anular" (click)="confirmAnular(v.id)" title="Anular venta">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                            </svg>
+                        </button>
+                        }
+                    </div>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+</div>
+
+<!-- Modal Nueva Venta -->
+@if (showModal()) {
+<div class="modal-overlay" (click)="closeModal()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+        <h2 class="modal-title">Nueva Venta</h2>
+
+        <!-- Trabajador (automático) -->
+        <div class="trabajador-info">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+            </svg>
+            <span>Atendido por: <strong>{{ currentUser?.nombre || '—' }}</strong></span>
+        </div>
+
+        <!-- Cliente y extras -->
+        <div class="form-row">
+            <div class="form-group-inline">
+                <label>Cliente</label>
+                <select [(ngModel)]="selectedClienteId" name="cliente_id">
+                    <option [ngValue]="undefined">— Sin cliente —</option>
+                    @for (c of clientes(); track c.id) {
+                    <option [ngValue]="c.id">{{ c.nombre_completo }}</option>
+                    }
+                </select>
+            </div>
+            <div class="form-group-inline">
+                <label>Descuento (S/.)</label>
+                <input type="number" [(ngModel)]="descuento" min="0" step="0.01" placeholder="0.00" />
+            </div>
+        </div>
+
+        <!-- Add Item Section -->
+        <div class="add-item-section">
+            <h3 class="section-label">Agregar producto</h3>
+            <div class="add-item-row">
+                <select class="item-select" [(ngModel)]="selectedProductoId">
+                    <option [ngValue]="0">Selecciona producto</option>
+                    @for (p of productos(); track p.id) {
+                    <option [ngValue]="p.id">{{ p.nombre }} — S/ {{ p.precio_venta }}</option>
+                    }
+                </select>
+                <input class="item-qty" type="number" [(ngModel)]="selectedCantidad" min="1" placeholder="Cant." />
+                <button type="button" class="btn-add-item" (click)="addItem()"
+                    [disabled]="!selectedProductoId">Agregar</button>
+            </div>
+        </div>
+
+        <!-- Items List -->
+        @if (items().length > 0) {
+        <div class="items-table-wrap">
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th>Producto</th>
+                        <th>Cant.</th>
+                        <th>P. Unit.</th>
+                        <th>Subtotal</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (item of items(); track item.producto_id; let i = $index) {
+                    <tr>
+                        <td>{{ item.nombre }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>{{ item.precio_unitario | currency:'PEN':'S/ ' }}</td>
+                        <td>{{ item.subtotal | currency:'PEN':'S/ ' }}</td>
+                        <td>
+                            <button class="btn-remove-item" (click)="removeItem(i)">✕</button>
+                        </td>
+                    </tr>
+                    }
+                </tbody>
+            </table>
+            <div class="total-row">
+                @if (descuento > 0) {
+                <span class="muted">Subtotal: {{ totalVenta() | currency:'PEN':'S/ ' }}</span>
+                <span class="muted">Dcto: -{{ descuento | currency:'PEN':'S/ ' }}</span>
+                }
+                <span>Total:</span>
+                <strong>{{ (totalVenta() - descuento) | currency:'PEN':'S/ ' }}</strong>
+            </div>
+        </div>
+        } @else {
+        <div class="empty-items">Agrega al menos un producto para continuar</div>
+        }
+
+        <!-- Observaciones -->
+        <div class="form-group-obs">
+            <label>Observaciones</label>
+            <input [(ngModel)]="observaciones" placeholder="Notas de la venta (opcional)" />
+        </div>
+
+        <div class="modal-actions">
+            <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
+            <button type="button" class="btn-save" (click)="saveVenta()"
+                [disabled]="savingModal() || items().length === 0">
+                {{ savingModal() ? 'Procesando...' : 'Confirmar Venta' }}
+            </button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- Detalle Venta -->
+@if (detalleVenta()) {
+<div class="modal-overlay" (click)="closeDetalle()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+        <div class="detalle-header">
+            <h2 class="modal-title">Venta #{{ detalleVenta()!.id }}</h2>
+            <span class="badge" [ngClass]="estadoBadgeClass(detalleVenta()!.estado)">
+                {{ detalleVenta()!.estado }}
+            </span>
+        </div>
+        <div class="detalle-meta">
+            @if (detalleVenta()!.fecha) {
+            <span class="muted">Fecha: {{ detalleVenta()!.fecha | date:'dd/MM/yyyy' }}</span>
+            }
+            @if (detalleVenta()!.cliente) {
+            <span class="muted">Cliente: {{ detalleVenta()!.cliente!.nombre_completo }}</span>
+            }
+            @if (detalleVenta()!.trabajador) {
+            <span class="muted">Trabajador: {{ detalleVenta()!.trabajador!.nombre_completo }}</span>
+            }
+            @if (detalleVenta()!.observaciones) {
+            <span class="muted">Obs: {{ detalleVenta()!.observaciones }}</span>
+            }
+        </div>
+        @if (detalleVenta()!.items.length > 0) {
+        <table class="items-table">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Cant.</th>
+                    <th>P. Unit.</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (item of detalleVenta()!.items; track item.producto_id) {
+                <tr>
+                    <td>{{ item.producto?.nombre ?? 'Producto #' + item.producto_id }}</td>
+                    <td>{{ item.cantidad }}</td>
+                    <td>{{ item.precio_unitario | currency:'PEN':'S/ ' }}</td>
+                    <td>{{ item.subtotal | currency:'PEN':'S/ ' }}</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        } @else {
+        <div class="empty-items">Sin ítems registrados</div>
+        }
+        <div class="total-row">
+            @if (parseMoney(detalleVenta()!.descuento) > 0) {
+            <span class="muted">Descuento: -{{ parseMoney(detalleVenta()!.descuento) | currency:'PEN':'S/ ' }}</span>
+            }
+            <span>Total:</span>
+            <strong>{{ parseMoney(detalleVenta()!.total) | currency:'PEN':'S/ ' }}</strong>
+        </div>
+        <div class="modal-actions">
+            <button class="btn-save" (click)="closeDetalle()">Cerrar</button>
+        </div>
+    </div>
+</div>
+}
+
+<!-- Confirm Anular -->
+@if (anularConfirmId()) {
+<div class="modal-overlay">
+    <div class="modal modal-sm">
+        <h2 class="modal-title">Anular Venta</h2>
+        <p class="confirm-text">¿Confirmas anular la venta #{{ anularConfirmId() }}? Esta acción no se puede deshacer.
+        </p>
+        <div class="modal-actions">
+            <button class="btn-cancel" (click)="cancelAnular()">Cancelar</button>
+            <button class="btn-danger-solid" (click)="doAnular()">Anular Venta</button>
+        </div>
+    </div>
+</div>
+}

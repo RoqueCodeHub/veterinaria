@@ -1,0 +1,214 @@
+/* ============================================
+   HOME PAGE – Hero Slider (full-screen)
+   Primary:   #2A168C  (purple dark)
+   Secondary: #4122DD  (purple light)
+   ============================================ */
+
+/* ---------- Hero wrapper ---------- */
+.hero-section {
+    position: relative;
+    width: 100%;
+    height: 100vh;
+    /* Pull up to cover header area (h-16 = 4rem mobile) */
+    margin-top: -4rem;
+    overflow: hidden;
+    background-color: #060312;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* md: header height h-20 = 5rem */
+@media (min-width: 768px) {
+    .hero-section {
+        margin-top: -5rem;
+    }
+}
+
+/* ---------- Slides ---------- */
+.slide-item {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+
+.slide-item.active {
+    opacity: 1;
+}
+
+.slide-bg-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.slide-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        to top,
+        rgba(6, 3, 18, 0.95) 0%,
+        rgba(10, 5, 40, 0.72) 38%,
+        rgba(20, 10, 60, 0.52) 65%,
+        rgba(30, 15, 80, 0.30) 100%
+    );
+}
+
+/* ---------- Content overlay ---------- */
+.hero-content {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    /* Top padding: header height + breathing room */
+    padding: 5.5rem 1.5rem 3rem;
+    z-index: 20;
+}
+
+@media (min-width: 768px) {
+    .hero-content {
+        padding: 7rem 3.5rem 3.5rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .hero-content {
+        padding: 8rem 5rem 4rem;
+    }
+}
+
+/* ---------- Branding badge ---------- */
+.hero-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.75rem;
+    background: rgba(42, 22, 140, 0.30);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(65, 34, 221, 0.30);
+}
+
+/* ---------- Slide text ---------- */
+.slide-text {
+    position: absolute;
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    pointer-events: none;
+    max-width: 44rem;
+}
+
+.slide-text.active {
+    position: static;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Tag pill */
+.slide-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 9999px;
+    margin-bottom: 1rem;
+    background: rgba(42, 22, 140, 0.30);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(65, 34, 221, 0.35);
+}
+
+/* Title */
+.slide-title {
+    font-size: clamp(2.25rem, 5.5vw, 4.5rem);
+    font-weight: 800;
+    color: #fff;
+    line-height: 1.1;
+    margin-bottom: 1rem;
+    letter-spacing: -0.02em;
+}
+
+/* Subtitle */
+.slide-subtitle {
+    font-size: clamp(1rem, 1.8vw, 1.2rem);
+    color: #c5baff;
+    opacity: 0.9;
+    max-width: 38rem;
+    line-height: 1.65;
+    margin-bottom: 2rem;
+}
+
+/* ---------- CTA Buttons ---------- */
+.hero-cta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+}
+
+.btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 2rem;
+    background: linear-gradient(135deg, #2A168C 0%, #1a0f5e 100%);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    border-radius: 0.875rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 20px rgba(42, 22, 140, 0.5);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #3a24b8 0%, #2A168C 100%);
+    box-shadow: 0 6px 28px rgba(42, 22, 140, 0.65);
+    transform: translateY(-2px);
+}
+
+.btn-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.8rem 2rem;
+    background: rgba(65, 34, 221, 0.08);
+    color: #4122DD;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    border-radius: 0.875rem;
+    border: 1.5px solid rgba(65, 34, 221, 0.30);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    backdrop-filter: blur(8px);
+}
+
+.btn-outline:hover {
+    background: rgba(65, 34, 221, 0.18);
+    border-color: rgba(65, 34, 221, 0.55);
+    color: #ede9ff;
+    transform: translateY(-2px);
+}
+
+/* ---------- Dot indicators ---------- */
+.slider-dot {
+    height: 4px;
+    width: 20px;
+    border-radius: 99px;
+    background: rgba(65, 34, 221, 0.30);
+    border: none;
+    cursor: pointer;
+    transition: all 0.35s ease;
+}
+
+.slider-dot.active {
+    width: 36px;
+    background: #4122DD;
+}
+
+.slider-dot:hover:not(.active) {
+    background: rgba(65, 34, 221, 0.60);
+}

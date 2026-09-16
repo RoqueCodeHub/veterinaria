@@ -1,0 +1,212 @@
+<!-- Page Header -->
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Productos</h1>
+        <p class="page-subtitle">Gestiona el inventario de productos</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Nuevo Producto
+    </button>
+</header>
+
+<!-- Tabs -->
+<div class="tabs">
+    <button class="tab-btn" [class.active]="activeTab() === 'todos'" (click)="setTab('todos')">Todos</button>
+    <button class="tab-btn" [class.active]="activeTab() === 'stock-bajo'" (click)="setTab('stock-bajo')">Stock Bajo</button>
+    <button class="tab-btn" [class.active]="activeTab() === 'por-vencer'" (click)="setTab('por-vencer')">Por Vencer</button>
+</div>
+
+<!-- Error -->
+@if (error()) {
+<div class="error-banner">{{ error() }}</div>
+}
+
+<!-- Table Card -->
+<div class="table-card">
+    <div class="table-header">
+        <h2 class="table-title">
+            @if (activeTab() === 'stock-bajo') { Productos con Stock Bajo }
+            @else if (activeTab() === 'por-vencer') { Productos por Vencer }
+            @else { Lista de Productos }
+        </h2>
+        <span class="table-count">{{ productos().length }} registros</span>
+    </div>
+
+    @if (loading()) {
+    <div class="loading-state">Cargando productos...</div>
+    } @else if (productos().length === 0) {
+    <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="40" height="40">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+        </svg>
+        <p>No hay productos</p>
+    </div>
+    } @else {
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Nombre / Código</th>
+                <th>Categoría</th>
+                <th>P. Venta</th>
+                <th>Stock</th>
+                <th>Mín.</th>
+                <th>Proveedor</th>
+                <th>Vencimiento</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (p of productos(); track p.id) {
+            <tr>
+                <td class="id-cell">#{{ p.id }}</td>
+                <td>
+                    <span class="product-name">{{ p.nombre }}</span>
+                    @if (p.codigo) {
+                    <span class="product-desc">{{ p.codigo }}</span>
+                    }
+                </td>
+                <td class="muted">{{ p.categoria || '—' }}</td>
+                <td>{{ p.precio_venta | currency:'PEN':'S/ ' }}</td>
+                <td>
+                    <span class="badge" [class.badge-danger]="isLowStock(p)" [class.badge-success]="!isLowStock(p)">
+                        {{ p.stock_actual }}
+                    </span>
+                </td>
+                <td class="muted">{{ p.stock_minimo }}</td>
+                <td class="muted">{{ p.proveedor?.nombre || '—' }}</td>
+                <td class="muted">{{ p.fecha_vencimiento ? (p.fecha_vencimiento | date:'dd/MM/yyyy') : '—' }}</td>
+                <td>
+                    <span class="badge" [class.badge-success]="p.activo" [class.badge-danger]="!p.activo">
+                        {{ p.activo ? 'Activo' : 'Inactivo' }}
+                    </span>
+                </td>
+                <td>
+                    <div class="actions">
+                        <button class="btn-icon btn-edit" (click)="openEdit(p)" title="Editar">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                        </button>
+                        <button class="btn-icon btn-delete" (click)="confirmDelete(p.id)" title="Eliminar">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+</div>
+
+<!-- Modal Crear / Editar -->
+@if (showModal()) {
+<div class="modal-overlay" (click)="closeModal()">
+    <div class="modal modal-lg" (click)="$event.stopPropagation()">
+        <h2 class="modal-title">{{ editingId() ? 'Editar Producto' : 'Nuevo Producto' }}</h2>
+        <form (ngSubmit)="save()">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Nombre *</label>
+                    <input [(ngModel)]="form.nombre" name="nombre" required placeholder="Nombre del producto" />
+                </div>
+                <div class="form-group">
+                    <label>Código</label>
+                    <input [(ngModel)]="form.codigo" name="codigo" placeholder="Ej. MED-001" />
+                </div>
+                <div class="form-group">
+                    <label>Categoría</label>
+                    <select [(ngModel)]="form.categoria_id" name="categoria_id">
+                        <option [ngValue]="undefined">— Sin categoría —</option>
+                        @for (cat of categorias(); track cat.id) {
+                        <option [ngValue]="cat.id">{{ cat.nombre }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Precio Compra (S/.) *</label>
+                    <input type="number" [(ngModel)]="form.precio_compra" name="precio_compra" required min="0"
+                        step="0.01" placeholder="0.00" />
+                </div>
+                <div class="form-group">
+                    <label>Precio Venta (S/.) *</label>
+                    <input type="number" [(ngModel)]="form.precio_venta" name="precio_venta" required min="0"
+                        step="0.01" placeholder="0.00" />
+                </div>
+                <div class="form-group">
+                    <label>Stock Actual</label>
+                    <input type="number" [(ngModel)]="form.stock_actual" name="stock_actual" min="0"
+                        placeholder="0" />
+                </div>
+                <div class="form-group">
+                    <label>Stock Mínimo *</label>
+                    <input type="number" [(ngModel)]="form.stock_minimo" name="stock_minimo" required min="0"
+                        placeholder="0" />
+                </div>
+                <div class="form-group">
+                    <label>Unidad de Medida</label>
+                    <input [(ngModel)]="form.unidad_medida" name="unidad_medida" placeholder="Ej. unidad, caja, kg" />
+                </div>
+                <div class="form-group">
+                    <label>Fecha de Vencimiento</label>
+                    <input type="date" [(ngModel)]="form.fecha_vencimiento" name="fecha_vencimiento" />
+                </div>
+                <div class="form-group full">
+                    <label>Proveedor</label>
+                    <select [(ngModel)]="form.proveedor_id" name="proveedor_id">
+                        <option [ngValue]="undefined">— Sin proveedor —</option>
+                        @for (prov of proveedores(); track prov.id) {
+                        <option [ngValue]="prov.id">{{ prov.nombre_completo }}{{ prov.empresa ? ' — ' + prov.empresa : '' }}</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group full">
+                    <label>Descripción</label>
+                    <textarea [(ngModel)]="form.descripcion" name="descripcion" rows="2"
+                        placeholder="Descripción opcional"></textarea>
+                </div>
+                <div class="form-group checks-row">
+                    <label class="checkbox-label">
+                        <input type="checkbox" [(ngModel)]="form.requiere_receta" name="requiere_receta" />
+                        <span>Requiere receta</span>
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
+                        <span>Producto activo</span>
+                    </label>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
+                <button type="submit" class="btn-save" [disabled]="savingModal()">
+                    {{ savingModal() ? 'Guardando...' : 'Guardar' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+}
+
+<!-- Confirm Delete -->
+@if (deleteConfirmId()) {
+<div class="modal-overlay">
+    <div class="modal modal-sm">
+        <h2 class="modal-title">Eliminar Producto</h2>
+        <p class="confirm-text">¿Estás seguro? Esta acción no se puede deshacer.</p>
+        <div class="modal-actions">
+            <button class="btn-cancel" (click)="cancelDelete()">Cancelar</button>
+            <button class="btn-danger-solid" (click)="doDelete()">Eliminar</button>
+        </div>
+    </div>
+</div>
+}

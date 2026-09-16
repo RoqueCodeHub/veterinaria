@@ -1,0 +1,300 @@
+/* ============================================
+   MÉTODOS DE PAGO
+   Primary:   #2A168C
+   Secondary: #4122DD
+   ============================================ */
+
+:host {
+    display: block;
+    position: sticky;
+    top: 5.5rem; /* debajo del header */
+}
+
+/* ── Tarjeta contenedora ── */
+.mp-card {
+    background: rgba(255, 255, 255, 0.025);
+    border: 1px solid rgba(154, 210, 217, 0.10);
+    border-radius: 1.5rem;
+    padding: 1.75rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+    font-family: 'Inter', system-ui, sans-serif;
+}
+
+/* ── Encabezado ── */
+.mp-header {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.mp-header-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #2A168C;
+    flex-shrink: 0;
+}
+
+.mp-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.10em;
+    text-transform: uppercase;
+    color: rgba(154, 210, 217, 0.75);
+    margin: 0;
+}
+
+.mp-subtitle {
+    font-size: 0.78rem;
+    color: rgba(255, 255, 255, 0.35);
+    line-height: 1.55;
+    margin: 0;
+}
+
+/* ── Lista de métodos ── */
+.mp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+/* ── Skeleton ── */
+.mp-skeleton {
+    height: 72px;
+    border-radius: 1rem;
+    background: linear-gradient(90deg,
+        rgba(255,255,255,0.04) 25%,
+        rgba(154,210,217,0.07) 50%,
+        rgba(255,255,255,0.04) 75%);
+    background-size: 200% 100%;
+    animation: mp-shimmer 1.4s infinite;
+}
+
+@keyframes mp-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* ── Ítem ── */
+.mp-item {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 1rem;
+    border-radius: 1rem;
+    background: var(--mp-bg);
+    border: 1px solid color-mix(in srgb, var(--mp-color) 30%, transparent);
+    transition: border-color 0.2s, transform 0.2s;
+}
+
+.mp-item:hover {
+    transform: translateX(3px);
+    border-color: color-mix(in srgb, var(--mp-color) 55%, transparent);
+}
+
+/* ── Ítem banco (más alto) ── */
+.mp-item--bank {
+    align-items: flex-start;
+}
+
+/* ── Ícono ── */
+.mp-icon-wrap {
+    width: 44px;
+    height: 44px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mp-icon {
+    width: 44px;
+    height: 44px;
+    color: var(--mp-color);
+}
+
+/* ── Cuerpo ── */
+.mp-body {
+    flex: 1;
+    min-width: 0;
+}
+
+.mp-body--bank {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.mp-name {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #fff;
+    margin: 0 0 0.2rem;
+}
+
+.mp-numero {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--mp-color);
+    margin: 0 0 0.15rem;
+    letter-spacing: 0.04em;
+}
+
+.mp-titular {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.35);
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mp-instrucciones {
+    font-size: 0.72rem;
+    color: rgba(154, 210, 217, 0.50);
+    margin: 0.15rem 0 0;
+    line-height: 1.4;
+}
+
+/* ── Acciones (copy + QR) ── */
+.mp-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    flex-shrink: 0;
+}
+
+/* ── QR ── */
+.mp-qr {
+    width: 52px;
+    height: 52px;
+    border-radius: 0.5rem;
+    object-fit: cover;
+    border: 1px solid rgba(154, 210, 217, 0.20);
+}
+
+/* ── Filas banco ── */
+.mp-bank-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.mp-bank-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: rgba(154, 210, 217, 0.55);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+    width: 38px;
+}
+
+.mp-banco-val {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.65);
+    font-variant-numeric: tabular-nums;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ── Botón copiar ── */
+.mp-copy {
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    border-radius: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(154, 210, 217, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: rgba(154, 210, 217, 0.50);
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    padding: 0;
+}
+
+.mp-copy svg {
+    width: 14px;
+    height: 14px;
+}
+
+.mp-copy:hover {
+    background: rgba(42, 22, 140, 0.20);
+    border-color: rgba(154, 210, 217, 0.30);
+    color: #4122DD;
+}
+
+.mp-copy--sm {
+    width: 22px;
+    height: 22px;
+    border-radius: 0.35rem;
+}
+
+.mp-copy--sm svg {
+    width: 11px;
+    height: 11px;
+}
+
+/* ── Nota seguridad ── */
+.mp-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    border-radius: 0.75rem;
+    background: rgba(42, 22, 140, 0.10);
+    border: 1px solid rgba(154, 210, 217, 0.12);
+}
+
+.mp-note svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    color: #4122DD;
+    margin-top: 1px;
+}
+
+.mp-note span {
+    font-size: 0.72rem;
+    color: rgba(154, 210, 217, 0.60);
+    line-height: 1.5;
+}
+
+/* ── Toast de copiado ── */
+.mp-toast {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.65rem 1.1rem;
+    border-radius: 0.75rem;
+    background: #2A168C;
+    color: #fff;
+    font-size: 0.82rem;
+    font-weight: 600;
+    font-family: 'Inter', system-ui, sans-serif;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.40);
+    z-index: 9999;
+    animation: mp-toast-in 0.25s ease;
+}
+
+.mp-toast svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+@keyframes mp-toast-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}

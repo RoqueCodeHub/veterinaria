@@ -1,0 +1,163 @@
+<!-- Top Header -->
+<header class="dash-header">
+    <div class="header-left">
+        <p class="greeting-text">{{ greeting }},</p>
+        <h1 class="user-name">{{ user?.nombre ?? 'Administrador' }}</h1>
+    </div>
+    <div class="header-right">
+        <div class="clock-badge">
+            <svg class="clock-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118z" />
+            </svg>
+            {{ currentTime() | date:'HH:mm:ss' }}
+        </div>
+        <div class="user-avatar">
+            {{ (user?.nombre ?? 'A').charAt(0).toUpperCase() }}
+        </div>
+    </div>
+</header>
+
+<!-- Stats Grid -->
+@if (loading()) {
+<div class="loading-stats">
+    <div class="loading-pulse"></div>
+    <div class="loading-pulse"></div>
+    <div class="loading-pulse"></div>
+    <div class="loading-pulse"></div>
+</div>
+} @else {
+<section class="stats-grid">
+    <!-- Productos activos -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Productos Activos</span>
+            <span class="stat-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+            </span>
+        </div>
+        <div class="stat-value" style="color:#4122DD">{{ totalProductosActivos() }}</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="background:#4122DD"></div></div>
+    </div>
+
+    <!-- Clientes activos -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Clientes Activos</span>
+            <span class="stat-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+            </span>
+        </div>
+        <div class="stat-value" style="color:#0d9488">{{ totalClientesActivos() }}</div>
+        <div class="stat-bar"><div class="stat-bar-fill" style="background:#0d9488"></div></div>
+    </div>
+
+    <!-- Ventas de hoy -->
+    <div class="stat-card">
+        <div class="stat-header">
+            <span class="stat-label">Ventas Hoy</span>
+            <span class="stat-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </span>
+        </div>
+        <div class="stat-value" style="color:#7c3aed">{{ ventasHoy().length }}</div>
+        <p class="stat-sub">S/ {{ totalVentasHoy() | number:'1.2-2' }}</p>
+        <div class="stat-bar"><div class="stat-bar-fill" style="background:#7c3aed"></div></div>
+    </div>
+
+    <!-- Stock bajo -->
+    <div class="stat-card" [class.stat-alert]="productosStockBajo() > 0">
+        <div class="stat-header">
+            <span class="stat-label">Stock Bajo</span>
+            <span class="stat-icon">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="18" height="18">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </span>
+        </div>
+        <div class="stat-value" [style.color]="productosStockBajo() > 0 ? '#f59e0b' : '#4122DD'">
+            {{ productosStockBajo() }}
+        </div>
+        <p class="stat-sub">productos por reponer</p>
+        <div class="stat-bar">
+            <div class="stat-bar-fill"
+                [style.background]="productosStockBajo() > 0 ? '#f59e0b' : '#4122DD'"></div>
+        </div>
+    </div>
+</section>
+}
+
+<!-- Content Grid -->
+<section class="content-grid">
+
+    <!-- Últimas Ventas -->
+    <div class="card">
+        <h2 class="card-title">Últimas Ventas</h2>
+        @if (ultimasVentas().length === 0) {
+        <p class="empty-msg">No hay ventas registradas aún.</p>
+        } @else {
+        <div class="ventas-list">
+            @for (v of ultimasVentas(); track v.id) {
+            <div class="venta-row">
+                <div class="venta-id">#{{ v.id }}</div>
+                <div class="venta-info">
+                    <span class="venta-cliente">{{ v.cliente?.nombre_completo ?? 'Cliente general' }}</span>
+                    <span class="venta-fecha">{{ v.fecha | date:'dd/MM/yyyy' }}</span>
+                </div>
+                <div class="venta-right">
+                    <span class="venta-total">S/ {{ v.total }}</span>
+                    <span class="badge-mini" [ngClass]="estadoBadgeClass(v.estado)">{{ v.estado }}</span>
+                </div>
+            </div>
+            }
+        </div>
+        }
+    </div>
+
+    <!-- Información de cuenta -->
+    <div class="card">
+        <h2 class="card-title">Información de Cuenta</h2>
+        <div class="user-info-block">
+            <div class="user-info-avatar">
+                {{ (user?.nombre ?? 'A').charAt(0).toUpperCase() }}
+            </div>
+            <div class="user-info-details">
+                <p class="info-name">{{ user?.nombre }}</p>
+                <p class="info-email">{{ user?.email }}</p>
+                <div class="info-badge" [class.badge-active]="user?.activo"
+                    [class.badge-inactive]="!user?.activo">
+                    {{ user?.activo ? '● Cuenta activa' : '○ Cuenta inactiva' }}
+                </div>
+            </div>
+        </div>
+        <div class="info-meta">
+            <div class="info-meta-item">
+                <span class="meta-label">ID de usuario</span>
+                <span class="meta-value">#{{ user?.id }}</span>
+            </div>
+            <div class="info-meta-item">
+                <span class="meta-label">Miembro desde</span>
+                <span class="meta-value">{{ user?.created_at | date:'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="info-meta-item">
+                <span class="meta-label">Total ventas</span>
+                <span class="meta-value">{{ ventas().length }}</span>
+            </div>
+            <div class="info-meta-item">
+                <span class="meta-label">Total clientes</span>
+                <span class="meta-value">{{ clientes().length }}</span>
+            </div>
+        </div>
+    </div>
+
+</section>

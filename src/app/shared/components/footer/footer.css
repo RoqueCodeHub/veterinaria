@@ -1,0 +1,113 @@
+/* ============================================
+   FOOTER
+   Primary:   #2A168C
+   Secondary: #4122DD
+   Dark bg:   #030109
+   ============================================ */
+
+.footer {
+    background: #030109;
+    font-family: 'Inter', system-ui, sans-serif;
+    position: relative;
+}
+
+.footer::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(65, 34, 221, 0.22), #2A168C, rgba(65, 34, 221, 0.22), transparent);
+}
+
+.footer-body {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 3.5rem 1.5rem 2.5rem;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+}
+
+@media (min-width: 640px) {
+    .footer-body { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (min-width: 1024px) {
+    .footer-body { grid-template-columns: 1.6fr 1fr 1fr; gap: 3rem; }
+}
+
+.footer-col { display: flex; flex-direction: column; gap: 1.1rem; }
+
+.footer-logo { display: flex; align-items: center; gap: 0.75rem; }
+
+.footer-logo-icon {
+    width: 40px; height: 40px; border-radius: 0.75rem;
+    background: linear-gradient(135deg, #2A168C, #1a0f5e);
+    border: 1px solid rgba(65,34,221,0.25);
+    display: flex; align-items: center; justify-content: center;
+    color: #4122DD; flex-shrink: 0;
+}
+
+.footer-logo-icon svg { width: 20px; height: 20px; }
+
+.footer-brand-name { font-size: 0.9rem; font-weight: 800; color: #fff; letter-spacing: 0.04em; margin: 0; line-height: 1.2; }
+.footer-brand-sub  { font-size: 0.68rem; color: rgba(65,34,221,0.55); margin: 0; font-weight: 500; }
+
+.footer-legal { display: flex; flex-direction: column; gap: 0.15rem; }
+.footer-ruc       { font-size: 0.78rem; color: rgba(255,255,255,0.35); margin: 0; }
+.footer-ruc-label { color: rgba(65,34,221,0.55); font-weight: 600; }
+.footer-desc      { font-size: 0.82rem; color: rgba(255,255,255,0.38); line-height: 1.6; margin: 0; max-width: 280px; }
+
+.footer-col-title {
+    font-size: 0.78rem; font-weight: 700; letter-spacing: 0.10em;
+    text-transform: uppercase; color: rgba(65,34,221,0.70);
+    margin: 0; display: flex; align-items: center; gap: 0.5rem;
+}
+
+.col-title-dot { width: 6px; height: 6px; border-radius: 50%; background: #2A168C; flex-shrink: 0; }
+
+.footer-socials { display: flex; flex-direction: column; gap: 0.55rem; }
+
+.social-link {
+    display: flex; align-items: center; gap: 0.65rem;
+    color: rgba(255,255,255,0.45); text-decoration: none;
+    font-size: 0.83rem; font-weight: 500;
+    transition: color 0.2s ease, transform 0.2s ease; width: fit-content;
+}
+.social-link svg { width: 15px; height: 15px; flex-shrink: 0; }
+.social-link:hover { color: #4122DD; transform: translateX(4px); }
+
+.footer-pago-desc { display: flex; align-items: center; gap: 0.5rem; font-size: 0.78rem; color: rgba(65,34,221,0.55); }
+.footer-pago-desc svg { color: #2A168C; }
+.footer-pagos { display: flex; flex-direction: column; gap: 0.55rem; }
+
+.pago-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 0.85rem; border-radius: 0.6rem;
+    background: rgba(42,22,140,0.10); border: 1px solid rgba(65,34,221,0.14);
+    color: rgba(255,255,255,0.55); font-size: 0.8rem; font-weight: 600;
+    width: fit-content; transition: border-color 0.2s ease, color 0.2s ease;
+}
+.pago-badge:hover { border-color: rgba(65,34,221,0.30); color: rgba(255,255,255,0.80); }
+.pago-badge svg { color: #2A168C; }
+
+.footer-divider {
+    max-width: 1100px; margin: 0 auto; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(65,34,221,0.12), transparent);
+}
+
+.footer-bottom {
+    max-width: 1100px; margin: 0 auto;
+    padding: 1.25rem 1.5rem 1.5rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    align-items: center; text-align: center;
+}
+
+@media (min-width: 768px) {
+    .footer-bottom { flex-direction: row; justify-content: space-between; text-align: left; }
+}
+
+.footer-copy { font-size: 0.75rem; color: rgba(255,255,255,0.25); margin: 0; line-height: 1.5; }
+.footer-links { display: flex; align-items: center; gap: 1.5rem; flex-shrink: 0; }
+.footer-link { font-size: 0.75rem; color: rgba(255,255,255,0.30); text-decoration: none; font-weight: 500; transition: color 0.2s ease; }
+.footer-link:hover { color: #4122DD; }

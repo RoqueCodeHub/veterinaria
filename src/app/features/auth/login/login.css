@@ -1,0 +1,261 @@
+/* ============================================
+   LOGIN PAGE – Custom Styles (Tailwind v4)
+   Primary:   #2A168C
+   Secondary: #4122DD
+   ============================================ */
+
+/* ---------- Page & Background ---------- */
+.login-page {
+    font-family: 'Inter', system-ui, sans-serif;
+    background-color: #030109;
+}
+
+/* Animated gradient blobs */
+.blob {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.22;
+    animation: blob-drift 12s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+
+.blob-1 {
+    width: 420px;
+    height: 420px;
+    background: radial-gradient(circle, #2A168C, #1a0f5e);
+    top: -120px;
+    left: -100px;
+    animation-delay: 0s;
+}
+
+.blob-2 {
+    width: 320px;
+    height: 320px;
+    background: radial-gradient(circle, #4122DD, #2A168C);
+    bottom: -80px;
+    right: -60px;
+    animation-delay: -6s;
+}
+
+@keyframes blob-drift {
+    0% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    50% {
+        transform: translate(30px, 20px) scale(1.08);
+    }
+
+    100% {
+        transform: translate(-20px, 30px) scale(0.96);
+    }
+}
+
+/* ---------- Glassmorphism Card ---------- */
+.glass-card {
+    background: rgba(6, 3, 18, 0.78);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(65, 34, 221, 0.1);
+}
+
+/* ---------- Input wrapper ---------- */
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-icon {
+    position: absolute;
+    left: 0.875rem;
+    color: #7a6aaa;
+    transition: color 0.2s;
+    display: flex;
+    align-items: center;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.65rem 0.875rem 0.65rem 2.75rem;
+    background: rgba(65, 34, 221, 0.05);
+    border: 1.5px solid rgba(65, 34, 221, 0.12);
+    border-radius: 0.75rem;
+    color: #ede9ff;
+    font-size: 0.875rem;
+    transition: all 0.25s ease;
+    outline: none;
+}
+
+.form-input::placeholder {
+    color: #5a4a9a;
+}
+
+.form-input:focus {
+    background: rgba(42, 22, 140, 0.12);
+    border-color: rgba(42, 22, 140, 0.7);
+    box-shadow: 0 0 0 3px rgba(42, 22, 140, 0.18);
+}
+
+.input-wrapper:focus-within .input-icon {
+    color: #4122DD;
+}
+
+.input-wrapper.input-error .form-input {
+    border-color: rgba(244, 63, 94, 0.6);
+    background: rgba(244, 63, 94, 0.06);
+}
+
+/* ---------- Password toggle ---------- */
+.pwd-toggle-btn {
+    position: absolute;
+    right: 0.75rem;
+    color: #7a6aaa;
+    background: transparent;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+}
+
+.pwd-toggle-btn:hover {
+    color: #4122DD;
+}
+
+/* ---------- Checkbox ---------- */
+.checkbox-custom {
+    width: 1rem;
+    height: 1rem;
+    accent-color: #2A168C;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+/* ---------- Submit Button ---------- */
+.submit-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    background: linear-gradient(135deg, #2A168C 0%, #1a0f5e 100%);
+    color: #fff;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.875rem;
+    border: none;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    box-shadow: 0 4px 20px rgba(42, 22, 140, 0.45);
+    letter-spacing: 0.01em;
+}
+
+.submit-btn:hover:not(:disabled) {
+    background: linear-gradient(135deg, #3a24b8 0%, #2A168C 100%);
+    box-shadow: 0 6px 28px rgba(42, 22, 140, 0.6);
+    transform: translateY(-1px);
+}
+
+.submit-btn:active:not(:disabled) {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(42, 22, 140, 0.3);
+}
+
+.submit-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* ---------- Social Buttons ---------- */
+.social-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    background: rgba(65, 34, 221, 0.05);
+    border: 1.5px solid rgba(65, 34, 221, 0.1);
+    border-radius: 0.75rem;
+    padding: 0.625rem 1rem;
+    color: #4122DD;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.social-btn:hover {
+    background: rgba(42, 22, 140, 0.15);
+    border-color: rgba(65, 34, 221, 0.25);
+    color: #c5baff;
+    transform: translateY(-1px);
+}
+
+/* ==========================================
+   RIGHT PANEL – Image Slider
+   ========================================== */
+.slide-item {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 1s ease-in-out;
+}
+
+.slide-item.active {
+    opacity: 1;
+}
+
+.slide-bg-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+}
+
+.slide-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top,
+            rgba(6, 3, 18, 0.95) 0%,
+            rgba(10, 10, 30, 0.70) 40%,
+            rgba(15, 15, 45, 0.50) 70%,
+            rgba(20, 20, 60, 0.30) 100%);
+}
+
+/* Slide text */
+.slide-text {
+    position: absolute;
+    opacity: 0;
+    transform: translateY(16px);
+    transition: opacity 0.7s ease, transform 0.7s ease;
+    pointer-events: none;
+}
+
+.slide-text.active {
+    position: static;
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+/* Dots */
+.slider-dot {
+    height: 4px;
+    width: 20px;
+    border-radius: 99px;
+    background: rgba(65, 34, 221, 0.3);
+    border: none;
+    cursor: pointer;
+    transition: all 0.35s ease;
+}
+
+.slider-dot.active {
+    width: 36px;
+    background: #4122DD;
+}
+
+.slider-dot:hover:not(.active) {
+    background: rgba(65, 34, 221, 0.6);
+}

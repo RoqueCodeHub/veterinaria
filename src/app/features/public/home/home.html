@@ -1,0 +1,89 @@
+<!-- Hero Section: Full Screen Slider -->
+<section class="hero-section">
+
+    <!-- ===== SLIDES (background images) ===== -->
+    @for (slide of slides; track slide.title; let i = $index) {
+    <div class="slide-item" [class.active]="currentSlide() === i">
+        <img [src]="slide.image" [alt]="slide.title" class="slide-bg-img" />
+        <div class="slide-overlay"></div>
+    </div>
+    }
+
+    <!-- ===== CONTENT OVERLAY ===== -->
+    <div class="hero-content">
+
+        <!-- Top: Branding badge -->
+        <div class="flex items-center gap-3">
+            <div class="hero-badge">
+                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+            </div>
+            <span class="font-semibold text-lg tracking-tight text-white">NexusPlatform</span>
+        </div>
+
+        <!-- Bottom: Slide text + dots -->
+        <div class="pb-2">
+
+            <!-- Slide texts (non-active are position:absolute, active is static) -->
+            @for (slide of slides; track slide.title; let i = $index) {
+            <div class="slide-text" [class.active]="currentSlide() === i">
+
+                <!-- Tag pill -->
+                <div class="slide-tag">
+                    <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: #4122DD;"></span>
+                    <span class="text-xs font-medium uppercase tracking-widest" style="color: #4122DD;">Descubre</span>
+                </div>
+
+                <h1 class="slide-title">{{ slide.title }}</h1>
+                <p class="slide-subtitle">{{ slide.subtitle }}</p>
+
+                <!-- CTA buttons -->
+                <div class="hero-cta">
+                    <button class="btn-primary">
+                        Comenzar ahora
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </button>
+                    <button class="btn-outline">Saber más</button>
+                </div>
+
+            </div>
+            }
+
+            <!-- Dot indicators -->
+            <div class="flex items-center gap-2 mt-8">
+                @for (slide of slides; track slide.title; let i = $index) {
+                <button (click)="goToSlide(i)" class="slider-dot" [class.active]="currentSlide() === i"
+                    [attr.aria-label]="'Slide ' + (i + 1)"></button>
+                }
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+<!-- Cuenta regresiva del sorteo 
+<app-countdown></app-countdown>-->
+
+<!-- Sección de eventos / sorteos -->
+<app-quienes-somos></app-quienes-somos>
+
+<!-- Slider de ganadores -->
+<app-especialidades></app-especialidades>
+
+<!-- Servicios -->
+<app-servicios></app-servicios>
+
+<!-- Galeria -->
+<app-galeria></app-galeria>
+
+<!-- Redes sociales -->
+<app-redes-sociales></app-redes-sociales>
+<!-- Sponsors -->
+<app-sponsors></app-sponsors>

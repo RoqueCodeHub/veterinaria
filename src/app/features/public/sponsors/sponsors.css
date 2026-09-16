@@ -1,0 +1,141 @@
+/* ============================================
+   SPONSORS — Infinite marquee (CSS only)
+   ============================================ */
+
+.sp-section {
+    background: #060312;
+    padding: 3rem 0 3.5rem;
+    font-family: 'Inter', system-ui, sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Separadores top/bottom */
+.sp-section::before,
+.sp-section::after {
+    content: '';
+    position: absolute;
+    left: 8%; right: 8%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(65, 34, 221, 0.15), transparent);
+}
+.sp-section::before { top: 0; }
+.sp-section::after  { bottom: 0; }
+
+/* ── Encabezado ── */
+.sp-header {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    justify-content: center;
+    margin-bottom: 2.25rem;
+    padding: 0 1.5rem;
+}
+
+.sp-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: rgba(65, 34, 221, 0.45);
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.sp-line {
+    height: 1px;
+    width: 80px;
+    background: linear-gradient(90deg, rgba(65, 34, 221, 0.20), transparent);
+}
+
+/* ── Marquee outer ── */
+.sp-marquee-outer {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+}
+
+/* Fades laterales */
+.sp-fade {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 120px;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.sp-fade--left {
+    left: 0;
+    background: linear-gradient(to right, #060312 0%, transparent 100%);
+}
+
+.sp-fade--right {
+    right: 0;
+    background: linear-gradient(to left, #060312 0%, transparent 100%);
+}
+
+/* ── Track ── */
+.sp-track {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    width: max-content;
+    animation: marquee-scroll 28s linear infinite;
+}
+
+.sp-track:hover {
+    animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+    0%   { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+}
+
+/* ── Item ── */
+.sp-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex-shrink: 0;
+    padding: 0.5rem 1.25rem 0.5rem 0.5rem;
+    border-radius: 0.875rem;
+    border: 1px solid rgba(65, 34, 221, 0.07);
+    background: rgba(255, 255, 255, 0.018);
+    transition: border-color 0.25s ease, background 0.25s ease;
+    cursor: default;
+}
+
+.sp-item:hover {
+    border-color: rgba(65, 34, 221, 0.20);
+    background: rgba(255, 255, 255, 0.04);
+}
+
+/* Logo badge */
+.sp-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 0.625rem;
+    border: 1px solid;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.sp-sigla {
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+}
+
+.sp-nombre {
+    font-size: 0.825rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.55);
+    white-space: nowrap;
+    transition: color 0.25s ease;
+}
+
+.sp-item:hover .sp-nombre {
+    color: rgba(255, 255, 255, 0.80);
+}

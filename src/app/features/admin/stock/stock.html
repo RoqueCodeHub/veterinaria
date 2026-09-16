@@ -1,0 +1,146 @@
+<!-- Page Header -->
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Movimientos de Stock</h1>
+        <p class="page-subtitle">Registra entradas y salidas del inventario</p>
+    </div>
+    <button class="btn-primary" (click)="openCreate()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Registrar Movimiento
+    </button>
+</header>
+
+<!-- Filter -->
+<div class="filter-bar">
+    <label class="filter-label">Filtrar por producto:</label>
+    <select class="filter-select" (change)="applyFilter($event)">
+        <option value="">Todos los productos</option>
+        @for (p of productos(); track p.id) {
+        <option [value]="p.id">{{ p.nombre }}</option>
+        }
+    </select>
+</div>
+
+<!-- Error -->
+@if (error()) {
+<div class="error-banner">{{ error() }}</div>
+}
+
+<!-- Table Card -->
+<div class="table-card">
+    <div class="table-header">
+        <h2 class="table-title">Historial de Movimientos</h2>
+        <span class="table-count">{{ movimientos().length }} registros</span>
+    </div>
+
+    @if (loading()) {
+    <div class="loading-state">Cargando movimientos...</div>
+    } @else if (movimientos().length === 0) {
+    <div class="empty-state">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="40" height="40">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+        </svg>
+        <p>No hay movimientos registrados</p>
+    </div>
+    } @else {
+    <table>
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>Producto</th>
+                <th>Tipo</th>
+                <th>Cant.</th>
+                <th>Stock Ant.</th>
+                <th>Stock Nuevo</th>
+                <th>P. Unitario</th>
+                <th>Responsable</th>
+                <th>Motivo / Referencia</th>
+                <th>Fecha</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (m of movimientos(); track m.id) {
+            <tr>
+                <td class="id-cell">#{{ m.id }}</td>
+                <td>
+                    <span>{{ m.producto?.nombre ?? getProductoNombre(m.producto_id) }}</span>
+                    @if (m.producto?.codigo) {
+                    <small class="muted"> · {{ m.producto!.codigo }}</small>
+                    }
+                </td>
+                <td>
+                    <span class="badge" [class.badge-entrada]="m.tipo === 'entrada'"
+                        [class.badge-salida]="m.tipo === 'salida'">
+                        {{ m.tipo === 'entrada' ? '↑ Entrada' : '↓ Salida' }}
+                    </span>
+                </td>
+                <td>
+                    <span [class.qty-entrada]="m.tipo === 'entrada'" [class.qty-salida]="m.tipo === 'salida'">
+                        {{ m.tipo === 'entrada' ? '+' : '-' }}{{ m.cantidad }}
+                    </span>
+                </td>
+                <td class="muted">{{ m.stock_anterior }}</td>
+                <td>{{ m.stock_nuevo }}</td>
+                <td class="muted">S/ {{ m.precio_unitario }}</td>
+                <td class="muted">{{ m.user?.name || '—' }}</td>
+                <td class="muted">
+                    {{ m.motivo || '—' }}
+                    @if (m.referencia) {
+                    <small class="ref-tag">{{ m.referencia }}</small>
+                    }
+                </td>
+                <td class="muted">{{ m.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+            </tr>
+            }
+        </tbody>
+    </table>
+    }
+</div>
+
+<!-- Modal Registrar Movimiento -->
+@if (showModal()) {
+<div class="modal-overlay" (click)="closeModal()">
+    <div class="modal" (click)="$event.stopPropagation()">
+        <h2 class="modal-title">Registrar Movimiento de Stock</h2>
+        <form (ngSubmit)="save()">
+            <div class="form-grid">
+                <div class="form-group full">
+                    <label>Producto *</label>
+                    <select [(ngModel)]="form.producto_id" name="producto_id" required>
+                        <option [value]="0" disabled>Selecciona un producto</option>
+                        @for (p of productos(); track p.id) {
+                        <option [value]="p.id">{{ p.nombre }} (Stock: {{ p.stock_actual }})</option>
+                        }
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Tipo *</label>
+                    <select [(ngModel)]="form.tipo" name="tipo" required>
+                        <option value="entrada">Entrada</option>
+                        <option value="salida">Salida</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Cantidad *</label>
+                    <input type="number" [(ngModel)]="form.cantidad" name="cantidad" required min="1"
+                        placeholder="1" />
+                </div>
+                <div class="form-group full">
+                    <label>Motivo</label>
+                    <input [(ngModel)]="form.motivo" name="motivo"
+                        placeholder="Ej. Compra a proveedor, venta, ajuste..." />
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
+                <button type="submit" class="btn-save" [disabled]="savingModal() || !form.producto_id">
+                    {{ savingModal() ? 'Guardando...' : 'Registrar' }}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+}

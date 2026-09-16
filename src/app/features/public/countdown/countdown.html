@@ -1,0 +1,102 @@
+<section class="countdown-section">
+    <div class="countdown-container">
+
+        <!-- ── LEFT: Badge + Título + Timer ── -->
+        <div class="countdown-left">
+
+            <!-- Badge -->
+            <div class="countdown-badge">
+                <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>CIERRE DE VENTAS</span>
+            </div>
+
+            <!-- Título -->
+            <h2 class="countdown-title">
+                EL TIEMPO<br>
+                <span class="countdown-title-accent">SE AGOTA</span>
+            </h2>
+
+            <!-- Cajas del timer -->
+            <div class="countdown-timer">
+
+                <div class="timer-unit">
+                    <div class="timer-box">
+                        <span class="timer-number">{{ pad(countdown().days) }}</span>
+                    </div>
+                    <span class="timer-label">DÍAS</span>
+                </div>
+
+                <span class="timer-separator">:</span>
+
+                <div class="timer-unit">
+                    <div class="timer-box">
+                        <span class="timer-number">{{ pad(countdown().hours) }}</span>
+                    </div>
+                    <span class="timer-label">HORAS</span>
+                </div>
+
+                <span class="timer-separator">:</span>
+
+                <div class="timer-unit">
+                    <div class="timer-box">
+                        <span class="timer-number">{{ pad(countdown().minutes) }}</span>
+                    </div>
+                    <span class="timer-label">MIN.</span>
+                </div>
+
+                <span class="timer-separator">:</span>
+
+                <div class="timer-unit">
+                    <div class="timer-box timer-box--accent">
+                        <span class="timer-number">{{ pad(countdown().seconds) }}</span>
+                    </div>
+                    <span class="timer-label">SEG.</span>
+                </div>
+
+            </div>
+
+        </div>
+
+        <!-- ── RIGHT: Tarjeta de meta ── -->
+        <div class="countdown-right">
+            <div class="meta-card">
+
+                <!-- Encabezado meta -->
+                <div class="meta-header">
+                    <div class="meta-title-row">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10" stroke-width="2" />
+                            <circle cx="12" cy="12" r="6"  stroke-width="2" />
+                            <circle cx="12" cy="12" r="2"  stroke-width="2" />
+                        </svg>
+                        <span class="meta-title">META: SORTEO PRINCIPAL</span>
+                    </div>
+                    <span class="meta-percent">{{ ticketsPorcentaje }}%</span>
+                </div>
+
+                <!-- Barra de progreso -->
+                <div class="meta-bar-track">
+                    <div class="meta-bar-fill" [style.width.%]="ticketsPorcentaje"></div>
+                </div>
+
+                <!-- Texto informativo -->
+                <p class="meta-info">
+                    Faltan <strong>{{ ticketsFaltantes.toLocaleString() }}</strong> tickets para llegar
+                    a la meta de <strong class="meta-info-accent">{{ ticketsMeta.toLocaleString() }}</strong>.
+                </p>
+
+                <!-- Botón CTA -->
+                <button class="meta-cta">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    COMPRAR TICKETS AHORA
+                </button>
+
+            </div>
+        </div>
+
+    </div>
+</section>

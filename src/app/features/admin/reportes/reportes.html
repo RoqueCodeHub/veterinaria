@@ -1,0 +1,228 @@
+<!-- Page Header -->
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Reportes</h1>
+        <p class="page-subtitle">Resumen general del sistema</p>
+    </div>
+    <button class="btn-refresh" (click)="loadAll()">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Actualizar
+    </button>
+</header>
+
+@if (error()) {
+<div class="error-banner">{{ error() }}</div>
+}
+
+@if (loading()) {
+<div class="loading-state">Cargando reportes...</div>
+} @else {
+
+<!-- Stats Grid -->
+<section class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+            </svg>
+        </div>
+        <div>
+            <p class="stat-label">Total Productos</p>
+            <p class="stat-value">{{ totalProductos() }}</p>
+        </div>
+    </div>
+    <div class="stat-card stat-warning">
+        <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <div>
+            <p class="stat-label">Stock Bajo</p>
+            <p class="stat-value">{{ stockBajo().length }}</p>
+        </div>
+    </div>
+    <div class="stat-card stat-purple">
+        <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+        </div>
+        <div>
+            <p class="stat-label">Ventas Activas</p>
+            <p class="stat-value">{{ totalVentasActivas() }}</p>
+        </div>
+    </div>
+    <div class="stat-card stat-teal">
+        <div class="stat-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+        </div>
+        <div>
+            <p class="stat-label">Ingreso Total</p>
+            <p class="stat-value">{{ ingresoTotal() | currency:'PEN':'S/ ' }}</p>
+        </div>
+    </div>
+</section>
+
+<!-- Content Grid -->
+<div class="content-grid">
+
+    <!-- Stock Bajo -->
+    <div class="report-card">
+        <h2 class="card-title">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Productos con Stock Bajo
+        </h2>
+        @if (stockBajo().length === 0) {
+        <p class="empty-msg">Sin productos con stock bajo</p>
+        } @else {
+        <table>
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Stock</th>
+                    <th>Mínimo</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (p of stockBajo(); track p.id) {
+                <tr>
+                    <td>{{ p.nombre }}</td>
+                    <td><span class="badge badge-danger">{{ p.stock_actual }}</span></td>
+                    <td class="muted">{{ p.stock_minimo }}</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+
+    <!-- Por Vencer -->
+    <div class="report-card">
+        <h2 class="card-title">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Productos por Vencer
+        </h2>
+        @if (porVencer().length === 0) {
+        <p class="empty-msg">Sin productos próximos a vencer</p>
+        } @else {
+        <table>
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Stock</th>
+                    <th>Vencimiento</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (p of porVencer(); track p.id) {
+                <tr>
+                    <td>{{ p.nombre }}</td>
+                    <td class="muted">{{ p.stock_actual }}</td>
+                    <td><span class="badge badge-warning">{{ p.fecha_vencimiento | date:'dd/MM/yyyy' }}</span></td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+
+    <!-- Ventas Recientes -->
+    <div class="report-card report-card-full">
+        <h2 class="card-title">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Ventas Recientes
+        </h2>
+        @if (ventas().length === 0) {
+        <p class="empty-msg">Sin ventas registradas</p>
+        } @else {
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Trabajador</th>
+                    <th>Total</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (v of getRecentVentas(); track v.id) {
+                <tr>
+                    <td class="id-cell">#{{ v.id }}</td>
+                    <td>{{ v.trabajador?.nombre_completo ?? '—' }}</td>
+                    <td>{{ v.total | currency:'PEN':'S/ ' }}</td>
+                    <td>
+                        <span class="badge" [class.badge-success]="v.estado === 'activa'"
+                            [class.badge-danger]="v.estado === 'anulada'">{{ v.estado }}</span>
+                    </td>
+                    <td class="muted">{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+
+    <!-- Movimientos Recientes -->
+    <div class="report-card report-card-full">
+        <h2 class="card-title">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+            </svg>
+            Movimientos de Stock Recientes
+        </h2>
+        @if (movimientos().length === 0) {
+        <p class="empty-msg">Sin movimientos registrados</p>
+        } @else {
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Producto</th>
+                    <th>Tipo</th>
+                    <th>Cantidad</th>
+                    <th>Fecha</th>
+                </tr>
+            </thead>
+            <tbody>
+                @for (m of getRecentMovimientos(); track m.id) {
+                <tr>
+                    <td class="id-cell">#{{ m.id }}</td>
+                    <td>{{ m.producto?.nombre ?? 'Producto #' + m.producto_id }}</td>
+                    <td>
+                        <span class="badge" [class.badge-entrada]="m.tipo === 'entrada'"
+                            [class.badge-salida]="m.tipo === 'salida'">
+                            {{ m.tipo }}
+                        </span>
+                    </td>
+                    <td>{{ m.cantidad }}</td>
+                    <td class="muted">{{ m.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                </tr>
+                }
+            </tbody>
+        </table>
+        }
+    </div>
+
+</div>
+}

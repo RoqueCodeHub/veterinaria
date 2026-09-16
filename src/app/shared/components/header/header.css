@@ -1,0 +1,15 @@
+/* ============================================
+   HEADER – Glass dark overlay style
+   ============================================ */
+
+.header-glass {
+    background: rgba(6, 3, 18, 0.55);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid rgba(65, 34, 221, 0.10);
+    transition: background 0.3s ease;
+}
+
+.header-glass:hover {
+    background: rgba(6, 3, 18, 0.70);
+}

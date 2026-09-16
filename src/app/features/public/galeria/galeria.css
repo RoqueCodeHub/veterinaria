@@ -1,0 +1,236 @@
+/* ============================================
+   GALERIA
+   Primary:   #2A168C  |  Secondary: #4122DD
+   ============================================ */
+
+.gal-section {
+  position: relative;
+  padding: 5rem 1.5rem;
+  background: #07031a;
+  overflow: hidden;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.gal-glow {
+  position: absolute;
+  width: 700px;
+  height: 700px;
+  border-radius: 50%;
+  filter: blur(140px);
+  pointer-events: none;
+  z-index: 0;
+}
+.gal-glow-t {
+  top: -200px;
+  left: -180px;
+  background: rgba(42, 22, 140, 0.30);
+}
+.gal-glow-b {
+  bottom: -200px;
+  right: -180px;
+  background: rgba(65, 34, 221, 0.18);
+}
+
+.gal-wrap {
+  position: relative;
+  z-index: 1;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── Shared header ── */
+.sec-head {
+  text-align: center;
+  margin-bottom: 4rem;
+}
+
+.sec-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 1rem;
+  border-radius: 9999px;
+  background: rgba(42, 22, 140, 0.30);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(65, 34, 221, 0.35);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #c5baff;
+  margin-bottom: 1.25rem;
+}
+
+.sec-tag-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #4122DD;
+  animation: gal-pulse 2s ease-in-out infinite;
+}
+
+@keyframes gal-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.sec-title {
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 800;
+  color: #fff;
+  line-height: 1.15;
+  margin-bottom: 1rem;
+  letter-spacing: -0.02em;
+}
+
+.sec-accent {
+  color: #4122DD;
+}
+
+.sec-sub {
+  font-size: 1.05rem;
+  color: #c5baff;
+  opacity: 0.85;
+  max-width: 42rem;
+  margin: 0 auto;
+  line-height: 1.65;
+}
+
+/* ── Masonry Grid ── */
+.gal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 200px;
+  gap: 1rem;
+}
+
+@media (min-width: 768px) {
+  .gal-grid {
+    grid-template-columns: repeat(3, 1fr);
+    grid-auto-rows: 220px;
+    gap: 1.25rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .gal-grid {
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 240px;
+  }
+}
+
+/* ── Item ── */
+.gal-item {
+  position: relative;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(65, 34, 221, 0.14);
+  cursor: pointer;
+  background: rgba(42, 22, 140, 0.20);
+}
+
+/* Tall item spans 2 rows */
+.gal-item--tall {
+  grid-row: span 2;
+}
+
+/* ── Image ── */
+.gal-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.5s ease;
+}
+
+.gal-item:hover .gal-img {
+  transform: scale(1.08);
+}
+
+/* ── Overlay ── */
+.gal-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(6, 3, 18, 0.85) 0%,
+    rgba(6, 3, 18, 0.20) 50%,
+    transparent 100%
+  );
+  opacity: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 1rem;
+  transition: opacity 0.3s ease;
+}
+
+.gal-item:hover .gal-overlay {
+  opacity: 1;
+}
+
+/* ── Label ── */
+.gal-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  border-radius: 9999px;
+  background: rgba(65, 34, 221, 0.35);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(65, 34, 221, 0.40);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+  transform: translateY(6px);
+  transition: transform 0.3s ease;
+}
+
+.gal-item:hover .gal-label {
+  transform: translateY(0);
+}
+
+/* ── Nota placeholder ── */
+.gal-note {
+  text-align: center;
+  margin-top: 2rem;
+  font-size: 0.82rem;
+  color: rgba(197, 186, 255, 0.45);
+  font-style: italic;
+}
+
+/* ── Actions ── */
+.gal-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 2.5rem;
+}
+
+.gal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.8rem 2rem;
+  border-radius: 0.875rem;
+  background: rgba(65, 34, 221, 0.10);
+  border: 1.5px solid rgba(65, 34, 221, 0.35);
+  color: #c5baff;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  backdrop-filter: blur(8px);
+}
+
+.gal-btn:hover {
+  background: rgba(65, 34, 221, 0.20);
+  border-color: rgba(65, 34, 221, 0.60);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(42, 22, 140, 0.35);
+}
+
+.gal-btn svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}

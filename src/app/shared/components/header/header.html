@@ -1,0 +1,54 @@
+<!-- src/app/shared/components/header/header.component.html -->
+<header class="header-glass sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between items-center h-16 md:h-20">
+
+            <!-- Logo -->
+            <div class="flex-shrink-0">
+                <a routerLink="/" class="flex flex-col leading-none select-none">
+                    <!-- Línea principal: ALI. -->
+                    <span class="font-black tracking-tight" style="font-size: 1.6rem; line-height: 1;">
+                        <span class="text-white">ALI-</span><span style="color: #4122DD;">VET</span>
+                    </span>
+                    <!-- Subtítulo: ALI-VET -->
+                    <span class="font-semibold tracking-widest uppercase"
+                        style="font-size: 0.55rem; color: #4122DD; letter-spacing: 0.22em; margin-top: 2px;">
+                        Veterinaria
+                    </span>
+                </a>
+            </div>
+
+            <!-- Menú desktop -->
+            <nav class="hidden md:flex items-center space-x-10">
+                @for (link of navLinks; track link.path) {
+                <a [routerLink]="link.path" routerLinkActive="!text-secondary font-semibold"
+                    [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
+                    class="text-white/75 hover:text-white transition-colors duration-200 text-sm font-medium">
+                    {{ link.label }}
+                </a>
+                }
+            </nav>
+
+            <!-- Sección derecha: Login + menú móvil -->
+            <div class="flex items-center space-x-4">
+
+                <a routerLink="/login"
+                    class="hidden md:inline-flex items-center px-5 py-2.5 rounded-lg font-medium text-white border transition-all duration-200"
+                    style="border-color: rgba(154,210,217,0.35); background: rgba(42, 22, 140,0.20); backdrop-filter: blur(8px);"
+                    onmouseover="this.style.background='rgba(42, 22, 140,0.40)'"
+                    onmouseout="this.style.background='rgba(42, 22, 140,0.20)'">
+                    Iniciar Sesión
+                </a>
+
+                <!-- Hamburguesa -->
+                <button class="md:hidden text-white/80 hover:text-white focus:outline-none">
+                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+
+        </div>
+    </div>
+</header>

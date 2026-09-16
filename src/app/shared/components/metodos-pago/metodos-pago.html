@@ -1,0 +1,141 @@
+<div class="mp-card">
+
+    <div class="mp-header">
+        <span class="mp-header-dot"></span>
+        <h3 class="mp-title">Métodos de Pago</h3>
+    </div>
+
+    <p class="mp-subtitle">
+        Realiza tu pago por cualquiera de estos medios y adjunta el comprobante en el formulario.
+    </p>
+
+    <!-- Loading skeleton -->
+    @if (isLoading()) {
+    <div class="mp-list">
+        @for (i of [1,2,3]; track i) {
+        <div class="mp-skeleton"></div>
+        }
+    </div>
+    }
+
+    <!-- Lista de métodos -->
+    @if (!isLoading()) {
+    <div class="mp-list">
+
+        @for (m of metodos(); track m.id) {
+
+        <!-- Billetera (Yape / Plin) -->
+        @if (m.tipo === 'billetera') {
+        <div class="mp-item" [style.--mp-color]="m.color" [style.--mp-bg]="m.colorBg">
+            <div class="mp-icon-wrap">
+                @if (m.nombre.toLowerCase().includes('yape')) {
+                <svg viewBox="0 0 40 40" fill="none" class="mp-icon">
+                    <circle cx="20" cy="20" r="20" fill="currentColor" opacity="0.15"/>
+                    <path d="M20 8l4 8h8l-6.5 5 2.5 8L20 24l-8 5 2.5-8L8 16h8l4-8z" fill="currentColor"/>
+                </svg>
+                } @else {
+                <svg viewBox="0 0 40 40" fill="none" class="mp-icon">
+                    <circle cx="20" cy="20" r="20" fill="currentColor" opacity="0.15"/>
+                    <rect x="8" y="14" width="24" height="14" rx="3" fill="currentColor" opacity="0.8"/>
+                    <rect x="8" y="12" width="24" height="4" rx="2" fill="currentColor"/>
+                    <circle cx="14" cy="23" r="2" fill="white" opacity="0.7"/>
+                    <rect x="18" y="21" width="8" height="2" rx="1" fill="white" opacity="0.5"/>
+                </svg>
+                }
+            </div>
+            <div class="mp-body">
+                <p class="mp-name">{{ m.nombre }}</p>
+                @if (m.numero) {
+                <p class="mp-numero">{{ m.numero }}</p>
+                }
+                @if (m.titular) {
+                <p class="mp-titular">{{ m.titular }}</p>
+                }
+                @if (m.instrucciones) {
+                <p class="mp-instrucciones">{{ m.instrucciones }}</p>
+                }
+            </div>
+            <div class="mp-actions">
+                @if (qrUrl(m.qr_imagen)) {
+                <img [src]="qrUrl(m.qr_imagen)!" class="mp-qr" [alt]="'QR ' + m.nombre" />
+                }
+                @if (m.numero) {
+                <button class="mp-copy" (click)="copyText(m.numero!)" title="Copiar número">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                    </svg>
+                </button>
+                }
+            </div>
+        </div>
+        }
+
+        <!-- Banco / Transferencia -->
+        @if (m.tipo === 'banco') {
+        <div class="mp-item mp-item--bank" [style.--mp-color]="m.color" [style.--mp-bg]="m.colorBg">
+            <div class="mp-icon-wrap">
+                <svg viewBox="0 0 40 40" fill="none" class="mp-icon">
+                    <circle cx="20" cy="20" r="20" fill="currentColor" opacity="0.15"/>
+                    <path d="M10 17h20M10 23h20M14 27V17M20 27V17M26 27V17M12 17l8-6 8 6H12z"
+                          stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="mp-body mp-body--bank">
+                <p class="mp-name">{{ m.nombre }}</p>
+                @if (m.numero) {
+                <div class="mp-bank-row">
+                    <span class="mp-bank-label">Cuenta</span>
+                    <span class="mp-banco-val">{{ m.numero }}</span>
+                    <button class="mp-copy mp-copy--sm" (click)="copyText(m.numero!)" title="Copiar cuenta">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </button>
+                </div>
+                }
+                @if (m.instrucciones) {
+                <div class="mp-bank-row">
+                    <span class="mp-bank-label">CCI</span>
+                    <span class="mp-banco-val">{{ m.instrucciones }}</span>
+                    <button class="mp-copy mp-copy--sm" (click)="copyText(m.instrucciones!)" title="Copiar CCI">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                    </button>
+                </div>
+                }
+                @if (m.titular) {
+                <p class="mp-titular">{{ m.titular }}</p>
+                }
+            </div>
+        </div>
+        }
+
+        }
+
+    </div>
+    }
+
+    <!-- Nota de seguridad -->
+    <div class="mp-note">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+        <span>Transacciones 100% seguras y verificadas por nuestro equipo.</span>
+    </div>
+
+</div>
+
+<!-- Toast de copiado -->
+@if (copied()) {
+<div class="mp-toast">
+    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+    </svg>
+    ¡Copiado!
+</div>
+}
