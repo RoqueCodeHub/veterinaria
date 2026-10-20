@@ -102,12 +102,12 @@
         <form (ngSubmit)="save()">
             <div class="form-grid">
                 <div class="form-group">
-                    <label>Nombres *</label>
-                    <input [(ngModel)]="form.nombres" name="nombres" required placeholder="Nombres" />
+                    <label>Nombre *</label>
+                    <input [(ngModel)]="form.nombres" name="nombres" required placeholder="Nombre comercial" />
                 </div>
                 <div class="form-group">
-                    <label>Apellidos *</label>
-                    <input [(ngModel)]="form.apellidos" name="apellidos" required placeholder="Apellidos" />
+                    <label>Apellidos</label>
+                    <input [(ngModel)]="form.apellidos" name="apellidos" placeholder="Opcional" />
                 </div>
                 <div class="form-group">
                     <label>Tipo Documento</label>
@@ -148,6 +148,9 @@
                     </label>
                 </div>
             </div>
+            @if (error()) {
+            <p class="confirm-text">{{ error() }}</p>
+            }
             <div class="modal-actions">
                 <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
                 <button type="submit" class="btn-save" [disabled]="savingModal()">

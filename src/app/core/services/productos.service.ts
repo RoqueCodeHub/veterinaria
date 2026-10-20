@@ -9,11 +9,13 @@ export interface Producto {
   nombre: string;
   descripcion?: string;
   codigo?: string;
+  categoria_id?: number | null;
   categoria?: string;
   proveedor?: { id: number; nombre: string } | null;
   precio_compra: number;
   precio_venta: number;
   stock_actual: number;
+  stock_disponible?: number;
   stock_minimo: number;
   stock_bajo: boolean;
   unidad_medida?: string;

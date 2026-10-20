@@ -8,6 +8,7 @@ export interface Categoria {
   id: number;
   nombre: string;
   descripcion?: string;
+  parent_id?: number | null;
   activo: number | boolean;
   created_at: string;
   updated_at: string;

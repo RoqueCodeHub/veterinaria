@@ -14,10 +14,10 @@ export class Footer {
 
   socials = [
     { nombre: 'Instagram', url: 'https://instagram.com' },
-    { nombre: 'Facebook',  url: 'https://facebook.com' },
+    { nombre: 'Facebook',  url: 'https://www.facebook.com/profile.php?id=61564744831448' },
     { nombre: 'TikTok',    url: 'https://tiktok.com' },
     { nombre: 'YouTube',   url: 'https://youtube.com' },
-    { nombre: 'WhatsApp',  url: 'https://wa.me/51987654321' },
+    { nombre: 'WhatsApp',  url: 'https://wa.me/51932898744' },
   ];
 
   pagos = ['Yape', 'Plin', 'Transferencias'];

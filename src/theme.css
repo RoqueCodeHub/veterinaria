@@ -1,0 +1,433 @@
+/* Modo claro del landing. El modo oscuro conserva los estilos de cada componente. */
+
+html[data-theme="light"] body {
+    background: #f4f2fb;
+    color: #1c1433;
+}
+
+html[data-theme="light"] .site-header {
+    background: rgba(255, 255, 255, 0.92);
+    border-bottom-color: rgba(42, 22, 140, 0.12);
+}
+
+html[data-theme="light"] .brand-ali,
+html[data-theme="light"] .nav-link,
+html[data-theme="light"] .theme-toggle,
+html[data-theme="light"] .menu-toggle,
+html[data-theme="light"] .btn-login {
+    color: #1c1433;
+}
+
+html[data-theme="light"] .nav-link:hover,
+html[data-theme="light"] .nav-link.is-active {
+    color: #4122DD;
+}
+
+html[data-theme="light"] .theme-toggle,
+html[data-theme="light"] .menu-toggle,
+html[data-theme="light"] .btn-login {
+    background: rgba(42, 22, 140, 0.08);
+    border-color: rgba(42, 22, 140, 0.18);
+}
+
+html[data-theme="light"] .nav-mobile .nav-link {
+    border-bottom-color: rgba(42, 22, 140, 0.08);
+}
+
+html[data-theme="light"] .qs-section,
+html[data-theme="light"] .esp-section,
+html[data-theme="light"] .srv-section,
+html[data-theme="light"] .gal-section,
+html[data-theme="light"] .ct-section,
+html[data-theme="light"] .rs-section,
+html[data-theme="light"] .sp-section,
+html[data-theme="light"] .countdown-section,
+html[data-theme="light"] .footer {
+    background: #f4f2fb;
+    color: #1c1433;
+}
+
+html[data-theme="light"] .page-hero {
+    background: linear-gradient(180deg, #ebe6fa 0%, #f4f2fb 100%);
+}
+
+html[data-theme="light"] .sec-title,
+html[data-theme="light"] .page-title,
+html[data-theme="light"] .rs-title,
+html[data-theme="light"] .countdown-title,
+html[data-theme="light"] .footer-brand-name,
+html[data-theme="light"] .qs-stat-val,
+html[data-theme="light"] .qs-p strong,
+html[data-theme="light"] .esp-card-title,
+html[data-theme="light"] .srv-title,
+html[data-theme="light"] .rs-platform {
+    color: #161022;
+}
+
+html[data-theme="light"] .sec-sub,
+html[data-theme="light"] .sec-tag,
+html[data-theme="light"] .page-subtitle,
+html[data-theme="light"] .rs-subtitle,
+html[data-theme="light"] .rs-desc,
+html[data-theme="light"] .qs-p,
+html[data-theme="light"] .qs-check-item,
+html[data-theme="light"] .qs-location,
+html[data-theme="light"] .qs-stat-lbl,
+html[data-theme="light"] .esp-card-text,
+html[data-theme="light"] .esp-list li,
+html[data-theme="light"] .srv-text,
+html[data-theme="light"] .srv-icon,
+html[data-theme="light"] .gal-note,
+html[data-theme="light"] .gal-btn,
+html[data-theme="light"] .sp-nombre,
+html[data-theme="light"] .ct-info-value,
+html[data-theme="light"] .ct-label,
+html[data-theme="light"] .footer-desc,
+html[data-theme="light"] .footer-ruc,
+html[data-theme="light"] .footer-copy,
+html[data-theme="light"] .footer-link,
+html[data-theme="light"] .social-link,
+html[data-theme="light"] .pago-badge {
+    color: #4a4368;
+}
+
+html[data-theme="light"] .esp-card,
+html[data-theme="light"] .srv-card,
+html[data-theme="light"] .rs-card,
+html[data-theme="light"] .ct-info-card,
+html[data-theme="light"] .ct-form-card,
+html[data-theme="light"] .pago-badge {
+    background: #ffffff;
+    border-color: rgba(42, 22, 140, 0.14);
+    box-shadow: 0 8px 24px rgba(42, 22, 140, 0.06);
+}
+
+html[data-theme="light"] .ct-input {
+    background: #ffffff;
+    color: #1c1433;
+    border-color: rgba(42, 22, 140, 0.18);
+}
+
+html[data-theme="light"] .ct-input::placeholder {
+    color: rgba(28, 20, 51, 0.4);
+}
+
+html[data-theme="light"] .sp-fade--left {
+    background: linear-gradient(to right, #f4f2fb 0%, transparent 100%);
+}
+
+html[data-theme="light"] .sp-fade--right {
+    background: linear-gradient(to left, #f4f2fb 0%, transparent 100%);
+}
+
+html[data-theme="light"] .qs-glow,
+html[data-theme="light"] .esp-glow,
+html[data-theme="light"] .srv-glow,
+html[data-theme="light"] .gal-glow {
+    opacity: 0.28;
+}
+
+/* Admin: el modo oscuro queda en cada pantalla. Aquí solo el modo claro. */
+html[data-theme="light"] .admin-page,
+html[data-theme="light"] .admin-content {
+    background: #f4f2fb;
+    color: #1c1433;
+}
+
+html[data-theme="light"] .admin-content > * {
+    color: #1c1433;
+}
+
+html[data-theme="light"] .sidebar,
+html[data-theme="light"] .admin-topbar {
+    background: rgba(255, 255, 255, 0.96);
+    border-color: rgba(42, 22, 140, 0.12);
+    color: #1c1433;
+}
+
+html[data-theme="light"] .menu-btn {
+    background: rgba(42, 22, 140, 0.08);
+    border-color: rgba(42, 22, 140, 0.18);
+    color: #1c1433;
+}
+
+html[data-theme="light"] .sidebar-brand,
+html[data-theme="light"] .sidebar-user,
+html[data-theme="light"] .sidebar-logout {
+    border-color: rgba(42, 22, 140, 0.12);
+}
+
+html[data-theme="light"] .sidebar-brand span,
+html[data-theme="light"] .sidebar-user-name,
+html[data-theme="light"] .admin-page .page-title,
+html[data-theme="light"] .admin-page .nombre-cell,
+html[data-theme="light"] .admin-page .product-name,
+html[data-theme="light"] .admin-page .modal-title,
+html[data-theme="light"] .admin-page .user-name,
+html[data-theme="light"] .admin-page .info-name,
+html[data-theme="light"] .admin-page .stat-value,
+html[data-theme="light"] .admin-page .venta-cliente,
+html[data-theme="light"] .admin-page .card-name,
+html[data-theme="light"] .admin-page .cart-name,
+html[data-theme="light"] .admin-page .caja-head h2,
+html[data-theme="light"] .admin-page .total-row,
+html[data-theme="light"] .admin-page .activity-action {
+    color: #1c1433;
+}
+
+html[data-theme="light"] .nav-item,
+html[data-theme="light"] .sidebar-user-email,
+html[data-theme="light"] .sidebar-logout {
+    color: #5c5478;
+}
+
+html[data-theme="light"] .nav-item:hover,
+html[data-theme="light"] .nav-item.active {
+    background: rgba(42, 22, 140, 0.08);
+    color: #4122DD;
+}
+
+html[data-theme="light"] .admin-page .theme-toggle {
+    background: rgba(42, 22, 140, 0.08);
+    border-color: rgba(42, 22, 140, 0.18);
+    color: #1c1433;
+}
+
+html[data-theme="light"] .admin-page .theme-toggle:hover {
+    background: rgba(42, 22, 140, 0.14);
+    color: #4122DD;
+}
+
+html[data-theme="light"] .admin-page .page-subtitle,
+html[data-theme="light"] .admin-page .muted,
+html[data-theme="light"] .admin-page .id-cell,
+html[data-theme="light"] .admin-page .table-count,
+html[data-theme="light"] .admin-page .sub-text,
+html[data-theme="light"] .admin-page .product-desc,
+html[data-theme="light"] .admin-page .confirm-text,
+html[data-theme="light"] .admin-page .empty-msg,
+html[data-theme="light"] .admin-page .filter-label,
+html[data-theme="light"] .admin-page .stat-label,
+html[data-theme="light"] .admin-page .stat-sub,
+html[data-theme="light"] .admin-page .meta-label,
+html[data-theme="light"] .admin-page .info-email,
+html[data-theme="light"] .admin-page .activity-meta,
+html[data-theme="light"] .admin-page .venta-fecha,
+html[data-theme="light"] .admin-page .greeting-text,
+html[data-theme="light"] .admin-page .page-info,
+html[data-theme="light"] .admin-page .section-label,
+html[data-theme="light"] .admin-page .card-meta,
+html[data-theme="light"] .admin-page .card-cat,
+html[data-theme="light"] .admin-page .caja-head span,
+html[data-theme="light"] .admin-page .caja-label,
+html[data-theme="light"] .admin-page .cliente-hint,
+html[data-theme="light"] .admin-page .cart-empty,
+html[data-theme="light"] .admin-page .cart-sub,
+html[data-theme="light"] .admin-page label,
+html[data-theme="light"] .admin-page th,
+html[data-theme="light"] .admin-page .ticket small {
+    color: #5c5478;
+}
+
+html[data-theme="light"] .admin-page td,
+html[data-theme="light"] .admin-page .checkbox-label,
+html[data-theme="light"] .admin-page .chip,
+html[data-theme="light"] .admin-page .page-btn,
+html[data-theme="light"] .admin-page .tab-btn,
+html[data-theme="light"] .admin-page .ticket,
+html[data-theme="light"] .admin-page .cobro ul {
+    color: #1c1433;
+}
+
+html[data-theme="light"] .admin-page .table-card,
+html[data-theme="light"] .admin-page .card,
+html[data-theme="light"] .admin-page .stat-card,
+html[data-theme="light"] .admin-page .modal,
+html[data-theme="light"] .admin-page .tabs,
+html[data-theme="light"] .admin-page .lista,
+html[data-theme="light"] .admin-page .cobro,
+html[data-theme="light"] .admin-page .catalog,
+html[data-theme="light"] .admin-page .caja {
+    background: #ffffff;
+    border-color: rgba(42, 22, 140, 0.14);
+    box-shadow: 0 8px 24px rgba(42, 22, 140, 0.06);
+}
+
+html[data-theme="light"] .admin-page .product-card,
+html[data-theme="light"] .admin-page .ticket,
+html[data-theme="light"] .admin-page .venta-row,
+html[data-theme="light"] .admin-page .add-item-section,
+html[data-theme="light"] .admin-page .row-parent td {
+    background: #f7f5ff;
+}
+
+html[data-theme="light"] .admin-page tr:hover td,
+html[data-theme="light"] .admin-page .row-child:hover td,
+html[data-theme="light"] .admin-page .row-parent:hover td {
+    background: rgba(42, 22, 140, 0.06);
+}
+
+html[data-theme="light"] .admin-page input,
+html[data-theme="light"] .admin-page select,
+html[data-theme="light"] .admin-page textarea,
+html[data-theme="light"] .admin-page .search,
+html[data-theme="light"] .admin-page .filter-select,
+html[data-theme="light"] .admin-page .item-select,
+html[data-theme="light"] .admin-page .item-qty {
+    background: #ffffff;
+    color: #1c1433;
+    border-color: rgba(42, 22, 140, 0.18);
+}
+
+html[data-theme="light"] .admin-page input::placeholder,
+html[data-theme="light"] .admin-page textarea::placeholder {
+    color: rgba(28, 20, 51, 0.45);
+}
+
+html[data-theme="light"] .admin-page select option,
+html[data-theme="light"] .admin-page .filter-select option,
+html[data-theme="light"] .admin-page .item-select option,
+html[data-theme="light"] .admin-page .caja select option {
+    background: #ffffff;
+    color: #1c1433;
+}
+
+html[data-theme="light"] .admin-page .modal .btn-cancel {
+    color: #5c5478;
+    border-color: rgba(42, 22, 140, 0.22);
+}
+
+html[data-theme="light"] .admin-page .modal .btn-cancel:hover {
+    color: #1c1433;
+}
+
+html[data-theme="light"] .admin-page .ticket span,
+html[data-theme="light"] .admin-page .card-foot strong,
+html[data-theme="light"] .admin-page .total strong,
+html[data-theme="light"] .admin-page .caja-totales strong,
+html[data-theme="light"] .admin-page .cliente-tag {
+    color: #4122DD;
+}
+
+html[data-theme="light"] .admin-page .ticket.active {
+    background: linear-gradient(135deg, #2A168C, #4122DD);
+    border-color: transparent;
+}
+
+html[data-theme="light"] .admin-page .ticket.active,
+html[data-theme="light"] .admin-page .ticket.active span,
+html[data-theme="light"] .admin-page .ticket.active small,
+html[data-theme="light"] .admin-page .chip.active,
+html[data-theme="light"] .admin-page .tab-btn.active,
+html[data-theme="light"] .admin-page .page-btn.active {
+    color: #ffffff;
+}
+
+html[data-theme="light"] .admin-page .qty button {
+    color: #1c1433;
+    border-color: rgba(42, 22, 140, 0.25);
+}
+
+/* Admin en celular y tablet. En escritorio cada pantalla conserva su diseño. */
+@media (max-width: 900px) {
+    html .admin-page .page-header,
+    html .admin-page .dash-header,
+    html .admin-page .table-header,
+    html .admin-page .catalog-tools,
+    html .admin-page .filter-bar,
+    html .admin-page .pagination,
+    html .admin-page .header-right,
+    html .admin-page .detalle-meta,
+    html .admin-page .checks-row {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    html .admin-page .page-title,
+    html .admin-page .user-name {
+        font-size: 1.4rem;
+    }
+
+    html .admin-page .stats-grid,
+    html .admin-page .loading-stats {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    html .admin-page .content-grid {
+        grid-template-columns: 1fr;
+    }
+
+    html .admin-page .report-card-full {
+        grid-column: 1;
+    }
+
+    html .admin-page .table-card,
+    html .admin-page .table-wrap,
+    html .admin-page .report-card,
+    html .admin-page .items-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    html .admin-page .table-card table,
+    html .admin-page .report-card table {
+        min-width: 680px;
+    }
+
+    html .admin-page .search,
+    html .admin-page .filter-select {
+        max-width: none;
+        min-width: 0;
+        width: 100%;
+    }
+
+    html .admin-page .cards {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        max-height: none;
+    }
+
+    html .admin-page .modal-overlay {
+        padding: 12px;
+        align-items: flex-start;
+    }
+
+    html .admin-page .modal {
+        max-width: 100%;
+        padding: 20px;
+    }
+}
+
+@media (max-width: 640px) {
+    html .admin-page .form-grid,
+    html .admin-page .stats-grid,
+    html .admin-page .loading-stats,
+    html .admin-page .pay-grid {
+        grid-template-columns: 1fr;
+    }
+
+    html .admin-page .form-row,
+    html .admin-page .add-item-row,
+    html .admin-page .modal-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    html .admin-page .item-select,
+    html .admin-page .item-qty,
+    html .admin-page .btn-add-item,
+    html .admin-page .modal-actions .btn-cancel,
+    html .admin-page .modal-actions .btn-save,
+    html .admin-page .modal-actions .btn-danger-solid {
+        width: 100%;
+    }
+
+    html .admin-page .tabs {
+        width: 100%;
+    }
+
+    html .admin-page .tab-btn {
+        flex: 1;
+        padding-left: 8px;
+        padding-right: 8px;
+    }
+}

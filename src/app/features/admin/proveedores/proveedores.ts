@@ -66,11 +66,29 @@ export class Proveedores implements OnInit {
 
     save(): void {
         this.savingModal.set(true);
+        this.error.set(null);
+        const payload: ProveedorForm = {
+            ...this.form,
+            nombres: this.form.nombres.trim(),
+            apellidos: this.form.apellidos?.trim() || '',
+            email: this.form.email?.trim() || '',
+            telefono: this.form.telefono?.trim() || '',
+            numero_documento: this.form.numero_documento?.trim() || '',
+            empresa: this.form.empresa?.trim() || '',
+            direccion: this.form.direccion?.trim() || '',
+        };
         const id = this.editingId();
-        const obs = id ? this.svc.update(id, this.form) : this.svc.create(this.form);
+        const obs = id ? this.svc.update(id, payload) : this.svc.create(payload);
         obs.subscribe({
             next: () => { this.closeModal(); this.load(); },
-            error: () => { this.error.set('Error al guardar el proveedor'); this.savingModal.set(false); }
+            error: (err) => {
+                const apiErrors = err?.error?.errors;
+                const detail = apiErrors
+                    ? Object.values(apiErrors).flat().join(' ')
+                    : err?.error?.message;
+                this.error.set(detail || 'Error al guardar el proveedor');
+                this.savingModal.set(false);
+            }
         });
     }
 

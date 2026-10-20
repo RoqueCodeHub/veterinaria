@@ -1,0 +1,71 @@
+<header class="page-header">
+    <div>
+        <h1 class="page-title">Caja</h1>
+        <p class="page-subtitle">Cobra las ventas que registró cualquier usuario. Solo la cajera y el administrador.</p>
+    </div>
+</header>
+
+@if (error()) {
+<p class="caja-error banner">{{ error() }}</p>
+}
+@if (aviso()) {
+<p class="caja-ok banner">{{ aviso() }}</p>
+}
+
+<div class="caja-layout">
+    <section class="lista">
+        <h2>Por cobrar</h2>
+        @if (loading()) {
+        <p class="muted">Cargando...</p>
+        } @else if (pendientes().length === 0) {
+        <p class="muted">No hay ventas pendientes.</p>
+        } @else {
+        @for (v of pendientes(); track v.id) {
+        <button type="button" class="ticket" [class.active]="seleccionId() === v.id" (click)="elegir(v.id)">
+            <strong>#{{ v.id }} · {{ v.cliente?.nombre_completo || 'Sin cliente' }}</strong>
+            <span>{{ totalDe(v) | currency:'PEN':'S/ ' }}</span>
+            <small>{{ v.fecha ? (v.fecha | date:'dd/MM/yyyy HH:mm') : '' }} · {{ v.items.length }} producto(s)</small>
+        </button>
+        }
+        }
+    </section>
+
+    <aside class="cobro">
+        @if (seleccion(); as venta) {
+        <h2>Cobrar #{{ venta.id }}</h2>
+        <p class="muted">{{ venta.cliente?.nombre_completo || 'Sin cliente' }}</p>
+        <ul>
+            @for (item of venta.items; track item.producto_id) {
+            <li>{{ item.producto?.nombre || ('Producto #' + item.producto_id) }} ×{{ item.cantidad }}</li>
+            }
+        </ul>
+        <div class="total">
+            <span>Total</span>
+            <strong>{{ totalDe(venta) | currency:'PEN':'S/ ' }}</strong>
+        </div>
+
+        <label>Cobranza</label>
+        <div class="chips">
+            @for (m of metodos; track m.id) {
+            <button type="button" class="chip" [class.active]="metodoPago === m.id" (click)="metodoPago = m.id">{{ m.label }}</button>
+            }
+        </div>
+
+        <label>Monto recibido</label>
+        <input type="number" [(ngModel)]="montoRecibido" min="0" step="0.01" placeholder="Igual al total si lo dejas vacío" />
+        @if (vuelto() > 0) {
+        <p class="vuelto">Vuelto {{ vuelto() | currency:'PEN':'S/ ' }}</p>
+        }
+
+        <button type="button" class="btn-save" (click)="cobrar()" [disabled]="saving() || cancelando()">
+            {{ saving() ? 'Cobrando...' : 'Registrar cobranza' }}
+        </button>
+        <button type="button" class="btn-cancel" (click)="cancelar()" [disabled]="saving() || cancelando()">
+            {{ cancelando() ? 'Cancelando...' : 'Cancelar venta' }}
+        </button>
+        <p class="muted">Si el cliente ya no se la lleva, cancela. El stock se mueve solo cuando el pago queda registrado.</p>
+        } @else {
+        <p class="muted">Selecciona una venta para cobrar.</p>
+        }
+    </aside>
+</div>

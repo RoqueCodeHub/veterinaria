@@ -47,26 +47,46 @@
             </tr>
         </thead>
         <tbody>
-            @for (c of categorias(); track c.id) {
-            <tr>
-                <td class="id-cell">#{{ c.id }}</td>
-                <td class="nombre-cell">{{ c.nombre }}</td>
-                <td class="muted">{{ c.descripcion || '—' }}</td>
+            @for (fila of filas(); track fila.categoria.id) {
+            <tr [class.row-parent]="fila.depth === 0" [class.row-child]="fila.depth > 0">
+                <td class="id-cell">#{{ fila.categoria.id }}</td>
+                <td class="nombre-cell">
+                    <div class="nombre-wrap" [style.padding-left.px]="fila.depth * 28">
+                        @if (fila.childCount > 0) {
+                        <button type="button" class="btn-toggle" (click)="toggle(fila.categoria.id)"
+                            [attr.aria-expanded]="isExpanded(fila.categoria.id)"
+                            [attr.aria-label]="isExpanded(fila.categoria.id) ? 'Ocultar subcategorías' : 'Mostrar subcategorías'"
+                            [title]="isExpanded(fila.categoria.id) ? 'Ocultar subcategorías' : 'Mostrar subcategorías'">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                [class.is-open]="isExpanded(fila.categoria.id)">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                        } @else {
+                        <span class="toggle-spacer" aria-hidden="true"></span>
+                        }
+                        <span>{{ fila.categoria.nombre }}</span>
+                        @if (fila.childCount > 0) {
+                        <span class="sub-count">{{ fila.childCount }}</span>
+                        }
+                    </div>
+                </td>
+                <td class="muted">{{ fila.categoria.descripcion || '—' }}</td>
                 <td>
-                    <span class="badge" [class.badge-success]="c.activo" [class.badge-danger]="!c.activo">
-                        {{ c.activo ? 'Activa' : 'Inactiva' }}
+                    <span class="badge" [class.badge-success]="fila.categoria.activo" [class.badge-danger]="!fila.categoria.activo">
+                        {{ fila.categoria.activo ? 'Activa' : 'Inactiva' }}
                     </span>
                 </td>
-                <td class="muted">{{ c.created_at | date:'dd/MM/yyyy' }}</td>
+                <td class="muted">{{ fila.categoria.created_at | date:'dd/MM/yyyy' }}</td>
                 <td>
                     <div class="actions">
-                        <button class="btn-icon btn-edit" (click)="openEdit(c)" title="Editar">
+                        <button class="btn-icon btn-edit" (click)="openEdit(fila.categoria)" title="Editar">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                         </button>
-                        <button class="btn-icon btn-delete" (click)="confirmDelete(c.id)" title="Eliminar">
+                        <button class="btn-icon btn-delete" (click)="confirmDelete(fila.categoria.id)" title="Eliminar">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />

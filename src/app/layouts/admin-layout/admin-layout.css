@@ -103,6 +103,34 @@
     pointer-events: none;
 }
 
+.theme-toggle {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 0 12px 8px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    border: 1px solid rgba(42, 22, 140, 0.3);
+    background: rgba(42, 22, 140, 0.15);
+    color: #c5baff;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    width: calc(100% - 24px);
+    text-align: left;
+}
+
+.theme-toggle svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.theme-toggle:hover {
+    background: rgba(42, 22, 140, 0.28);
+    color: #ede9ff;
+}
+
 /* User info */
 .sidebar-user {
     display: flex;
@@ -181,9 +209,93 @@
 /* ===== MAIN CONTENT ===== */
 .admin-content {
     flex: 1;
+    min-width: 0;
+    min-height: 0;
     overflow-y: auto;
     padding: 32px;
     background: #060312;
     display: flex;
     flex-direction: column;
+}
+
+.admin-topbar,
+.sidebar-backdrop {
+    display: none;
+}
+
+@media (max-width: 900px) {
+    .admin-page {
+        flex-direction: column;
+    }
+
+    .admin-topbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        height: 56px;
+        padding: 0 12px;
+        flex-shrink: 0;
+        background: rgba(6, 3, 24, 0.98);
+        border-bottom: 1px solid rgba(42, 22, 140, 0.2);
+        color: #ede9ff;
+        font-weight: 700;
+        z-index: 50;
+    }
+
+    .menu-btn {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        border: 1px solid rgba(42, 22, 140, 0.35);
+        background: rgba(42, 22, 140, 0.2);
+        color: #ede9ff;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        padding: 0;
+    }
+
+    .menu-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    .sidebar-backdrop {
+        display: block;
+        position: fixed;
+        inset: 56px 0 0;
+        border: 0;
+        background: rgba(0, 0, 0, 0.55);
+        z-index: 30;
+        cursor: pointer;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 56px;
+        left: 0;
+        bottom: 0;
+        width: min(280px, 86vw);
+        min-width: 0;
+        z-index: 40;
+        transform: translateX(-105%);
+        visibility: hidden;
+        transition: transform 0.2s ease;
+    }
+
+    .admin-page.menu-open .sidebar {
+        transform: translateX(0);
+        visibility: visible;
+    }
+
+    .admin-content {
+        padding: 16px;
+    }
+}
+
+@media (max-width: 640px) {
+    .admin-content {
+        padding: 12px;
+    }
 }

@@ -1,152 +1,51 @@
-<!-- ===== SERVICIOS ===== -->
-<section class="srv-section">
+<!-- Fotos en assets/img/servicios/ (800×500 px). Las rutas están en servicios.ts. -->
+<section class="srv-section" aria-labelledby="srv-title">
 
-  <div class="srv-glow srv-glow-t"></div>
-  <div class="srv-glow srv-glow-b"></div>
+  <div class="srv-glow srv-glow-t" aria-hidden="true"></div>
+  <div class="srv-glow srv-glow-b" aria-hidden="true"></div>
 
   <div class="srv-wrap">
 
-    <!-- ── Encabezado ── -->
     <div class="sec-head">
       <div class="sec-tag">
-        <span class="sec-tag-dot"></span>
+        <span class="sec-tag-dot" aria-hidden="true"></span>
         Lo que ofrecemos
       </div>
-      <h2 class="sec-title">Nuestros <span class="sec-accent">Servicios</span></h2>
+      <h2 class="sec-title" id="srv-title">Nuestros servicios</h2>
       <p class="sec-sub">Soluciones integrales para el cuidado de todos tus animales y mascotas en la selva peruana</p>
     </div>
 
-    <!-- ── Grid de tarjetas ── -->
+    <ul class="srv-legend">
+      <li><span class="srv-legend-dot is-prod" aria-hidden="true"></span>Productos</li>
+      <li><span class="srv-legend-dot is-serv" aria-hidden="true"></span>Servicios</li>
+    </ul>
+
     <div class="srv-grid">
-
-      <!-- 1. Alimentos -->
-      <div class="srv-card">
-        <div class="srv-icon-wrap" style="--clr: rgba(34,197,94,0.18); --border: rgba(34,197,94,0.35);">
-          <svg class="srv-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
-          </svg>
+      @for (item of servicios; track item.titulo) {
+      <article class="srv-card" [class.srv-card--prod]="item.tipo === 'prod'" [class.srv-card--serv]="item.tipo === 'serv'">
+        <div class="srv-media">
+          <img class="srv-img" [src]="item.imagen" [alt]="item.alt"
+               width="800" height="500" loading="lazy" (error)="ocultarImagen($event)" />
+          <span class="srv-kind">{{ item.etiqueta }}</span>
         </div>
-        <h3 class="srv-title">Alimentos Especializados</h3>
-        <p class="srv-text">
-          Proveemos alimentos balanceados y especializados para todo tipo de animales: ganado, aves de corral,
-          porcinos, equinos y mascotas. Productos de marcas reconocidas con garantía de calidad.
-        </p>
-        <div class="srv-tag-row">
-          <span class="srv-tag">Ganado</span>
-          <span class="srv-tag">Aves</span>
-          <span class="srv-tag">Mascotas</span>
+        <div class="srv-body">
+          <h3 class="srv-title">{{ item.titulo }}</h3>
+          <p class="srv-text">{{ item.texto }}</p>
+          <div class="srv-tag-row">
+            @for (tag of item.tags; track tag) {
+            <span class="srv-tag">{{ tag }}</span>
+            }
+          </div>
         </div>
-      </div>
-
-      <!-- 2. Vacunas -->
-      <div class="srv-card">
-        <div class="srv-icon-wrap" style="--clr: rgba(59,130,246,0.18); --border: rgba(59,130,246,0.35);">
-          <svg class="srv-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"/>
-          </svg>
-        </div>
-        <h3 class="srv-title">Vacunación y Prevención</h3>
-        <p class="srv-text">
-          Vacunas para la prevención de enfermedades en bovinos, ovinos, porcinos, equinos y mascotas.
-          Administración profesional con trazabilidad y carnet de vacunación.
-        </p>
-        <div class="srv-tag-row">
-          <span class="srv-tag">Bovinos</span>
-          <span class="srv-tag">Ovinos</span>
-          <span class="srv-tag">Mascotas</span>
-        </div>
-      </div>
-
-      <!-- 3. Antibióticos y fármacos -->
-      <div class="srv-card">
-        <div class="srv-icon-wrap" style="--clr: rgba(168,85,247,0.18); --border: rgba(168,85,247,0.35);">
-          <svg class="srv-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/>
-          </svg>
-        </div>
-        <h3 class="srv-title">Antibióticos y Fármacos</h3>
-        <p class="srv-text">
-          Amplio stock de antibióticos, antiparasitarios, vitaminas y medicamentos veterinarios. Asesoría
-          especializada en dosificación y tratamientos según el tipo y peso del animal.
-        </p>
-        <div class="srv-tag-row">
-          <span class="srv-tag">Antibióticos</span>
-          <span class="srv-tag">Antiparasitarios</span>
-          <span class="srv-tag">Vitaminas</span>
-        </div>
-      </div>
-
-      <!-- 4. Trabajo en campo -->
-      <div class="srv-card">
-        <div class="srv-icon-wrap" style="--clr: rgba(234,179,8,0.18); --border: rgba(234,179,8,0.35);">
-          <svg class="srv-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064"/>
-          </svg>
-        </div>
-        <h3 class="srv-title">Trabajo en Campo</h3>
-        <p class="srv-text">
-          Nos desplazamos hasta tu finca o chacra para brindar atención directa a tus animales. Visitas
-          programadas o de emergencia con equipamiento completo para diagnóstico y tratamiento.
-        </p>
-        <div class="srv-tag-row">
-          <span class="srv-tag">Visitas a finca</span>
-          <span class="srv-tag">Emergencias</span>
-          <span class="srv-tag">Diagnóstico</span>
-        </div>
-      </div>
-
-      <!-- 5. Asesoría a ganaderos -->
-      <div class="srv-card">
-        <div class="srv-icon-wrap" style="--clr: rgba(239,68,68,0.18); --border: rgba(239,68,68,0.35);">
-          <svg class="srv-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
-          </svg>
-        </div>
-        <h3 class="srv-title">Asesoría a Ganaderos</h3>
-        <p class="srv-text">
-          Consultoría técnica integral para productores ganaderos: manejo sanitario, nutrición animal,
-          reproducción, control de enfermedades y optimización de la producción en la selva peruana.
-        </p>
-        <div class="srv-tag-row">
-          <span class="srv-tag">Sanidad</span>
-          <span class="srv-tag">Nutrición</span>
-          <span class="srv-tag">Producción</span>
-        </div>
-      </div>
-
-      <!-- 6. Atención de mascotas -->
-      <div class="srv-card">
-        <div class="srv-icon-wrap" style="--clr: rgba(251,146,60,0.18); --border: rgba(251,146,60,0.35);">
-          <svg class="srv-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"
-              d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-          </svg>
-        </div>
-        <h3 class="srv-title">Atención de Mascotas</h3>
-        <p class="srv-text">
-          Cuidamos a tus perros, gatos y otras mascotas con cariño y profesionalismo. Vacunación,
-          desparasitación, consultas generales y venta de alimentos y accesorios para tu compañero fiel.
-        </p>
-        <div class="srv-tag-row">
-          <span class="srv-tag">Perros</span>
-          <span class="srv-tag">Gatos</span>
-          <span class="srv-tag">Otras mascotas</span>
-        </div>
-      </div>
-
+      </article>
+      }
     </div>
 
-    <!-- CTA inferior -->
     <div class="srv-cta">
       <p class="srv-cta-text">¿Necesitas un servicio personalizado?</p>
       <a href="#contacto" class="srv-cta-btn">
         Contáctanos
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
         </svg>
       </a>

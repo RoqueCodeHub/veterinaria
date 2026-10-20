@@ -1,6 +1,6 @@
-// src/app/shared/components/header/header.component.ts
-import { Component, input } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
+import { ThemeService } from '../../../core/theme/theme';
 
 interface NavLink {
   label: string;
@@ -11,26 +11,28 @@ interface NavLink {
 @Component({
   selector: 'app-header',
   standalone: true,
-  imports: [
-    RouterLink,
-    RouterLinkActive
-  ],
+  imports: [RouterLink, RouterLinkActive],
   templateUrl: './header.html',
   styleUrl: './header.css',
 })
 export class HeaderComponent {
-  // Input opcional (por si más adelante quieres mostrar diferente si está logueado)
-  isLoggedIn = input<boolean>(false);
+  readonly theme = inject(ThemeService);
+  readonly menuOpen = signal(false);
 
-  // Array de enlaces – aquí defines TODO el menú público
   navLinks: NavLink[] = [
     { label: 'Inicio', path: '/', exact: true },
     { label: 'Quienes Somos', path: '/quienes-somos' },
-    { label: 'Especialidad', path: '/especialidad' },
+    { label: 'Especialidad', path: '/especialidades' },
     { label: 'Servicios', path: '/servicios' },
     { label: 'Galeria', path: '/galeria' },
     { label: 'Contacto', path: '/contacto' },
-    // Puedes agregar más fácilmente después:
-    // { label: 'Nosotros', path: '/nosotros' },
   ];
+
+  toggleMenu(): void {
+    this.menuOpen.update((open) => !open);
+  }
+
+  closeMenu(): void {
+    this.menuOpen.set(false);
+  }
 }

@@ -79,6 +79,11 @@ export const routes: Routes = [
                 title: 'Ventas - Admin'
             },
             {
+                path: 'caja',
+                loadComponent: () => import('./features/admin/caja/caja').then(m => m.Caja),
+                title: 'Caja - Admin'
+            },
+            {
                 path: 'proveedores',
                 loadComponent: () => import('./features/admin/proveedores/proveedores').then(m => m.Proveedores),
                 title: 'Proveedores - Admin'

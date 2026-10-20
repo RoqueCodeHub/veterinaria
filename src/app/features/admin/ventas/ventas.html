@@ -1,23 +1,125 @@
-<!-- Page Header -->
 <header class="page-header">
     <div>
         <h1 class="page-title">Ventas</h1>
-        <p class="page-subtitle">Registro y gestión de ventas</p>
+        <p class="page-subtitle">Registra la venta a nombre de un cliente. El cobro lo hace la cajera en el menú Caja.</p>
     </div>
-    <button class="btn-primary" (click)="openCreate()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Nueva Venta
-    </button>
 </header>
 
-<!-- Error -->
 @if (error()) {
 <div class="error-banner">{{ error() }}</div>
 }
 
-<!-- Table Card -->
+<div class="pos">
+    <section class="catalog">
+        <div class="catalog-tools">
+            <input class="search" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
+                placeholder="Buscar producto o código" />
+            <span class="table-count">{{ productosVisibles().length }} productos</span>
+        </div>
+
+        <div class="chips">
+            <button type="button" class="chip" [class.active]="categoriaFiltro() === 'todas'"
+                (click)="setFiltro('todas')">Todas</button>
+            @for (nombre of filtros(); track nombre) {
+            <button type="button" class="chip" [class.active]="categoriaFiltro() === nombre"
+                (click)="setFiltro(nombre)">{{ nombre }}</button>
+            }
+        </div>
+
+        @if (productosVisibles().length === 0) {
+        <div class="empty-state">
+            <p>No hay productos para este filtro</p>
+        </div>
+        } @else {
+        <div class="cards">
+            @for (p of productosVisibles(); track p.id) {
+            <article class="product-card">
+                <div class="card-top">
+                    <span class="card-cat">{{ p.categoria || 'Sin categoría' }}</span>
+                    @if (enCarrito(p.id) > 0) {
+                    <span class="card-qty">{{ enCarrito(p.id) }}</span>
+                    }
+                </div>
+                <h3 class="card-name">{{ p.nombre }}</h3>
+                <p class="card-meta">Stock {{ stockDe(p) }}</p>
+                <div class="card-foot">
+                    <strong>{{ precioDe(p) | currency:'PEN':'S/ ' }}</strong>
+                    <button type="button" class="btn-add" (click)="agregar(p)"
+                        [disabled]="stockDe(p) < 1 || precioDe(p) <= 0 || enCarrito(p.id) >= stockDe(p)">
+                        {{ stockDe(p) < 1 ? 'Sin stock' : 'Agregar' }}
+                    </button>
+                </div>
+            </article>
+            }
+        </div>
+        }
+    </section>
+
+    <aside class="caja">
+        <div class="caja-head">
+            <h2>Pedido</h2>
+            <span>{{ cantidadItems() }} und.</span>
+        </div>
+
+        <label class="caja-label">Cliente *</label>
+        <select [ngModel]="selectedClienteId()" (ngModelChange)="selectedClienteId.set($event)">
+            <option [ngValue]="null">Selecciona un cliente</option>
+            @for (c of clientes(); track c.id) {
+            <option [ngValue]="c.id">{{ c.nombre_completo }}</option>
+            }
+        </select>
+        @if (clienteActual(); as cliente) {
+        <p class="cliente-tag">Venta a nombre de <strong>{{ cliente.nombre_completo }}</strong></p>
+        } @else {
+        <p class="cliente-hint">El cliente identifica la venta para que la cajera la cobre.</p>
+        }
+
+        <div class="cart">
+            @if (items().length === 0) {
+            <p class="cart-empty">El carrito está vacío</p>
+            } @else {
+            @for (item of items(); track item.producto_id) {
+            <div class="cart-line">
+                <div>
+                    <p class="cart-name">{{ item.nombre }}</p>
+                    <p class="cart-sub">{{ item.subtotal | currency:'PEN':'S/ ' }}</p>
+                </div>
+                <div class="qty">
+                    <button type="button" (click)="cambiarCantidad(productoDe(item.producto_id), item.cantidad - 1)">−</button>
+                    <span>{{ item.cantidad }}</span>
+                    <button type="button" (click)="cambiarCantidad(productoDe(item.producto_id), item.cantidad + 1)">+</button>
+                </div>
+                <button type="button" class="btn-remove-item" (click)="quitar(item.producto_id)">✕</button>
+            </div>
+            }
+            }
+        </div>
+
+        <label class="caja-label">Descuento (S/.)</label>
+        <input type="number" [(ngModel)]="descuento" min="0" step="0.01" placeholder="0.00" />
+
+        <div class="caja-totales">
+            <span>Total</span>
+            <strong>{{ totalAPagar() | currency:'PEN':'S/ ' }}</strong>
+        </div>
+
+        <label class="caja-label">Nota</label>
+        <input [(ngModel)]="observaciones" placeholder="Opcional" />
+
+        @if (cajaError()) {
+        <p class="caja-error">{{ cajaError() }}</p>
+        }
+        @if (aviso()) {
+        <p class="caja-ok">{{ aviso() }}</p>
+        }
+
+        <button type="button" class="btn-save caja-btn" (click)="registrar()"
+            [disabled]="saving() || items().length === 0 || !selectedClienteId()">
+            {{ saving() ? 'Registrando...' : 'Registrar venta' }}
+        </button>
+    </aside>
+</div>
+
 <div class="table-card">
     <div class="table-header">
         <h2 class="table-title">Historial de Ventas</h2>
@@ -28,21 +130,17 @@
     <div class="loading-state">Cargando ventas...</div>
     } @else if (ventas().length === 0) {
     <div class="empty-state">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="40" height="40">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
         <p>No hay ventas registradas</p>
     </div>
     } @else {
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
                 <th>#</th>
                 <th>Cliente</th>
-                <th>Trabajador</th>
                 <th>Items</th>
-                <th>Descuento</th>
+                <th>Cobranza</th>
                 <th>Total</th>
                 <th>Estado</th>
                 <th>Fecha</th>
@@ -54,17 +152,13 @@
             <tr>
                 <td class="id-cell">#{{ v.id }}</td>
                 <td>{{ v.cliente?.nombre_completo || '—' }}</td>
-                <td class="muted">{{ v.trabajador?.nombre_completo || '—' }}</td>
                 <td class="muted">{{ v.items.length }} producto(s)</td>
-                <td class="muted">{{ parseMoney(v.descuento) > 0 ? (parseMoney(v.descuento) | currency:'PEN':'S/ ') :
-                    '—' }}</td>
+                <td class="muted">{{ etiquetaMetodo(v.metodo_pago) }}</td>
                 <td class="total-cell">{{ parseMoney(v.total) | currency:'PEN':'S/ ' }}</td>
                 <td>
-                    <span class="badge" [ngClass]="estadoBadgeClass(v.estado)">
-                        {{ v.estado }}
-                    </span>
+                    <span class="badge" [ngClass]="estadoBadgeClass(v.estado)">{{ v.estado }}</span>
                 </td>
-                <td class="muted">{{ v.fecha ? (v.fecha | date:'dd/MM/yyyy') : '—' }}</td>
+                <td class="muted">{{ v.fecha ? (v.fecha | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
                 <td>
                     <div class="actions">
                         <button class="btn-icon btn-view" (click)="openDetalle(v)" title="Ver detalle">
@@ -89,115 +183,10 @@
             }
         </tbody>
     </table>
+    </div>
     }
 </div>
 
-<!-- Modal Nueva Venta -->
-@if (showModal()) {
-<div class="modal-overlay" (click)="closeModal()">
-    <div class="modal modal-lg" (click)="$event.stopPropagation()">
-        <h2 class="modal-title">Nueva Venta</h2>
-
-        <!-- Trabajador (automático) -->
-        <div class="trabajador-info">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="14" height="14">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-            </svg>
-            <span>Atendido por: <strong>{{ currentUser?.nombre || '—' }}</strong></span>
-        </div>
-
-        <!-- Cliente y extras -->
-        <div class="form-row">
-            <div class="form-group-inline">
-                <label>Cliente</label>
-                <select [(ngModel)]="selectedClienteId" name="cliente_id">
-                    <option [ngValue]="undefined">— Sin cliente —</option>
-                    @for (c of clientes(); track c.id) {
-                    <option [ngValue]="c.id">{{ c.nombre_completo }}</option>
-                    }
-                </select>
-            </div>
-            <div class="form-group-inline">
-                <label>Descuento (S/.)</label>
-                <input type="number" [(ngModel)]="descuento" min="0" step="0.01" placeholder="0.00" />
-            </div>
-        </div>
-
-        <!-- Add Item Section -->
-        <div class="add-item-section">
-            <h3 class="section-label">Agregar producto</h3>
-            <div class="add-item-row">
-                <select class="item-select" [(ngModel)]="selectedProductoId">
-                    <option [ngValue]="0">Selecciona producto</option>
-                    @for (p of productos(); track p.id) {
-                    <option [ngValue]="p.id">{{ p.nombre }} — S/ {{ p.precio_venta }}</option>
-                    }
-                </select>
-                <input class="item-qty" type="number" [(ngModel)]="selectedCantidad" min="1" placeholder="Cant." />
-                <button type="button" class="btn-add-item" (click)="addItem()"
-                    [disabled]="!selectedProductoId">Agregar</button>
-            </div>
-        </div>
-
-        <!-- Items List -->
-        @if (items().length > 0) {
-        <div class="items-table-wrap">
-            <table class="items-table">
-                <thead>
-                    <tr>
-                        <th>Producto</th>
-                        <th>Cant.</th>
-                        <th>P. Unit.</th>
-                        <th>Subtotal</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @for (item of items(); track item.producto_id; let i = $index) {
-                    <tr>
-                        <td>{{ item.nombre }}</td>
-                        <td>{{ item.cantidad }}</td>
-                        <td>{{ item.precio_unitario | currency:'PEN':'S/ ' }}</td>
-                        <td>{{ item.subtotal | currency:'PEN':'S/ ' }}</td>
-                        <td>
-                            <button class="btn-remove-item" (click)="removeItem(i)">✕</button>
-                        </td>
-                    </tr>
-                    }
-                </tbody>
-            </table>
-            <div class="total-row">
-                @if (descuento > 0) {
-                <span class="muted">Subtotal: {{ totalVenta() | currency:'PEN':'S/ ' }}</span>
-                <span class="muted">Dcto: -{{ descuento | currency:'PEN':'S/ ' }}</span>
-                }
-                <span>Total:</span>
-                <strong>{{ (totalVenta() - descuento) | currency:'PEN':'S/ ' }}</strong>
-            </div>
-        </div>
-        } @else {
-        <div class="empty-items">Agrega al menos un producto para continuar</div>
-        }
-
-        <!-- Observaciones -->
-        <div class="form-group-obs">
-            <label>Observaciones</label>
-            <input [(ngModel)]="observaciones" placeholder="Notas de la venta (opcional)" />
-        </div>
-
-        <div class="modal-actions">
-            <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
-            <button type="button" class="btn-save" (click)="saveVenta()"
-                [disabled]="savingModal() || items().length === 0">
-                {{ savingModal() ? 'Procesando...' : 'Confirmar Venta' }}
-            </button>
-        </div>
-    </div>
-</div>
-}
-
-<!-- Detalle Venta -->
 @if (detalleVenta()) {
 <div class="modal-overlay" (click)="closeDetalle()">
     <div class="modal modal-lg" (click)="$event.stopPropagation()">
@@ -209,14 +198,14 @@
         </div>
         <div class="detalle-meta">
             @if (detalleVenta()!.fecha) {
-            <span class="muted">Fecha: {{ detalleVenta()!.fecha | date:'dd/MM/yyyy' }}</span>
+            <span class="muted">Fecha: {{ detalleVenta()!.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
             }
-            @if (detalleVenta()!.cliente) {
-            <span class="muted">Cliente: {{ detalleVenta()!.cliente!.nombre_completo }}</span>
-            }
-            @if (detalleVenta()!.trabajador) {
-            <span class="muted">Trabajador: {{ detalleVenta()!.trabajador!.nombre_completo }}</span>
-            }
+            <span class="muted">Cliente: {{ detalleVenta()!.cliente?.nombre_completo || '—' }}</span>
+            <span class="muted">Cobranza: {{ etiquetaMetodo(detalleVenta()!.metodo_pago) }}
+                @if (detalleVenta()!.monto_pagado != null) {
+                · {{ parseMoney(detalleVenta()!.monto_pagado) | currency:'PEN':'S/ ' }}
+                }
+            </span>
             @if (detalleVenta()!.observaciones) {
             <span class="muted">Obs: {{ detalleVenta()!.observaciones }}</span>
             }
@@ -259,13 +248,11 @@
 </div>
 }
 
-<!-- Confirm Anular -->
 @if (anularConfirmId()) {
 <div class="modal-overlay">
     <div class="modal modal-sm">
         <h2 class="modal-title">Anular Venta</h2>
-        <p class="confirm-text">¿Confirmas anular la venta #{{ anularConfirmId() }}? Esta acción no se puede deshacer.
-        </p>
+        <p class="confirm-text">¿Confirmas anular la venta #{{ anularConfirmId() }}? Esta acción no se puede deshacer.</p>
         <div class="modal-actions">
             <button class="btn-cancel" (click)="cancelAnular()">Cancelar</button>
             <button class="btn-danger-solid" (click)="doAnular()">Anular Venta</button>

@@ -1,6 +1,98 @@
 /* You can add global styles to this file, and also import other style files */
 
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+@import "./theme.css";
+
+/* ============================================
+   TEMA · Veterinaria Alivet
+   Un solo lugar para los colores de todas las secciones.
+   Cárgalo ANTES de quienes-somos.css y servicios.css:
+
+     <link rel="stylesheet" href="css/tema.css">
+     <link rel="stylesheet" href="css/quienes-somos.css">
+     <link rel="stylesheet" href="css/servicios.css">
+
+   Marca: #2A168C (primario) · #4122DD (secundario) · verde selva (apoyo)
+
+   MODO OSCURO: se activa SOLO cuando tu botón de tema pone alguna
+   de estas marcas en <html> o <body>. Así siempre coincide con lo
+   que el usuario eligió en tu sitio (ya no depende del sistema):
+     data-theme="dark" · data-bs-theme="dark" · class="dark" · class="dark-mode"
+   Si tu botón usa otra marca, agrégala a la lista de abajo.
+   ============================================ */
+
+/* ── MODO CLARO (por defecto) ── */
+:root {
+  --qs-bg:            #f5f3ff;
+  --qs-surface:       #ffffff;
+  --qs-surface-soft:  #ebe6ff;
+  --qs-text:          #120a30;   /* casi negro violeta: contraste ~16:1 */
+  --qs-muted:         #3a3262;   /* texto secundario: contraste ~10:1  */
+  --qs-border:        rgba(42, 22, 140, 0.22);
+
+  --qs-accent:        #3a1fd0;
+  --qs-accent-soft:   rgba(65, 34, 221, 0.10);
+  --qs-accent-line:   rgba(65, 34, 221, 0.35);
+
+  --qs-leaf:          #0a6a43;
+  --qs-leaf-soft:     rgba(10, 106, 67, 0.11);
+  --qs-leaf-line:     rgba(10, 106, 67, 0.35);
+
+  --qs-glow-a:        rgba(65, 34, 221, 0.12);
+  --qs-glow-b:        rgba(10, 106, 67, 0.10);
+
+  --qs-badge-bg:      rgba(255, 255, 255, 0.92);
+  --qs-badge-text:    #120a30;
+
+  --qs-frame:         rgba(65, 34, 221, 0.20);
+  --qs-shadow:        0 20px 48px rgba(42, 22, 140, 0.18);
+  --qs-shadow-sm:     0 6px 20px rgba(42, 22, 140, 0.10);
+
+  --qs-font-head: 'Bricolage Grotesque', 'Inter', system-ui, sans-serif;
+  --qs-font-body: 'Figtree', 'Inter', system-ui, sans-serif;
+}
+
+/* ── MODO OSCURO ── */
+:root[data-theme="dark"],
+:root[data-bs-theme="dark"],
+:root.dark,
+:root.dark-mode,
+body[data-theme="dark"],
+body.dark,
+body.dark-mode {
+  --qs-bg:            #07041a;
+  --qs-surface:       #120c2e;
+  --qs-surface-soft:  #1c1445;
+  --qs-text:          #f6f3ff;
+  --qs-muted:         #c4bbf0;
+  --qs-border:        rgba(157, 138, 255, 0.24);
+
+  --qs-accent:        #a999ff;
+  --qs-accent-soft:   rgba(157, 138, 255, 0.15);
+  --qs-accent-line:   rgba(157, 138, 255, 0.40);
+
+  --qs-leaf:          #4fe0a0;
+  --qs-leaf-soft:     rgba(79, 224, 160, 0.12);
+  --qs-leaf-line:     rgba(79, 224, 160, 0.36);
+
+  --qs-glow-a:        rgba(65, 34, 221, 0.40);
+  --qs-glow-b:        rgba(42, 22, 140, 0.45);
+
+  --qs-badge-bg:      rgba(7, 4, 26, 0.82);
+  --qs-badge-text:    #ece8ff;
+
+  --qs-frame:         rgba(65, 34, 221, 0.38);
+  --qs-shadow:        0 24px 64px rgba(0, 0, 0, 0.60);
+  --qs-shadow-sm:     0 6px 20px rgba(0, 0, 0, 0.35);
+}
+
+html, body {
+    margin: 0;
+    background: var(--qs-bg);
+    color: var(--qs-text);
+    font-family: var(--qs-font-body);
+}
 
 @theme {
     /* Personalización de colores según tu requerimiento */

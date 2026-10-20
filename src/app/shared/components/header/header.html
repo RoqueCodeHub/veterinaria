@@ -1,54 +1,66 @@
-<!-- src/app/shared/components/header/header.component.html -->
-<header class="header-glass sticky top-0 z-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center h-16 md:h-20">
+<header class="site-header" [class.menu-open]="menuOpen()">
+    <div class="header-bar">
+        <a routerLink="/" class="brand" (click)="closeMenu()">
+            <span class="brand-name">
+                <span class="brand-ali">ALI-</span><span class="brand-vet">VET</span>
+            </span>
+            <span class="brand-sub">Veterinaria</span>
+        </a>
 
-            <!-- Logo -->
-            <div class="flex-shrink-0">
-                <a routerLink="/" class="flex flex-col leading-none select-none">
-                    <!-- Línea principal: ALI. -->
-                    <span class="font-black tracking-tight" style="font-size: 1.6rem; line-height: 1;">
-                        <span class="text-white">ALI-</span><span style="color: #4122DD;">VET</span>
-                    </span>
-                    <!-- Subtítulo: ALI-VET -->
-                    <span class="font-semibold tracking-widest uppercase"
-                        style="font-size: 0.55rem; color: #4122DD; letter-spacing: 0.22em; margin-top: 2px;">
-                        Veterinaria
-                    </span>
-                </a>
-            </div>
+        <nav class="nav-desktop" aria-label="Principal">
+            @for (link of navLinks; track link.path) {
+            <a [routerLink]="link.path" routerLinkActive="is-active"
+                [routerLinkActiveOptions]="{ exact: link.exact ?? false }" class="nav-link">
+                {{ link.label }}
+            </a>
+            }
+        </nav>
 
-            <!-- Menú desktop -->
-            <nav class="hidden md:flex items-center space-x-10">
-                @for (link of navLinks; track link.path) {
-                <a [routerLink]="link.path" routerLinkActive="!text-secondary font-semibold"
-                    [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
-                    class="text-white/75 hover:text-white transition-colors duration-200 text-sm font-medium">
-                    {{ link.label }}
-                </a>
+        <div class="header-actions">
+            <button type="button" class="theme-toggle" (click)="theme.toggle()"
+                [attr.aria-label]="theme.theme() === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'"
+                [title]="theme.theme() === 'dark' ? 'Modo claro' : 'Modo oscuro'">
+                @if (theme.theme() === 'dark') {
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                } @else {
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
                 }
-            </nav>
+            </button>
 
-            <!-- Sección derecha: Login + menú móvil -->
-            <div class="flex items-center space-x-4">
+            <a routerLink="/login" class="btn-login">Iniciar Sesión</a>
 
-                <a routerLink="/login"
-                    class="hidden md:inline-flex items-center px-5 py-2.5 rounded-lg font-medium text-white border transition-all duration-200"
-                    style="border-color: rgba(154,210,217,0.35); background: rgba(42, 22, 140,0.20); backdrop-filter: blur(8px);"
-                    onmouseover="this.style.background='rgba(42, 22, 140,0.40)'"
-                    onmouseout="this.style.background='rgba(42, 22, 140,0.20)'">
-                    Iniciar Sesión
-                </a>
-
-                <!-- Hamburguesa -->
-                <button class="md:hidden text-white/80 hover:text-white focus:outline-none">
-                    <svg class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
-            </div>
-
+            <button type="button" class="menu-toggle" (click)="toggleMenu()"
+                [attr.aria-expanded]="menuOpen()" aria-controls="menu-movil"
+                [attr.aria-label]="menuOpen() ? 'Cerrar menú' : 'Abrir menú'">
+                @if (menuOpen()) {
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                } @else {
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+                }
+            </button>
         </div>
     </div>
+
+    @if (menuOpen()) {
+    <nav id="menu-movil" class="nav-mobile" aria-label="Menú">
+        @for (link of navLinks; track link.path) {
+        <a [routerLink]="link.path" routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: link.exact ?? false }" class="nav-link"
+            (click)="closeMenu()">
+            {{ link.label }}
+        </a>
+        }
+        <a routerLink="/login" class="btn-login btn-login--block" (click)="closeMenu()">Iniciar Sesión</a>
+    </nav>
+    }
 </header>

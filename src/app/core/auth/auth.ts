@@ -2,6 +2,7 @@ import { Injectable, PLATFORM_ID, inject } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
 export interface User {
@@ -12,6 +13,8 @@ export interface User {
   email_verified_at: string | null;
   created_at: string;
   updated_at: string;
+  roles?: string[];
+  puede_cobrar?: boolean;
 }
 
 // Estructura real que devuelve la API
@@ -58,15 +61,7 @@ export class AuthService {
         tap((response) => {
           const { token, user } = response;
           this.saveToken(token);
-          this.saveUser({
-            id: user.id,
-            nombre: user.name,
-            email: user.email,
-            activo: true,
-            email_verified_at: user.email_verified_at,
-            created_at: user.created_at,
-            updated_at: user.updated_at,
-          });
+          this.saveUser(this.mapUser(user));
         })
       );
   }
@@ -96,6 +91,29 @@ export class AuthService {
 
   isLoggedIn(): boolean {
     return !!this.getToken();
+  }
+
+  refreshProfile(): Observable<User | null> {
+    return this.http.get<{ user: LoginResponse['user'] & { roles?: string[]; puede_cobrar?: boolean } }>(
+      `${environment.apiUrl}/auth/me`,
+    ).pipe(
+      tap((response) => this.saveUser(this.mapUser(response.user))),
+      map(() => this.getUser()),
+    );
+  }
+
+  private mapUser(user: LoginResponse['user'] & { roles?: string[]; puede_cobrar?: boolean }): User {
+    return {
+      id: user.id,
+      nombre: user.name,
+      email: user.email,
+      activo: true,
+      email_verified_at: user.email_verified_at,
+      created_at: user.created_at,
+      updated_at: user.updated_at,
+      roles: user.roles ?? [],
+      puede_cobrar: user.puede_cobrar !== false,
+    };
   }
 
   private saveToken(token: string): void {

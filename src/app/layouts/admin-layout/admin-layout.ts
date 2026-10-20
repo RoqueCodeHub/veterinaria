@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
 import { Router } from '@angular/router';
 import { AuthService, User } from '../../core/auth/auth';
+import { ThemeService } from '../../core/theme/theme';
 interface NavLink {
     label: string;
     path: string;
@@ -18,6 +19,8 @@ interface NavLink {
 })
 export class AdminLayoutComponent implements OnInit {
     user: User | null = null;
+    menuOpen = false;
+    readonly theme = inject(ThemeService);
     private authService = inject(AuthService);
     private router = inject(Router);
     // Array de enlaces – aquí defines TODO el menú público
@@ -29,10 +32,32 @@ export class AdminLayoutComponent implements OnInit {
         { label: 'Categorías', path: '/admin/categorias', icon: 'M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z' },
         { label: 'Clientes', path: '/admin/clientes', icon: 'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' },
         { label: 'Ventas', path: '/admin/ventas', icon: 'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z' },
+        { label: 'Caja', path: '/admin/caja', icon: 'M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z' },
         { label: 'Reportes', path: '/admin/reportes', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     ];
+    puedeCobrar = true;
+
+    get menu(): NavLink[] {
+        return this.navLinks.filter(link => link.path !== '/admin/caja' || this.puedeCobrar);
+    }
+
     ngOnInit(): void {
         this.user = this.authService.getUser();
+        this.puedeCobrar = this.user?.puede_cobrar !== false;
+        this.authService.refreshProfile().subscribe({
+            next: (user) => {
+                this.user = user;
+                this.puedeCobrar = user?.puede_cobrar !== false;
+            },
+        });
+    }
+
+    toggleMenu(): void {
+        this.menuOpen = !this.menuOpen;
+    }
+
+    closeMenu(): void {
+        this.menuOpen = false;
     }
 
     logout(): void {

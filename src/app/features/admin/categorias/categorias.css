@@ -37,6 +37,27 @@ tr:last-child td { border-bottom: none; }
 tr:hover td { background: rgba(42, 22, 140, 0.05); }
 .id-cell { color: #4b7a80; font-size: 0.8rem; }
 .nombre-cell { font-weight: 600; color: #e2f4f6; }
+.nombre-wrap { display: flex; align-items: center; gap: 8px; min-height: 26px; }
+.toggle-spacer { width: 26px; flex-shrink: 0; }
+.btn-toggle {
+    width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px;
+    border: 1px solid rgba(65, 34, 221, 0.35); background: rgba(42, 22, 140, 0.18);
+    color: #8b7cf7; display: flex; align-items: center; justify-content: center;
+    cursor: pointer; padding: 0; transition: background 0.2s, border-color 0.2s;
+}
+.btn-toggle:hover { background: rgba(65, 34, 221, 0.35); border-color: rgba(65, 34, 221, 0.6); }
+.btn-toggle svg { width: 14px; height: 14px; transition: transform 0.15s ease; }
+.btn-toggle svg.is-open { transform: rotate(90deg); }
+.sub-count {
+    font-size: 0.7rem; font-weight: 600; color: #c4b5fd;
+    background: rgba(65, 34, 221, 0.2); border: 1px solid rgba(65, 34, 221, 0.35);
+    border-radius: 999px; padding: 1px 7px; line-height: 1.4;
+}
+.row-parent td { background: rgba(42, 22, 140, 0.1); }
+.row-child td { background: transparent; }
+.row-parent:hover td { background: rgba(42, 22, 140, 0.16); }
+.row-child:hover td { background: rgba(42, 22, 140, 0.05); }
+.row-child .nombre-cell { font-weight: 500; color: #c5e8ec; }
 .muted { color: #4b7a80; }
 
 .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; }

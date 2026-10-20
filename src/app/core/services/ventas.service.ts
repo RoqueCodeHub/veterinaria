@@ -21,6 +21,8 @@ export interface Venta {
   descuento: string;
   total: string;
   estado: string;
+  metodo_pago?: string | null;
+  monto_pagado?: string | number | null;
   observaciones: string | null;
   fecha: string | null;
 }
@@ -30,6 +32,8 @@ export interface VentaForm {
   trabajador_id?: number;
   descuento?: number;
   observaciones?: string;
+  metodo_pago?: string;
+  monto_pagado?: number;
   items: { producto_id: number; cantidad: number; precio_unitario: number }[];
 }
 
@@ -44,8 +48,13 @@ export class VentasService {
   private http = inject(HttpClient);
   private url = `${environment.apiUrl}/ventas`;
 
-  getAll(): Observable<Venta[]> {
-    return this.http.get<VentasResponse>(this.url).pipe(map(r => r.ventas));
+  getAll(estado?: string): Observable<Venta[]> {
+    const params = estado ? { estado } : undefined;
+    return this.http.get<VentasResponse>(this.url, { params }).pipe(map(r => r.ventas));
+  }
+
+  cobrar(id: number, data: { metodo_pago: string; monto_pagado: number }): Observable<Venta> {
+    return this.http.patch<{ venta: Venta }>(`${this.url}/${id}/cobrar`, data).pipe(map(r => r.venta));
   }
 
   getById(id: number): Observable<Venta> {
@@ -53,10 +62,10 @@ export class VentasService {
   }
 
   create(data: VentaForm): Observable<Venta> {
-    return this.http.post<Venta>(this.url, data);
+    return this.http.post<{ venta: Venta }>(this.url, data).pipe(map(r => r.venta));
   }
 
-  anular(id: number): Observable<Venta> {
-    return this.http.patch<Venta>(`${this.url}/${id}/anular`, {});
+  anular(id: number): Observable<{ message: string }> {
+    return this.http.patch<{ message: string }>(`${this.url}/${id}/anular`, {});
   }
 }
