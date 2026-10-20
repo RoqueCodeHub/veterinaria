@@ -1,146 +1,284 @@
-<!-- Page Header -->
-<header class="page-header">
-    <div>
-        <h1 class="page-title">Movimientos de Stock</h1>
-        <p class="page-subtitle">Registra entradas y salidas del inventario</p>
+<div class="stock-wrapper">
+    <!-- Cabecera -->
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Gestión de Inventario y Stock</h1>
+        <p class="page-subtitle">Control de existencias, alertas de stock mínimo e historial Kardex</p>
+      </div>
+      <button class="btn-primary" (click)="openCreateForProduct(0)">
+        ➕ Registrar Movimiento
+      </button>
+    </header>
+  
+    @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
+    @if (aviso()) { <div class="alert alert-success">{{ aviso() }}</div> }
+  
+    <!-- Métricas KPI -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">Productos en Catálogo</span>
+        <strong class="metric-value">{{ metricas().totalProductos }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Ingresos Registrados</span>
+        <strong class="metric-value text-success">+{{ metricas().totalEntradas }} u.</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Salidas / Mermas</span>
+        <strong class="metric-value text-danger">-{{ metricas().totalSalidas }} u.</strong>
+      </div>
+      <div class="metric-card" [class.card-alert]="metricas().conStockBajo > 0 || metricas().agotados > 0">
+        <span class="metric-label">Alertas de Stock</span>
+        <strong class="metric-value" [class.text-warning]="metricas().conStockBajo > 0" [class.text-danger]="metricas().agotados > 0">
+          {{ metricas().conStockBajo }} bajo / {{ metricas().agotados }} agotados
+        </strong>
+      </div>
     </div>
-    <button class="btn-primary" (click)="openCreate()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Registrar Movimiento
-    </button>
-</header>
-
-<!-- Filter -->
-<div class="filter-bar">
-    <label class="filter-label">Filtrar por producto:</label>
-    <select class="filter-select" (change)="applyFilter($event)">
-        <option value="">Todos los productos</option>
-        @for (p of productos(); track p.id) {
-        <option [value]="p.id">{{ p.nombre }}</option>
+  
+    <!-- Pestañas de Navegación -->
+    <div class="tab-container mt-4">
+      <button 
+        type="button" 
+        class="tab-btn" 
+        [class.active]="tabActiva() === 'inventario'"
+        (click)="tabActiva.set('inventario')"
+      >
+        📦 Stock Actual de Productos
+      </button>
+      <button 
+        type="button" 
+        class="tab-btn" 
+        [class.active]="tabActiva() === 'kardex'"
+        (click)="tabActiva.set('kardex')"
+      >
+        📋 Historial de Movimientos (Kardex)
+      </button>
+    </div>
+  
+    <!-- Panel Principal -->
+    <section class="card-panel">
+      <!-- Barra de Búsqueda y Filtros -->
+      <div class="filters-bar">
+        <div class="search-field">
+          <input 
+            type="text" 
+            class="input-custom" 
+            placeholder="🔍 Buscar producto por nombre, categoría o código..."
+            [ngModel]="busquedaTexto()"
+            (ngModelChange)="busquedaTexto.set($event)"
+          />
+        </div>
+  
+        @if (tabActiva() === 'kardex') {
+          <div class="filter-group">
+            <select 
+              class="input-custom select-custom" 
+              [ngModel]="filterProductoId()" 
+              (ngModelChange)="filterProductoId.set($event)"
+            >
+              <option [ngValue]="null">Todos los productos</option>
+              @for (p of productos(); track p.id) {
+                <option [ngValue]="p.id">{{ p.nombre }}</option>
+              }
+            </select>
+          </div>
+  
+          <div class="filter-group">
+            <select 
+              class="input-custom select-custom" 
+              [ngModel]="filterTipo()" 
+              (ngModelChange)="filterTipo.set($event)"
+            >
+              <option value="todos">Todos los tipos</option>
+              <option value="entrada">🟢 Entradas (Ingresos)</option>
+              <option value="salida">🔴 Salidas (Mermas)</option>
+            </select>
+          </div>
         }
-    </select>
-</div>
-
-<!-- Error -->
-@if (error()) {
-<div class="error-banner">{{ error() }}</div>
-}
-
-<!-- Table Card -->
-<div class="table-card">
-    <div class="table-header">
-        <h2 class="table-title">Historial de Movimientos</h2>
-        <span class="table-count">{{ movimientos().length }} registros</span>
-    </div>
-
-    @if (loading()) {
-    <div class="loading-state">Cargando movimientos...</div>
-    } @else if (movimientos().length === 0) {
-    <div class="empty-state">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="40" height="40">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-        </svg>
-        <p>No hay movimientos registrados</p>
-    </div>
-    } @else {
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
+      </div>
+  
+      <!-- PESTAÑA 1: TABLA DE INVENTARIO Y STOCK ACTUAL -->
+      @if (tabActiva() === 'inventario') {
+        <div class="table-responsive mt-3">
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Código</th>
                 <th>Producto</th>
-                <th>Tipo</th>
-                <th>Cant.</th>
-                <th>Stock Ant.</th>
-                <th>Stock Nuevo</th>
-                <th>P. Unitario</th>
-                <th>Responsable</th>
-                <th>Motivo / Referencia</th>
-                <th>Fecha</th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (m of movimientos(); track m.id) {
-            <tr>
-                <td class="id-cell">#{{ m.id }}</td>
-                <td>
-                    <span>{{ m.producto?.nombre ?? getProductoNombre(m.producto_id) }}</span>
-                    @if (m.producto?.codigo) {
-                    <small class="muted"> · {{ m.producto!.codigo }}</small>
+                <th>Categoría</th>
+                <th class="text-end">P. Venta</th>
+                <th class="text-center">Stock Actual</th>
+                <th class="text-center">Estado</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (p of productosFiltrados(); track p.id) {
+                @let stockActual = getProductoStockActual(p);
+                @let stockMin = p.stock_minimo || 5;
+                <tr>
+                  <td class="id-cell">{{ p.codigo || ('#' + p.id) }}</td>
+                  <td><strong class="text-white">{{ p.nombre }}</strong></td>
+                  <td><span class="category-badge">{{ p.categoria || 'General' }}</span></td>
+                  <td class="text-end bold text-success">S/ {{ p.precio_venta }}</td>
+                  <td class="text-center bold text-white font-size-lg">{{ stockActual }} u.</td>
+                  <td class="text-center">
+                    @if (stockActual <= 0) {
+                      <span class="status-badge badge-danger">🔴 AGOTADO</span>
+                    } @else if (stockActual <= stockMin) {
+                      <span class="status-badge badge-warning">🟡 STOCK BAJO</span>
+                    } @else {
+                      <span class="status-badge badge-success">🟢 DISPONIBLE</span>
                     }
-                </td>
-                <td>
-                    <span class="badge" [class.badge-entrada]="m.tipo === 'entrada'"
-                        [class.badge-salida]="m.tipo === 'salida'">
-                        {{ m.tipo === 'entrada' ? '↑ Entrada' : '↓ Salida' }}
-                    </span>
-                </td>
-                <td>
-                    <span [class.qty-entrada]="m.tipo === 'entrada'" [class.qty-salida]="m.tipo === 'salida'">
-                        {{ m.tipo === 'entrada' ? '+' : '-' }}{{ m.cantidad }}
-                    </span>
-                </td>
-                <td class="muted">{{ m.stock_anterior }}</td>
-                <td>{{ m.stock_nuevo }}</td>
-                <td class="muted">S/ {{ m.precio_unitario }}</td>
-                <td class="muted">{{ m.user?.name || '—' }}</td>
-                <td class="muted">
-                    {{ m.motivo || '—' }}
-                    @if (m.referencia) {
-                    <small class="ref-tag">{{ m.referencia }}</small>
-                    }
-                </td>
-                <td class="muted">{{ m.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
-            </tr>
-            }
-        </tbody>
-    </table>
-    }
-</div>
-
-<!-- Modal Registrar Movimiento -->
-@if (showModal()) {
-<div class="modal-overlay" (click)="closeModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-        <h2 class="modal-title">Registrar Movimiento de Stock</h2>
+                  </td>
+                  <td class="text-end">
+                    <button type="button" class="btn-action-adjust" (click)="openCreateForProduct(p.id)">
+                      ⚙️ Ajustar Stock
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="7" class="empty-state">No se encontraron productos en el inventario.</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+  
+      <!-- PESTAÑA 2: TABLA KARDEX (HISTORIAL DE MOVIMIENTOS) -->
+      @if (tabActiva() === 'kardex') {
+        <div class="table-responsive mt-3">
+          @if (loading()) {
+            <div class="empty-state">⏳ Cargando historial de movimientos...</div>
+          } @else if (movimientosFiltrados().length === 0) {
+            <div class="empty-state">📦 No hay movimientos registrados con los filtros seleccionados.</div>
+          } @else {
+            <table class="custom-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Producto</th>
+                  <th>Tipo</th>
+                  <th class="text-center">Cant.</th>
+                  <th class="text-end">Stock Ant.</th>
+                  <th class="text-end">Stock Nuevo</th>
+                  <th>Responsable</th>
+                  <th>Motivo / Referencia</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (m of movimientosFiltrados(); track m.id) {
+                  <tr>
+                    <td class="id-cell">#{{ m.id }}</td>
+                    <td>
+                      <strong class="text-white">{{ m.producto?.nombre ?? getProductoNombre(m.producto_id) }}</strong>
+                    </td>
+                    <td>
+                      <span 
+                        class="status-badge" 
+                        [class.badge-success]="$any(m.tipo) === 'entrada'"
+                        [class.badge-danger]="$any(m.tipo) === 'salida'"
+                      >
+                        {{ $any(m.tipo) === 'entrada' ? '↑ Entrada' : '↓ Salida' }}
+                      </span>
+                    </td>
+                    <td class="text-center font-bold">
+                      <span [class.text-success]="$any(m.tipo) === 'entrada'" [class.text-danger]="$any(m.tipo) === 'salida'">
+                        {{ $any(m.tipo) === 'entrada' ? '+' : '-' }}{{ m.cantidad }}
+                      </span>
+                    </td>
+                    <td class="text-end muted">{{ m.stock_anterior }}</td>
+                    <td class="text-end bold text-white">{{ m.stock_nuevo }}</td>
+                    <td class="muted">{{ m.user?.name || 'Administrador' }}</td>
+                    <td class="muted">
+                      {{ m.motivo || 'Ajuste manual' }}
+                      @if (m.referencia) {
+                        <small class="ref-tag">{{ m.referencia }}</small>
+                      }
+                    </td>
+                    <td class="muted">{{ m.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      }
+    </section>
+  </div>
+  
+  <!-- ===================================================
+       MODAL REGISTRAR MOVIMIENTO
+       =================================================== -->
+  @if (showModal()) {
+    <div class="modal-overlay-fix">
+      <div class="modal-box-center">
+        <div class="modal-header-custom">
+          <h5>📦 Registrar Movimiento de Stock</h5>
+          <button type="button" class="btn-close-icon" (click)="closeModal()">✕</button>
+        </div>
+  
         <form (ngSubmit)="save()">
-            <div class="form-grid">
-                <div class="form-group full">
-                    <label>Producto *</label>
-                    <select [(ngModel)]="form.producto_id" name="producto_id" required>
-                        <option [value]="0" disabled>Selecciona un producto</option>
-                        @for (p of productos(); track p.id) {
-                        <option [value]="p.id">{{ p.nombre }} (Stock: {{ p.stock_actual }})</option>
-                        }
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Tipo *</label>
-                    <select [(ngModel)]="form.tipo" name="tipo" required>
-                        <option value="entrada">Entrada</option>
-                        <option value="salida">Salida</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Cantidad *</label>
-                    <input type="number" [(ngModel)]="form.cantidad" name="cantidad" required min="1"
-                        placeholder="1" />
-                </div>
-                <div class="form-group full">
-                    <label>Motivo</label>
-                    <input [(ngModel)]="form.motivo" name="motivo"
-                        placeholder="Ej. Compra a proveedor, venta, ajuste..." />
-                </div>
+          <div class="modal-body-custom">
+            <div class="form-group mb-3">
+              <label>Producto *</label>
+              <select class="input-custom select-custom" [(ngModel)]="form.producto_id" name="producto_id" required>
+                <option [value]="0" disabled>Selecciona un producto</option>
+                @for (p of productos(); track p.id) {
+                  <option [value]="p.id">
+                    {{ p.nombre }} (Stock actual: {{ getProductoStockActual(p) }})
+                  </option>
+                }
+              </select>
             </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
-                <button type="submit" class="btn-save" [disabled]="savingModal() || !form.producto_id">
-                    {{ savingModal() ? 'Guardando...' : 'Registrar' }}
-                </button>
+  
+            <div class="form-grid-2 mb-3">
+              <div class="form-group">
+                <label>Tipo de Movimiento *</label>
+                <select class="input-custom select-custom" [(ngModel)]="form.tipo" name="tipo" required>
+                  <option value="entrada">🟢 Entrada (Ingreso / Compra)</option>
+                  <option value="salida">🔴 Salida (Merma / Ajuste)</option>
+                </select>
+              </div>
+  
+              <div class="form-group">
+                <label>Cantidad *</label>
+                <input 
+                  type="number" 
+                  class="input-custom" 
+                  [(ngModel)]="form.cantidad" 
+                  name="cantidad" 
+                  required 
+                  min="1" 
+                  placeholder="1"
+                />
+              </div>
             </div>
+  
+            <div class="form-group">
+              <label>Motivo / Observación</label>
+              <input 
+                type="text" 
+                class="input-custom" 
+                [(ngModel)]="form.motivo" 
+                name="motivo" 
+                placeholder="Ej. Compra con Factura F001-204, rotura, vencimiento..."
+              />
+            </div>
+          </div>
+  
+          <div class="modal-footer-custom">
+            <button type="submit" class="btn-primary-action" [disabled]="savingModal() || !form.producto_id">
+              {{ savingModal() ? 'Guardando...' : '💾 Registrar' }}
+            </button>
+            <button type="button" class="btn-secondary-action" (click)="closeModal()">
+              Cancelar
+            </button>
+          </div>
         </form>
+      </div>
     </div>
-</div>
-}
+  }

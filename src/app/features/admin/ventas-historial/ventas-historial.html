@@ -1,0 +1,246 @@
+<div class="ventas-wrapper">
+    <!-- Cabecera -->
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Historial de Ventas y Comprobantes</h1>
+        <p class="page-subtitle">Consulta de operaciones, reemisión de comprobantes y notas de crédito</p>
+      </div>
+      <button type="button" class="btn-refresh" (click)="cargarHistorial()">🔄 Actualizar Lista</button>
+    </header>
+  
+    @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
+    @if (aviso()) { <div class="alert alert-success">{{ aviso() }}</div> }
+  
+    <!-- Tarjetas de Métricas -->
+    <div class="metrics-grid">
+      <div class="metric-card">
+        <span class="metric-label">Ventas Cobradas</span>
+        <strong class="metric-value">{{ metricas().cantidad }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Total Recaudado</span>
+        <strong class="metric-value text-success">S/ {{ metricas().totalSoles | number:'1.2-2' }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Ticket Promedio</span>
+        <strong class="metric-value text-primary">S/ {{ metricas().promedio | number:'1.2-2' }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Anuladas / N. Crédito</span>
+        <strong class="metric-value text-danger">{{ metricas().anuladas }}</strong>
+      </div>
+    </div>
+  
+    <!-- Panel Principal con Filtros y Tabla -->
+    <section class="card-panel mt-4">
+      <!-- Barra de Filtros -->
+      <div class="filters-bar">
+        <div class="search-field">
+          <input 
+            type="text" 
+            class="input-custom" 
+            placeholder="🔍 Buscar por N° comprobante, cliente..."
+            [(ngModel)]="busqueda"
+          />
+        </div>
+  
+        <div class="filter-options">
+          <select class="input-custom select-custom" [(ngModel)]="filtroRangoFecha">
+            <option value="todos">Todas las fechas</option>
+            <option value="hoy">Hoy</option>
+            <option value="semana">Últimos 7 días</option>
+            <option value="mes">Últimos 30 días</option>
+          </select>
+          <select class="input-custom select-custom" [(ngModel)]="filtroEstado">
+            <option value="todos">Todos los estados</option>
+            <option value="completada">Completadas</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="anulada">Anuladas</option>
+          </select>
+        </div>
+      </div>
+  
+      <!-- Tabla General de Ventas -->
+      <div class="table-responsive mt-3">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Comprobante</th>
+              <th>Fecha / Hora</th>
+              <th>Cliente</th>
+              <th>Método Pago</th>
+              <th class="text-end">Total</th>
+              <th class="text-center">Estado</th>
+              <th class="text-end">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr>
+                <td colspan="7" class="empty-table">Cargando historial...</td>
+              </tr>
+            } @else {
+            @for (v of ventasFiltradas(); track v.id) {
+              <tr>
+                <td>
+                  <strong class="text-white">#{{ v.id }}</strong>
+                </td>
+                <td>{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ v.cliente?.nombre_completo || 'Cliente Varios' }}</td>
+                <td>
+                  <span class="badge-method">{{ metodoDe(v) | uppercase }}</span>
+                </td>
+                <td class="text-end bold text-white">S/ {{ totalDe(v) | number:'1.2-2' }}</td>
+                <td class="text-center">
+                  @if (esCompletada(v)) {
+                    <span class="status-badge badge-success">Completada</span>
+                  } @else if (esAnulada(v)) {
+                    <span class="status-badge badge-danger">Anulada</span>
+                  } @else {
+                    <span class="status-badge">{{ etiquetaEstado(v) }}</span>
+                  }
+                </td>
+                <td class="text-end">
+                  <div class="action-btn-group">
+                    <button type="button" class="btn-icon" title="Ver Detalle" (click)="verDetalle(v)">👁️</button>
+                    <button type="button" class="btn-icon" title="Reimprimir Ticket 80mm" (click)="abrirTicketReimpresion(v)">🖨️</button>
+                    <button type="button" class="btn-icon" title="Enviar WhatsApp" (click)="enviarWhatsApp(v)">📱</button>
+                    @if (esCompletada(v)) {
+                      <button type="button" class="btn-icon btn-cancel" title="Anular con N. Crédito" (click)="anularComprobante(v)">🚫</button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="empty-table">No se encontraron ventas en el historial.</td>
+              </tr>
+            }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+  
+  <!-- ===================================================
+       MODAL DETALLE DE LA VENTA
+       =================================================== -->
+  @if (mostrarModalDetalle() && ventaSeleccionada(); as v) {
+    <div class="modal-backdrop">
+      <div class="modal-card modal-lg">
+        <div class="modal-header">
+          <h5>Detalle de Venta #{{ v.id }}</h5>
+          <button type="button" class="btn-close-x" (click)="cerrarModalDetalle()">✕</button>
+        </div>
+  
+        <div class="modal-body">
+          <div class="detail-info-grid mb-3">
+            <div><span>Cliente:</span> <strong>{{ v.cliente?.nombre_completo || 'Cliente Varios' }}</strong></div>
+            <div><span>Fecha:</span> <strong>{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</strong></div>
+            <div><span>Cajero:</span> <strong>{{ cajeroDe(v) }}</strong></div>
+            <div><span>Estado:</span> <strong [class.text-success]="esCompletada(v)" [class.text-danger]="esAnulada(v)">{{ etiquetaEstado(v) }}</strong></div>
+          </div>
+  
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>Producto / Servicio</th>
+                <th class="text-center">Cant.</th>
+                <th class="text-end">P. Unit</th>
+                <th class="text-end">Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of v.items; track item.id) {
+                <tr>
+                  <td>{{ item.producto?.nombre || item.description }}</td>
+                  <td class="text-center">{{ item.cantidad || item.quantity }}</td>
+                  <td class="text-end">S/ {{ (item.precio_unitario || item.unit_price) | number:'1.2-2' }}</td>
+                  <td class="text-end bold">S/ {{ (item.subtotal || item.line_total) | number:'1.2-2' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+  
+          <div class="summary-box mt-3">
+            <div class="summary-row grand-total">
+              <span>Total Cobrado:</span>
+              <span class="total-amount">S/ {{ v.total | number:'1.2-2' }}</span>
+            </div>
+          </div>
+        </div>
+  
+        <div class="modal-footer">
+          <button type="button" class="btn-close-modal" (click)="cerrarModalDetalle()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }
+  
+  <!-- ===================================================
+       MODAL DE REIMPRESIÓN TÉRMICA 80MM
+       =================================================== -->
+  @if (mostrarModalTicket() && ventaSeleccionada(); as v) {
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h5>📄 Reimpresión de Comprobante</h5>
+          <button type="button" class="btn-close-x" (click)="cerrarModalTicket()">✕</button>
+        </div>
+  
+        <div class="modal-body">
+          <div class="ticket-thermal-print" id="seccionTicketImprimir">
+            <div class="ticket-center">
+              <h2 class="ticket-empresa">VETERINARIA ALIVET S.A.C.</h2>
+              <p class="ticket-info">RUC: 20123456789</p>
+              <p class="ticket-info">Av. Principal 123 - Arequipa</p>
+              <div class="ticket-divider">================================</div>
+              <h3 class="ticket-comprobante">COMPROBANTE ELECTRÓNICO</h3>
+              <p class="ticket-numero"><strong>#{{ v.id }}</strong></p>
+              <div class="ticket-divider">--------------------------------</div>
+            </div>
+  
+            <div class="ticket-details">
+              <p><strong>Fecha:</strong> {{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</p>
+              <p><strong>Cliente:</strong> {{ v.cliente?.nombre_completo || 'CLIENTE VARIOS' }}</p>
+            </div>
+            <div class="ticket-divider">--------------------------------</div>
+  
+            <table class="ticket-items">
+              <tbody>
+                @for (item of v.items; track $index) {
+                  <tr>
+                    <td class="text-left">
+                      {{ item.cantidad || item.quantity }} x S/ {{ (item.precio_unitario || item.unit_price) | number:'1.2-2' }}<br />
+                      <span class="item-name">{{ item.producto?.nombre || item.description }}</span>
+                    </td>
+                    <td class="text-right text-top">S/ {{ (item.subtotal || item.line_total) | number:'1.2-2' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <div class="ticket-divider">--------------------------------</div>
+  
+            <div class="ticket-totals">
+              <div class="tot-row total-final">
+                <span>TOTAL A PAGAR:</span>
+                <span>S/ {{ v.total | number:'1.2-2' }}</span>
+              </div>
+            </div>
+            <div class="ticket-divider">================================</div>
+  
+            <div class="ticket-center ticket-footer-msg">
+              <p>(Reimpresión de Comprobante)</p>
+              <p>www.alivet.com.pe</p>
+            </div>
+          </div>
+        </div>
+  
+        <div class="modal-footer">
+          <button type="button" class="btn-print" (click)="imprimirComprobante()">🖨️ Imprimir</button>
+          <button type="button" class="btn-close-modal" (click)="cerrarModalTicket()">Cerrar</button>
+        </div>
+      </div>
+    </div>
+  }

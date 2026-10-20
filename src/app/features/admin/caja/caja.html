@@ -1,71 +1,472 @@
-<header class="page-header">
-    <div>
-        <h1 class="page-title">Caja</h1>
-        <p class="page-subtitle">Cobra las ventas que registró cualquier usuario. Solo la cajera y el administrador.</p>
+<div class="caja-wrapper">
+    <!-- Cabecera de Caja -->
+    <header class="caja-header">
+      <div>
+        <h1 class="caja-title">Caja y Cobranza</h1>
+        <p class="caja-subtitle">Gestión de cobranzas y emisión de comprobantes electrónicos</p>
+      </div>
+  
+      <div class="caja-status-badge">
+        <span class="dot-open">🟢 Caja Abierta</span>
+        <span class="status-info">Fondo inicial: <strong>S/ {{ fondoInicial | number:'1.2-2' }}</strong></span>
+        <button type="button" class="btn-close-shift" (click)="abrirModalCierre()">Cerrar Turno</button>
+      </div>
+    </header>
+  
+    <!-- Alertas de Estado -->
+    @if (error()) {
+      <div class="alert alert-danger">{{ error() }}</div>
+    }
+    @if (aviso()) {
+      <div class="alert alert-success">{{ aviso() }}</div>
+    }
+  
+    <!-- Layout Principal de Cobranza -->
+    <div class="caja-grid">
+      <!-- Columna Izquierda: Ventas Pendientes -->
+      <section class="card-panel">
+        <h2 class="panel-title">Ventas por cobrar</h2>
+  
+        <div class="search-box">
+          <input 
+            type="text" 
+            class="input-custom" 
+            placeholder="🔍 Buscar por ticket o cliente..."
+            [(ngModel)]="busquedaPending"
+          />
+        </div>
+  
+        <div class="pending-list">
+          @for (v of ventasFiltradas(); track v.id) {
+            <div 
+              class="ticket-card"
+              [class.active]="ventaSeleccionada()?.id === v.id"
+              (click)="seleccionarVenta(v)"
+            >
+              <div class="ticket-header">
+                <strong>#{{ v.id }} · {{ v.cliente?.nombre_completo || 'Cliente Varios' }}</strong>
+                <span class="badge-price">S/ {{ v.total | number:'1.2-2' }}</span>
+              </div>
+              <div class="ticket-footer">
+                📅 {{ v.fecha | date:'shortTime' }} · {{ v.items.length }} item(s)
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-msg">
+              No hay ventas pendientes por cobrar.
+            </div>
+          }
+        </div>
+      </section>
+  
+      <!-- Columna Derecha: Panel de Cobro -->
+      <section class="card-panel">
+        @if (ventaSeleccionada(); as venta) {
+          <div class="payment-detail">
+            <div class="detail-header">
+              <h3>Cobrar Ticket #{{ venta.id }}</h3>
+              <span>Cliente: <strong>{{ venta.cliente?.nombre_completo || 'Cliente Varios' }}</strong></span>
+            </div>
+  
+            <!-- Tabla de Productos -->
+            <div class="table-container">
+              <table class="custom-table">
+                <thead>
+                  <tr>
+                    <th>Producto / Servicio</th>
+                    <th class="text-center">Cant.</th>
+                    <th class="text-end">P. Unit</th>
+                    <th class="text-end">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of venta.items; track item.id) {
+                    <tr>
+                      <td>{{ item.producto?.nombre || item.description }}</td>
+                      <td class="text-center">{{ item.cantidad || item.quantity }}</td>
+                      <td class="text-end">S/ {{ (item.precio_unitario || item.unit_price) | number:'1.2-2' }}</td>
+                      <td class="text-end bold">S/ {{ (item.subtotal || item.line_total) | number:'1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+  
+            <!-- Resumen de Totales -->
+            <div class="summary-box">
+              <div class="summary-row">
+                <span>Subtotal:</span>
+                <span>S/ {{ venta.subtotal | number:'1.2-2' }}</span>
+              </div>
+              @if (+venta.discount > 0) {
+                <div class="summary-row text-discount">
+                  <span>Descuento:</span>
+                  <span>- S/ {{ venta.discount | number:'1.2-2' }}</span>
+                </div>
+              }
+              <div class="summary-row grand-total">
+                <span>Total a cobrar:</span>
+                <span class="total-amount">S/ {{ venta.total | number:'1.2-2' }}</span>
+              </div>
+            </div>
+  
+            <!-- Controles de Cobro -->
+            <div class="form-group-container">
+              <!-- 1. Tipo de Comprobante -->
+              <div class="form-section">
+                <label>Tipo de Comprobante</label>
+                <div class="segmented-control">
+                  <button type="button" [class.active]="tipoComprobante === 'boleta'" (click)="tipoComprobante = 'boleta'">📄 Boleta</button>
+                  <button type="button" [class.active]="tipoComprobante === 'factura'" (click)="tipoComprobante = 'factura'">🏢 Factura</button>
+                </div>
+              </div>
+  
+              <!-- 2. Método de Pago -->
+              <div class="form-section">
+                <label>Método de Pago</label>
+                <div class="method-chips">
+                  <button type="button" [class.active]="metodoPago === 'efectivo'" (click)="cambiarMetodo('efectivo')">Efectivo</button>
+                  <button type="button" [class.active]="metodoPago === 'yape'" (click)="cambiarMetodo('yape')">📱 Yape</button>
+                  <button type="button" [class.active]="metodoPago === 'plin'" (click)="cambiarMetodo('plin')">🟣 Plin</button>
+                  <button type="button" [class.active]="metodoPago === 'tarjeta'" (click)="cambiarMetodo('tarjeta')">💳 Tarjeta</button>
+                  <button type="button" [class.active]="metodoPago === 'transferencia'" (click)="cambiarMetodo('transferencia')">🏦 Transferencia</button>
+                </div>
+              </div>
+  
+              <!-- 3A. Si es EFECTIVO -->
+              @if (metodoPago === 'efectivo') {
+                <div class="form-section">
+                  <label>Monto Recibido</label>
+                  <div class="input-prefix-group">
+                    <span class="prefix">S/</span>
+                    <input type="number" class="input-custom big-input" [(ngModel)]="montoRecibido" placeholder="0.00" />
+                  </div>
+  
+                  <div class="quick-cash-buttons">
+                    <button type="button" (click)="montoRecibido = +venta.total">Exacto</button>
+                    <button type="button" (click)="montoRecibido = 20">S/ 20</button>
+                    <button type="button" (click)="montoRecibido = 50">S/ 50</button>
+                    <button type="button" (click)="montoRecibido = 100">S/ 100</button>
+                  </div>
+  
+                  @if (montoRecibido !== null && montoRecibido > 0) {
+                    <div class="change-banner" [class.valid]="vuelto >= 0" [class.invalid]="vuelto < 0">
+                      @if (vuelto >= 0) {
+                        <strong>Vuelto a entregar: S/ {{ vuelto | number:'1.2-2' }}</strong>
+                      } @else {
+                        <span>Falta abonar: S/ {{ (vuelto * -1) | number:'1.2-2' }}</span>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+  
+              <!-- 3B. Si es DIGITAL -->
+              @if (metodoPago !== 'efectivo') {
+                <div class="form-section digital-box">
+                  <label class="label-digital">
+                    Nro. de Operación / Ref. (
+                    @if (metodoPago === 'yape') { Yape }
+                    @else if (metodoPago === 'plin') { Plin }
+                    @else if (metodoPago === 'tarjeta') { POS }
+                    @else { Banco }
+                    )
+                  </label>
+                  <input 
+                    type="text" 
+                    class="input-custom digital-input" 
+                    [(ngModel)]="numeroOperacion" 
+                    placeholder="Ej: 128495 (Obligatorio)"
+                    maxlength="20"
+                  />
+                  <small class="text-help">Verifica en la constancia del cliente antes de confirmar.</small>
+                </div>
+              }
+  
+              <!-- Acciones -->
+              <div class="action-buttons">
+                <button 
+                  type="button" 
+                  class="btn-submit"
+                  [disabled]="saving() || !esPagoValido()"
+                  (click)="procesarCobro()"
+                >
+                  ✔ Registrar Cobranza y Emitir
+                </button>
+                <button 
+                  type="button" 
+                  class="btn-cancel-sale" 
+                  [disabled]="cancelando()"
+                  (click)="anularVenta(venta.id)"
+                >
+                  Anular
+                </button>
+              </div>
+            </div>
+          </div>
+        } @else {
+          <div class="empty-selection">
+            <p>👈 Selecciona una venta de la lista para procesar la cobranza.</p>
+          </div>
+        }
+      </section>
     </div>
-</header>
-
-@if (error()) {
-<p class="caja-error banner">{{ error() }}</p>
-}
-@if (aviso()) {
-<p class="caja-ok banner">{{ aviso() }}</p>
-}
-
-<div class="caja-layout">
-    <section class="lista">
-        <h2>Por cobrar</h2>
-        @if (loading()) {
-        <p class="muted">Cargando...</p>
-        } @else if (pendientes().length === 0) {
-        <p class="muted">No hay ventas pendientes.</p>
-        } @else {
-        @for (v of pendientes(); track v.id) {
-        <button type="button" class="ticket" [class.active]="seleccionId() === v.id" (click)="elegir(v.id)">
-            <strong>#{{ v.id }} · {{ v.cliente?.nombre_completo || 'Sin cliente' }}</strong>
-            <span>{{ totalDe(v) | currency:'PEN':'S/ ' }}</span>
-            <small>{{ v.fecha ? (v.fecha | date:'dd/MM/yyyy HH:mm') : '' }} · {{ v.items.length }} producto(s)</small>
-        </button>
-        }
-        }
-    </section>
-
-    <aside class="cobro">
-        @if (seleccion(); as venta) {
-        <h2>Cobrar #{{ venta.id }}</h2>
-        <p class="muted">{{ venta.cliente?.nombre_completo || 'Sin cliente' }}</p>
-        <ul>
-            @for (item of venta.items; track item.producto_id) {
-            <li>{{ item.producto?.nombre || ('Producto #' + item.producto_id) }} ×{{ item.cantidad }}</li>
-            }
-        </ul>
-        <div class="total">
-            <span>Total</span>
-            <strong>{{ totalDe(venta) | currency:'PEN':'S/ ' }}</strong>
+  </div>
+  
+  <!-- ===================================================
+       1. MODAL DE IMPRESIÓN DE TICKET DE VENTA
+       =================================================== -->
+  @if (mostrarModalTicket() && ticketData(); as ticket) {
+    <div class="modal-backdrop">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h5>📄 Comprobante Emitido</h5>
+          <button type="button" class="btn-close-x" (click)="cerrarModalTicket()">✕</button>
         </div>
-
-        <label>Cobranza</label>
-        <div class="chips">
-            @for (m of metodos; track m.id) {
-            <button type="button" class="chip" [class.active]="metodoPago === m.id" (click)="metodoPago = m.id">{{ m.label }}</button>
-            }
+  
+        <div class="modal-body">
+          <div class="ticket-thermal-print" id="seccionTicketImprimir">
+            <div class="ticket-center">
+              <h2 class="ticket-empresa">VETERINARIA ALIVET S.A.C.</h2>
+              <p class="ticket-info">RUC: 20123456789</p>
+              <p class="ticket-info">Av. Principal 123 - Arequipa</p>
+              <p class="ticket-info">Teléf: (054) 987 654 321</p>
+              <div class="ticket-divider">================================</div>
+              <h3 class="ticket-comprobante">
+                {{ ticket.invoice?.document_type === 'factura' ? 'FACTURA ELECTRÓNICA' : 'BOLETA DE VENTA ELECTRÓNICA' }}
+              </h3>
+              <p class="ticket-numero"><strong>{{ ticket.invoice?.document || ('N° ' + ticket.document) }}</strong></p>
+              <div class="ticket-divider">--------------------------------</div>
+            </div>
+  
+            <div class="ticket-details">
+              <p><strong>Fecha:</strong> {{ ticket.fecha | date:'dd/MM/yyyy HH:mm' }}</p>
+              <p><strong>Cajero:</strong> {{ ticket.cajero }}</p>
+              <p><strong>Cliente:</strong> {{ ticket.cliente }}</p>
+              @if (ticket.mascota) {
+                <p><strong>Mascota:</strong> {{ ticket.mascota }}</p>
+              }
+            </div>
+            <div class="ticket-divider">--------------------------------</div>
+  
+            <table class="ticket-items">
+              <thead>
+                <tr>
+                  <th class="text-left">CANT/DESCRIPCION</th>
+                  <th class="text-right">TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of ticket.items; track $index) {
+                  <tr>
+                    <td class="text-left">
+                      {{ item.cantidad || item.quantity }} x S/ {{ (item.precio_unitario || item.unit_price) | number:'1.2-2' }}
+                      <br />
+                      <span class="item-name">{{ item.producto?.nombre || item.description }}</span>
+                    </td>
+                    <td class="text-right text-top">
+                      S/ {{ (item.subtotal || item.line_total) | number:'1.2-2' }}
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+            <div class="ticket-divider">--------------------------------</div>
+  
+            <div class="ticket-totals">
+              <div class="tot-row">
+                <span>Op. Gravada:</span>
+                <span>S/ {{ (ticket.invoice?.gravada || (ticket.total / 1.18)) | number:'1.2-2' }}</span>
+              </div>
+              <div class="tot-row">
+                <span>IGV (18%):</span>
+                <span>S/ {{ (ticket.invoice?.igv || (ticket.total - (ticket.total / 1.18))) | number:'1.2-2' }}</span>
+              </div>
+              @if (+ticket.discount > 0) {
+                <div class="tot-row">
+                  <span>Descuento:</span>
+                  <span>- S/ {{ ticket.discount | number:'1.2-2' }}</span>
+                </div>
+              }
+              <div class="tot-row total-final">
+                <strong>TOTAL A PAGAR:</strong>
+                <strong>S/ {{ ticket.total | number:'1.2-2' }}</strong>
+              </div>
+            </div>
+            <div class="ticket-divider">--------------------------------</div>
+  
+            <div class="ticket-payment-info">
+              <p><strong>Forma de pago:</strong> {{ ticket.metodo_pago | uppercase }}</p>
+              @if (ticket.numero_operacion) {
+                <p><strong>Nro. Operación:</strong> {{ ticket.numero_operacion }}</p>
+              }
+              @if (ticket.metodo_pago === 'efectivo' && ticket.change_amount > 0) {
+                <p><strong>Vuelto:</strong> S/ {{ ticket.change_amount | number:'1.2-2' }}</p>
+              }
+            </div>
+            <div class="ticket-divider">================================</div>
+  
+            <div class="ticket-center ticket-footer-msg">
+              <p>Representación impresa del Comprobante Electrónico.</p>
+              <p>¡Gracias por confiar en Ali-Vet!</p>
+              <p class="ticket-web">www.alivet.com.pe</p>
+            </div>
+          </div>
         </div>
-
-        <label>Monto recibido</label>
-        <input type="number" [(ngModel)]="montoRecibido" min="0" step="0.01" placeholder="Igual al total si lo dejas vacío" />
-        @if (vuelto() > 0) {
-        <p class="vuelto">Vuelto {{ vuelto() | currency:'PEN':'S/ ' }}</p>
-        }
-
-        <button type="button" class="btn-save" (click)="cobrar()" [disabled]="saving() || cancelando()">
-            {{ saving() ? 'Cobrando...' : 'Registrar cobranza' }}
-        </button>
-        <button type="button" class="btn-cancel" (click)="cancelar()" [disabled]="saving() || cancelando()">
-            {{ cancelando() ? 'Cancelando...' : 'Cancelar venta' }}
-        </button>
-        <p class="muted">Si el cliente ya no se la lleva, cancela. El stock se mueve solo cuando el pago queda registrado.</p>
-        } @else {
-        <p class="muted">Selecciona una venta para cobrar.</p>
-        }
-    </aside>
-</div>
+  
+        <div class="modal-footer">
+          <button type="button" class="btn-print" (click)="imprimirTicket()">🖨️ Imprimir</button>
+          <button type="button" class="btn-whatsapp" (click)="enviarWhatsApp()">📱 WhatsApp</button>
+          <button type="button" class="btn-email" (click)="enviarCorreo()">✉️ Correo</button>
+          <button type="button" class="btn-close-modal" (click)="cerrarModalTicket()">Listo</button>
+        </div>
+      </div>
+    </div>
+  }
+  
+  <!-- ===================================================
+       2. MODAL DE ARQUEO Y CIERRE DE CAJA (REPORTE Z)
+       =================================================== -->
+  @if (mostrarModalCierre()) {
+    <div class="modal-backdrop">
+      <div class="modal-card modal-cierre">
+        <div class="modal-header">
+          <h5>🔒 Arqueo y Cierre de Turno</h5>
+          @if (!cajaCerradaExito()) {
+            <button type="button" class="btn-close-x" (click)="cerrarModalCierre()">✕</button>
+          }
+        </div>
+  
+        <div class="modal-body">
+          @if (!cajaCerradaExito()) {
+            <div class="cierre-form">
+             <!-- Resumen en la Ventana de Arqueo -->
+<div class="summary-box mb-3">
+    <div class="summary-row">
+      <span>Fondo Inicial:</span>
+      <span>S/ 100.00</span>
+    </div>
+    <div class="summary-row text-success">
+      <span>Ventas en Efectivo:</span>
+      <span>+ S/ 12.00</span>
+    </div>
+    <div class="summary-row grand-total pt-2 border-top">
+      <span>Efectivo Esperado en Cajón (Billetes/Monedas):</span>
+      <span class="total-amount">S/ 112.00</span>
+    </div>
+  </div>
+  
+  <!-- Resumen Digital + Total Vendido -->
+  <div class="digital-summary-grid">
+    <div>📱 Yape: <strong>S/ 6.00</strong></div>
+    <div>🟣 Plin: <strong>S/ 0.00</strong></div>
+    <div>💳 POS: <strong>S/ 6.00</strong></div>
+  </div>
+  
+  <div class="summary-row total-general-ventas mt-2">
+    <span>Total Recaudado en el Turno (Efectivo + Digital):</span>
+    <strong>S/ 24.00</strong>
+  </div>
+  
+              <!-- Entrada de Efectivo Real -->
+              <div class="form-section mt-3">
+                <label>Ingresa el Efectivo Real Contado (S/):</label>
+                <div class="input-prefix-group">
+                  <span class="prefix">S/</span>
+                  <input 
+                    type="number" 
+                    class="input-custom big-input" 
+                    [(ngModel)]="efectivoFisico" 
+                    placeholder="0.00"
+                  />
+                </div>
+              </div>
+  
+              <!-- Indicador de Cuadre -->
+              @if (efectivoFisico !== null) {
+                <div class="change-banner mt-3" [class.valid]="diferenciaEfectivo() === 0" [class.invalid]="diferenciaEfectivo() !== 0">
+                  @if (diferenciaEfectivo() === 0) {
+                    <strong>🟢 CAJA CUADRADA PERFECTA</strong>
+                  } @else if (diferenciaEfectivo() < 0) {
+                    <strong>🔴 FALTANTE DE EFECTIVO: S/ {{ (diferenciaEfectivo() * -1) | number:'1.2-2' }}</strong>
+                  } @else {
+                    <strong>🔵 SOBRANTE DE EFECTIVO: S/ {{ diferenciaEfectivo() | number:'1.2-2' }}</strong>
+                  }
+                </div>
+              }
+  
+              <!-- Observaciones -->
+              <div class="form-section mt-3">
+                <label>Observaciones / Motivo de descuadre:</label>
+                <textarea 
+                  class="input-custom" 
+                  rows="2" 
+                  [(ngModel)]="observacionesCierre"
+                  placeholder="Escribe aquí cualquier incidencia..."
+                ></textarea>
+              </div>
+            </div>
+          } @else {
+            <!-- REPORTE Z IMPRESO EN TIQUETERA -->
+            <div class="ticket-thermal-print" id="seccionTicketZImprimir">
+              <div class="ticket-center">
+                <h2 class="ticket-empresa">VETERINARIA ALIVET S.A.C.</h2>
+                <p class="ticket-info">RUC: 20123456789</p>
+                <p class="ticket-info">REPORTE Z - CIERRE DE TURNO</p>
+                <div class="ticket-divider">================================</div>
+              </div>
+  
+              <div class="ticket-details">
+                <p><strong>Fecha:</strong> {{ fechaCierre | date:'dd/MM/yyyy HH:mm' }}</p>
+                <p><strong>Cajero/Admin:</strong> Administrador</p>
+                <p><strong>Transacciones:</strong> {{ totalVentasCobradas().length }} cobranza(s)</p>
+              </div>
+              <div class="ticket-divider">--------------------------------</div>
+  
+              <div class="ticket-totals">
+                <div class="tot-row"><span>Fondo Inicial:</span><span>S/ {{ fondoInicial | number:'1.2-2' }}</span></div>
+                <div class="tot-row"><span>Ventas Efectivo:</span><span>S/ {{ totalEfectivoTurno() | number:'1.2-2' }}</span></div>
+                <div class="tot-row bold"><span>Efectivo Esperado:</span><span>S/ {{ efectivoEsperado() | number:'1.2-2' }}</span></div>
+                <div class="tot-row bold"><span>Efectivo Real:</span><span>S/ {{ efectivoFisico | number:'1.2-2' }}</span></div>
+                <div class="tot-row total-final"><span>Diferencia:</span><span>S/ {{ diferenciaEfectivo() | number:'1.2-2' }}</span></div>
+              </div>
+              <div class="ticket-divider">--------------------------------</div>
+  
+              <div class="ticket-totals">
+                <div class="tot-row"><span>Yape:</span><span>S/ {{ totalYapeTurno() | number:'1.2-2' }}</span></div>
+                <div class="tot-row"><span>Plin:</span><span>S/ {{ totalPlinTurno() | number:'1.2-2' }}</span></div>
+                <div class="tot-row"><span>Tarjeta / POS:</span><span>S/ {{ totalTarjetaTurno() | number:'1.2-2' }}</span></div>
+              </div>
+              <div class="ticket-divider">================================</div>
+  
+              @if (observacionesCierre) {
+                <p class="ticket-info"><strong>Obs:</strong> {{ observacionesCierre }}</p>
+                <div class="ticket-divider">--------------------------------</div>
+              }
+  
+              <div class="ticket-center ticket-footer-msg">
+                <p>Firma Responsable: __________________</p>
+              </div>
+            </div>
+          }
+        </div>
+  
+        <div class="modal-footer">
+          @if (!cajaCerradaExito()) {
+            <button 
+              type="button" 
+              class="btn-submit btn-danger-cierre" 
+              [disabled]="efectivoFisico === null || (diferenciaEfectivo() !== 0 && observacionesCierre.trim().length < 3)"
+              (click)="confirmarCierreTurno()"
+            >
+              🔒 Confirmar Cierre
+            </button>
+            <button type="button" class="btn-close-modal" (click)="cerrarModalCierre()">Cancelar</button>
+          } @else {
+            <button type="button" class="btn-print" (click)="imprimirReporteZ()">🖨️ Imprimir Reporte Z</button>
+            <button type="button" class="btn-close-modal" (click)="finalizarSesionCaja()">Finalizar</button>
+          }
+        </div>
+      </div>
+    </div>
+  }

@@ -1,0 +1,200 @@
+:host {
+    display: block;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    color: #f1f5f9;
+    background-color: #0f172a;
+    min-height: 100vh;
+    padding: 24px;
+  }
+  
+  .ventas-wrapper {
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  
+  .page-title { font-size: 1.5rem; font-weight: 700; margin: 0; color: #ffffff; }
+  .page-subtitle { font-size: 0.875rem; color: #94a3b8; margin: 4px 0 0 0; }
+  
+  .btn-refresh {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    color: #cbd5e1;
+    padding: 8px 16px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  
+  /* Métricas */
+  .metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+  }
+  
+  .metric-card {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .metric-label { font-size: 0.8rem; color: #94a3b8; text-transform: uppercase; }
+  .metric-value { font-size: 1.5rem; font-weight: 700; color: #ffffff; margin-top: 4px; }
+  
+  /* Tabla y Filtros */
+  .card-panel {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 20px;
+  }
+  
+  .filters-bar {
+    display: flex;
+    gap: 16px;
+  }
+  
+  .search-field { flex: 2; }
+  .filter-options { flex: 1; display: flex; gap: 8px; }
+  
+  .input-custom {
+    width: 100%;
+    box-sizing: border-box;
+    background-color: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #ffffff;
+  }
+  
+  .custom-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+  }
+  
+  .custom-table th, .custom-table td {
+    padding: 12px;
+    border-bottom: 1px solid #334155;
+  }
+  
+  .custom-table th { color: #94a3b8; text-align: left; }
+  .text-center { text-align: center; }
+  .text-end { text-align: right; }
+  .bold { font-weight: 600; }
+  .text-white { color: #ffffff; }
+  .text-success { color: #4ade80 !important; }
+  .text-primary { color: #818cf8 !important; }
+  .text-danger { color: #f87171 !important; }
+  
+  .status-badge {
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .badge-success { background-color: rgba(74, 222, 128, 0.15); color: #4ade80; }
+  .badge-danger { background-color: rgba(248, 113, 113, 0.15); color: #f87171; }
+  .badge-method { background-color: #0f172a; border: 1px solid #334155; padding: 2px 8px; border-radius: 6px; font-size: 0.75rem; }
+  
+  .action-btn-group { display: flex; gap: 6px; justify-content: flex-end; }
+  .btn-icon {
+    background: #0f172a;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    padding: 6px 10px;
+    cursor: pointer;
+  }
+  .btn-icon:hover { border-color: #6366f1; }
+  .btn-cancel:hover { border-color: #ef4444; }
+  
+  /* Modales */
+  .modal-backdrop {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+  }
+  
+  .modal-card {
+    background-color: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    width: 420px;
+    display: flex; flex-direction: column;
+  }
+  .modal-lg { width: 650px; }
+  
+  .modal-header { display: flex; justify-content: space-between; padding: 16px; border-bottom: 1px solid #334155; }
+  .modal-header h5 { margin: 0; color: #fff; }
+  .btn-close-x { background: transparent; border: none; color: #94a3b8; font-size: 1.2rem; cursor: pointer; }
+  .modal-body { padding: 20px; background-color: #0f172a; max-height: 75vh; overflow-y: auto; }
+  .modal-footer { padding: 16px; border-top: 1px solid #334155; display: flex; justify-content: flex-end; gap: 10px; }
+  
+  /* Plantilla Térmica */
+  .ticket-thermal-print {
+    width: 280px; margin: 0 auto; padding: 16px;
+    background-color: #ffffff; color: #000000;
+    font-family: 'Courier New', Courier, monospace; font-size: 12px;
+  }
+  .ticket-center { text-align: center; }
+  .ticket-empresa { font-size: 14px; font-weight: bold; margin: 0; }
+  .ticket-divider { margin: 4px 0; overflow: hidden; white-space: nowrap; font-size: 10px; }
+  .ticket-totals .tot-row { display: flex; justify-content: space-between; }
+  
+  .btn-print { background-color: #4f46e5; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+  .btn-close-modal { background: transparent; border: 1px solid #64748b; color: #cbd5e1; padding: 10px 16px; border-radius: 8px; cursor: pointer; }
+  
+  /* Impresión Térmica aislando sólo el Ticket */
+  @media print {
+    ::ng-deep body *,
+    ::ng-deep app-root *,
+    ::ng-deep .ventas-wrapper {
+      visibility: hidden !important;
+    }
+  
+    ::ng-deep .modal-header,
+    ::ng-deep .modal-footer,
+    ::ng-deep .btn-close-x {
+      display: none !important;
+    }
+  
+    ::ng-deep .modal-backdrop,
+    ::ng-deep .modal-card,
+    ::ng-deep .modal-body {
+      position: static !important;
+      display: block !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      padding: 0 !important;
+      margin: 0 !important;
+    }
+  
+    ::ng-deep #seccionTicketImprimir,
+    ::ng-deep #seccionTicketImprimir * {
+      visibility: visible !important;
+    }
+  
+    ::ng-deep #seccionTicketImprimir {
+      display: block !important;
+      position: fixed !important;
+      left: 0 !important; top: 0 !important;
+      width: 78mm !important;
+      margin: 0 !important; padding: 2mm !important;
+      background-color: #ffffff !important; color: #000000 !important;
+      z-index: 99999999 !important;
+    }
+  
+    @page { size: 80mm auto; margin: 0mm; }
+  }

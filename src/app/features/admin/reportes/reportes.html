@@ -1,228 +1,341 @@
-<!-- Page Header -->
-<header class="page-header">
-    <div>
-        <h1 class="page-title">Reportes</h1>
-        <p class="page-subtitle">Resumen general del sistema</p>
+<div class="reportes-wrapper">
+    <!-- Cabecera -->
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Centro de Analítica e Informes Gerenciales</h1>
+        <p class="page-subtitle">Indicadores financieros, valorización de inventario y consumo de clientes</p>
+      </div>
+      <button type="button" class="btn-refresh" (click)="loadAll()">
+        🔄 Actualizar Datos
+      </button>
+    </header>
+  
+    @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
+  
+    <!-- BARRA DE FILTROS POR FECHA -->
+    <section class="date-filter-panel mb-4">
+      <div class="filter-presets">
+        <button 
+          type="button" 
+          class="btn-preset" 
+          [class.active]="rangoSeleccionado() === 'hoy'" 
+          (click)="setRangoFecha('hoy')"
+        >
+          Hoy
+        </button>
+        <button 
+          type="button" 
+          class="btn-preset" 
+          [class.active]="rangoSeleccionado() === 'semana'" 
+          (click)="setRangoFecha('semana')"
+        >
+          Últimos 7 Días
+        </button>
+        <button 
+          type="button" 
+          class="btn-preset" 
+          [class.active]="rangoSeleccionado() === 'mes'" 
+          (click)="setRangoFecha('mes')"
+        >
+          Este Mes
+        </button>
+        <button 
+          type="button" 
+          class="btn-preset" 
+          [class.active]="rangoSeleccionado() === 'mes_anterior'" 
+          (click)="setRangoFecha('mes_anterior')"
+        >
+          Mes Anterior
+        </button>
+      </div>
+  
+      <div class="custom-dates-group">
+        <div class="date-field">
+          <label>Desde:</label>
+          <input 
+            type="date" 
+            class="input-custom date-input" 
+            [ngModel]="fechaInicio()" 
+            (ngModelChange)="fechaInicio.set($event); rangoSeleccionado.set('custom')" 
+          />
+        </div>
+        <div class="date-field">
+          <label>Hasta:</label>
+          <input 
+            type="date" 
+            class="input-custom date-input" 
+            [ngModel]="fechaFin()" 
+            (ngModelChange)="fechaFin.set($event); rangoSeleccionado.set('custom')" 
+          />
+        </div>
+      </div>
+    </section>
+  
+    <!-- PESTAÑAS PRINCIPALES -->
+    <div class="tabs-navigation">
+      <button 
+        type="button" 
+        class="tab-btn" 
+        [class.active]="tabActiva() === 'financiero'"
+        (click)="tabActiva.set('financiero')"
+      >
+        💰 Financiero y Ventas
+      </button>
+      <button 
+        type="button" 
+        class="tab-btn" 
+        [class.active]="tabActiva() === 'inventario'"
+        (click)="tabActiva.set('inventario')"
+      >
+        📦 Valorización e Inventario
+      </button>
+      <button 
+        type="button" 
+        class="tab-btn" 
+        [class.active]="tabActiva() === 'clientes'"
+        (click)="tabActiva.set('clientes')"
+      >
+        👥 Clientes VIP y Métodos de Pago
+      </button>
     </div>
-    <button class="btn-refresh" (click)="loadAll()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-        </svg>
-        Actualizar
-    </button>
-</header>
-
-@if (error()) {
-<div class="error-banner">{{ error() }}</div>
-}
-
-@if (loading()) {
-<div class="loading-state">Cargando reportes...</div>
-} @else {
-
-<!-- Stats Grid -->
-<section class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-            </svg>
+  
+    @if (loading()) {
+      <div class="loading-state">⏳ Procesando algoritmos y calculando indicadores...</div>
+    } @else {
+  
+      <!-- ===================================================
+           PESTAÑA 1: FINANCIERO Y VENTAS
+           =================================================== -->
+      @if (tabActiva() === 'financiero') {
+        <!-- Tarjetas KPI -->
+        <div class="metrics-grid mt-4">
+          <div class="metric-card">
+            <span class="metric-label">Ingresos Totales</span>
+            <strong class="metric-value text-success">S/ {{ ingresosFiltrados() | number:'1.2-2' }}</strong>
+            <small class="metric-sub">{{ ventasFiltradas().length }} ventas registradas</small>
+          </div>
+  
+          <div class="metric-card">
+            <span class="metric-label">Utilidad Bruta Estimada</span>
+            <strong class="metric-value text-indigo">S/ {{ gananciaBrutaEstimada() | number:'1.2-2' }}</strong>
+            <small class="metric-sub">Ventas menos costo de compra</small>
+          </div>
+  
+          <div class="metric-card">
+            <span class="metric-label">Ticket Promedio</span>
+            <strong class="metric-value text-teal">S/ {{ ticketPromedio() | number:'1.2-2' }}</strong>
+            <small class="metric-sub">Gasto promedio por cliente</small>
+          </div>
+  
+          <div class="metric-card">
+            <span class="metric-label">Órdenes Procesadas</span>
+            <strong class="metric-value text-white">{{ ventasFiltradas().length }}</strong>
+            <small class="metric-sub">En el rango seleccionado</small>
+          </div>
         </div>
-        <div>
-            <p class="stat-label">Total Productos</p>
-            <p class="stat-value">{{ totalProductos() }}</p>
+  
+        <!-- Métodos de Pago Desglose -->
+        <section class="card-panel mt-4">
+          <h2 class="card-title">💳 Desglose por Métodos de Pago</h2>
+          <div class="payment-methods-grid mt-3">
+            <!-- Efectivo -->
+            <div class="pm-box">
+              <div class="pm-header">
+                <span>💵 Efectivo en Caja</span>
+                <strong class="text-white">S/ {{ metodosPagoResumen().efectivo | number:'1.2-2' }}</strong>
+              </div>
+              <div class="pm-progress-bar">
+                <div class="pm-progress-fill fill-green" [style.width.%]="metodosPagoResumen().pctEfectivo"></div>
+              </div>
+              <small class="muted">{{ metodosPagoResumen().pctEfectivo | number:'1.1-1' }}% del total</small>
+            </div>
+  
+            <!-- Yape / Plin -->
+            <div class="pm-box">
+              <div class="pm-header">
+                <span>📱 Yape / Plin / QR</span>
+                <strong class="text-white">S/ {{ metodosPagoResumen().yape_plin | number:'1.2-2' }}</strong>
+              </div>
+              <div class="pm-progress-bar">
+                <div class="pm-progress-fill fill-purple" [style.width.%]="metodosPagoResumen().pctYape"></div>
+              </div>
+              <small class="muted">{{ metodosPagoResumen().pctYape | number:'1.1-1' }}% del total</small>
+            </div>
+  
+            <!-- Tarjeta POS -->
+            <div class="pm-box">
+              <div class="pm-header">
+                <span>💳 Tarjetas (POS)</span>
+                <strong class="text-white">S/ {{ metodosPagoResumen().tarjeta | number:'1.2-2' }}</strong>
+              </div>
+              <div class="pm-progress-bar">
+                <div class="pm-progress-fill fill-indigo" [style.width.%]="metodosPagoResumen().pctTarjeta"></div>
+              </div>
+              <small class="muted">{{ metodosPagoResumen().pctTarjeta | number:'1.1-1' }}% del total</small>
+            </div>
+  
+            <!-- Transferencia -->
+            <div class="pm-box">
+              <div class="pm-header">
+                <span>🏦 Transferencias</span>
+                <strong class="text-white">S/ {{ metodosPagoResumen().transferencia | number:'1.2-2' }}</strong>
+              </div>
+              <div class="pm-progress-bar">
+                <div class="pm-progress-fill fill-teal" [style.width.%]="metodosPagoResumen().pctTransf"></div>
+              </div>
+              <small class="muted">{{ metodosPagoResumen().pctTransf | number:'1.1-1' }}% del total</small>
+            </div>
+          </div>
+        </section>
+      }
+  
+      <!-- ===================================================
+           PESTAÑA 2: VALORIZACIÓN E INVENTARIO
+           =================================================== -->
+      @if (tabActiva() === 'inventario') {
+        <div class="metrics-grid mt-4">
+          <div class="metric-card">
+            <span class="metric-label">Inversión en Stock (Costo)</span>
+            <strong class="metric-value text-indigo">S/ {{ valorizacionAlmacenCosto() | number:'1.2-2' }}</strong>
+            <small class="metric-sub">Capital estancado en almacén</small>
+          </div>
+  
+          <div class="metric-card">
+            <span class="metric-label">Valor Retorno (P. Venta)</span>
+            <strong class="metric-value text-success">S/ {{ valorizacionAlmacenVenta() | number:'1.2-2' }}</strong>
+            <small class="metric-sub">Recaudación proyectada al 100%</small>
+          </div>
+  
+          <div class="metric-card">
+            <span class="metric-label">Ganancia Potencial Stock</span>
+            <strong class="metric-value text-teal">S/ {{ gananciaPotencialStock() | number:'1.2-2' }}</strong>
+            <small class="metric-sub">Margen esperado en inventario</small>
+          </div>
+  
+          <div class="metric-card">
+            <span class="metric-label">Alertas Críticas</span>
+            <strong class="metric-value text-warning">{{ stockBajo().length }} bajo / {{ porVencer().length }} vencer</strong>
+            <small class="metric-sub">Ítems que requieren acción</small>
+          </div>
         </div>
-    </div>
-    <div class="stat-card stat-warning">
-        <div class="stat-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-        </div>
-        <div>
-            <p class="stat-label">Stock Bajo</p>
-            <p class="stat-value">{{ stockBajo().length }}</p>
-        </div>
-    </div>
-    <div class="stat-card stat-purple">
-        <div class="stat-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-        </div>
-        <div>
-            <p class="stat-label">Ventas Activas</p>
-            <p class="stat-value">{{ totalVentasActivas() }}</p>
-        </div>
-    </div>
-    <div class="stat-card stat-teal">
-        <div class="stat-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-        </div>
-        <div>
-            <p class="stat-label">Ingreso Total</p>
-            <p class="stat-value">{{ ingresoTotal() | currency:'PEN':'S/ ' }}</p>
-        </div>
-    </div>
-</section>
-
-<!-- Content Grid -->
-<div class="content-grid">
-
-    <!-- Stock Bajo -->
-    <div class="report-card">
-        <h2 class="card-title">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-            Productos con Stock Bajo
-        </h2>
-        @if (stockBajo().length === 0) {
-        <p class="empty-msg">Sin productos con stock bajo</p>
-        } @else {
-        <table>
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Stock</th>
-                    <th>Mínimo</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (p of stockBajo(); track p.id) {
-                <tr>
-                    <td>{{ p.nombre }}</td>
-                    <td><span class="badge badge-danger">{{ p.stock_actual }}</span></td>
-                    <td class="muted">{{ p.stock_minimo }}</td>
-                </tr>
-                }
-            </tbody>
-        </table>
-        }
-    </div>
-
-    <!-- Por Vencer -->
-    <div class="report-card">
-        <h2 class="card-title">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
-            Productos por Vencer
-        </h2>
-        @if (porVencer().length === 0) {
-        <p class="empty-msg">Sin productos próximos a vencer</p>
-        } @else {
-        <table>
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Stock</th>
-                    <th>Vencimiento</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (p of porVencer(); track p.id) {
-                <tr>
-                    <td>{{ p.nombre }}</td>
-                    <td class="muted">{{ p.stock_actual }}</td>
-                    <td><span class="badge badge-warning">{{ p.fecha_vencimiento | date:'dd/MM/yyyy' }}</span></td>
-                </tr>
-                }
-            </tbody>
-        </table>
-        }
-    </div>
-
-    <!-- Ventas Recientes -->
-    <div class="report-card report-card-full">
-        <h2 class="card-title">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            Ventas Recientes
-        </h2>
-        @if (ventas().length === 0) {
-        <p class="empty-msg">Sin ventas registradas</p>
-        } @else {
-        <table>
-            <thead>
-                <tr>
+  
+        <div class="content-grid mt-4">
+          <!-- Top 10 Mas Vendidos -->
+          <div class="card-panel">
+            <h2 class="card-title text-indigo">🏆 Top 10 Productos Más Vendidos</h2>
+            @if (topProductosVendidos().length === 0) {
+              <p class="empty-msg">Sin datos de rotación en las fechas seleccionadas.</p>
+            } @else {
+              <table class="custom-table mt-2">
+                <thead>
+                  <tr>
                     <th>#</th>
-                    <th>Trabajador</th>
-                    <th>Total</th>
-                    <th>Estado</th>
-                    <th>Fecha</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (v of getRecentVentas(); track v.id) {
-                <tr>
-                    <td class="id-cell">#{{ v.id }}</td>
-                    <td>{{ v.trabajador?.nombre_completo ?? '—' }}</td>
-                    <td>{{ v.total | currency:'PEN':'S/ ' }}</td>
-                    <td>
-                        <span class="badge" [class.badge-success]="v.estado === 'activa'"
-                            [class.badge-danger]="v.estado === 'anulada'">{{ v.estado }}</span>
-                    </td>
-                    <td class="muted">{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
-                </tr>
-                }
-            </tbody>
-        </table>
-        }
-    </div>
-
-    <!-- Movimientos Recientes -->
-    <div class="report-card report-card-full">
-        <h2 class="card-title">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M4 6h16M4 10h16M4 14h16M4 18h16" />
-            </svg>
-            Movimientos de Stock Recientes
-        </h2>
-        @if (movimientos().length === 0) {
-        <p class="empty-msg">Sin movimientos registrados</p>
-        } @else {
-        <table>
-            <thead>
-                <tr>
-                    <th>#</th>
                     <th>Producto</th>
-                    <th>Tipo</th>
-                    <th>Cantidad</th>
-                    <th>Fecha</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (m of getRecentMovimientos(); track m.id) {
-                <tr>
-                    <td class="id-cell">#{{ m.id }}</td>
-                    <td>{{ m.producto?.nombre ?? 'Producto #' + m.producto_id }}</td>
-                    <td>
-                        <span class="badge" [class.badge-entrada]="m.tipo === 'entrada'"
-                            [class.badge-salida]="m.tipo === 'salida'">
-                            {{ m.tipo }}
-                        </span>
-                    </td>
-                    <td>{{ m.cantidad }}</td>
-                    <td class="muted">{{ m.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
-                </tr>
-                }
-            </tbody>
-        </table>
-        }
-    </div>
-
-</div>
-}
+                    <th class="text-center">Unidades</th>
+                    <th class="text-end">Total Generado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (prod of topProductosVendidos(); track prod.id; let idx = $index) {
+                    <tr>
+                      <td class="id-cell">#{{ idx + 1 }}</td>
+                      <td><strong class="text-white">{{ prod.nombre }}</strong></td>
+                      <td class="text-center bold text-indigo">{{ prod.cantidad }} u.</td>
+                      <td class="text-end bold text-success">S/ {{ prod.totalRecaudado | number:'1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+  
+          <!-- Stock Bajo y Vencimientos -->
+          <div class="right-stack">
+            <div class="card-panel">
+              <h2 class="card-title text-warning">⚠️ Stock Bajo (Urgente Reponer)</h2>
+              <div class="table-responsive">
+                <table class="custom-table mt-2">
+                  <thead>
+                    <tr>
+                      <th>Producto</th>
+                      <th class="text-center">Stock Actual</th>
+                      <th class="text-center">Mínimo</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (p of stockBajo().slice(0, 5); track p.id) {
+                      @let sActual = $any(p).stock_disponible ?? p.stock_actual ?? 0;
+                      <tr>
+                        <td><strong class="text-white">{{ p.nombre }}</strong></td>
+                        <td class="text-center"><span class="status-badge badge-danger">{{ sActual }} u.</span></td>
+                        <td class="text-center muted">{{ p.stock_minimo || 5 }} u.</td>
+                      </tr>
+                    } @empty {
+                      <tr><td colspan="3" class="empty-msg text-success">✅ Stock saludable en todo el catálogo.</td></tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+  
+      <!-- ===================================================
+           PESTAÑA 3: CLIENTES VIP Y VENDEDORES
+           =================================================== -->
+      @if (tabActiva() === 'clientes') {
+        <div class="content-grid mt-4">
+          <!-- Top Clientes VIP -->
+          <div class="card-panel">
+            <h2 class="card-title text-teal">⭐ Top 10 Clientes VIP (Mayor Consumo)</h2>
+            @if (topClientesVIP().length === 0) {
+              <p class="empty-msg">No hay registros de compras asociadas a clientes identificados.</p>
+            } @else {
+              <table class="custom-table mt-2">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Cliente Propietario</th>
+                    <th class="text-center">N° Visitas</th>
+                    <th class="text-end">Total Consumido</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (cli of topClientesVIP(); track cli.id; let idx = $index) {
+                    <tr>
+                      <td class="id-cell">#{{ idx + 1 }}</td>
+                      <td><strong class="text-white">{{ cli.nombre }}</strong></td>
+                      <td class="text-center muted">{{ cli.comprasCount }} compras</td>
+                      <td class="text-end bold text-success">S/ {{ cli.totalGastado | number:'1.2-2' }}</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            }
+          </div>
+  
+          <!-- Resumen Operativo de Clientes -->
+          <div class="card-panel">
+            <h2 class="card-title text-indigo">📊 Métricas de Fidelización</h2>
+            <div class="info-meta mt-3">
+              <div class="info-meta-item">
+                <span class="meta-label">Total Clientes en Ficha</span>
+                <span class="meta-value text-white">{{ clientes().length }} registrados</span>
+              </div>
+              <div class="info-meta-item">
+                <span class="meta-label">Frecuencia Promedio de Compra</span>
+                <span class="meta-value text-teal">
+                  {{ clientes().length > 0 ? (ventasFiltradas().length / clientes().length | number:'1.1-1') : 0 }} visitas/cliente
+                </span>
+              </div>
+              <div class="info-meta-item">
+                <span class="meta-label">Estado de Conexión POS/API</span>
+                <span class="meta-value text-success">🟢 Operativo al 100%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    }
+  </div>

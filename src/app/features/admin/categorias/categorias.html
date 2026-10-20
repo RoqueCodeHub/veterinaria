@@ -1,150 +1,222 @@
-<!-- Page Header -->
-<header class="page-header">
-    <div>
-        <h1 class="page-title">Categorías</h1>
-        <p class="page-subtitle">Gestiona las categorías de productos</p>
+<div class="categorias-wrapper">
+    <!-- Cabecera -->
+    <header class="page-header">
+      <div>
+        <h1 class="page-title">Categorías de Productos y Servicios</h1>
+        <p class="page-subtitle">Organización jerárquica de líneas de medicamentos, alimentos y atención clínica</p>
+      </div>
+      <button type="button" class="btn-primary" (click)="openCreate()">
+        ➕ Nueva Categoría
+      </button>
+    </header>
+  
+    @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
+    @if (aviso()) { <div class="alert alert-success">{{ aviso() }}</div> }
+  
+    <!-- Tarjetas KPI -->
+    <div class="metrics-grid">
+      <div class="metric-card" (click)="setFiltroEstado('todos')">
+        <span class="metric-label">Total Categorías</span>
+        <strong class="metric-value">{{ metricas().total }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Categorías Principales</span>
+        <strong class="metric-value text-primary">{{ metricas().principales }}</strong>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Subcategorías</span>
+        <strong class="metric-value text-info">{{ metricas().subcategorias }}</strong>
+      </div>
+      <div class="metric-card" (click)="setFiltroEstado('activas')">
+        <span class="metric-label">Activas</span>
+        <strong class="metric-value text-success">{{ metricas().activas }}</strong>
+      </div>
     </div>
-    <button class="btn-primary" (click)="openCreate()">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="16" height="16">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-        </svg>
-        Nueva Categoría
-    </button>
-</header>
-
-<!-- Error -->
-@if (error()) {
-<div class="error-banner">{{ error() }}</div>
-}
-
-<!-- Table Card -->
-<div class="table-card">
-    <div class="table-header">
-        <h2 class="table-title">Lista de Categorías</h2>
-        <span class="table-count">{{ categorias().length }} registros</span>
-    </div>
-
-    @if (loading()) {
-    <div class="loading-state">Cargando categorías...</div>
-    } @else if (categorias().length === 0) {
-    <div class="empty-state">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" width="40" height="40">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-        </svg>
-        <p>No hay categorías registradas</p>
-    </div>
-    } @else {
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Estado</th>
-                <th>Creado</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (fila of filas(); track fila.categoria.id) {
-            <tr [class.row-parent]="fila.depth === 0" [class.row-child]="fila.depth > 0">
-                <td class="id-cell">#{{ fila.categoria.id }}</td>
-                <td class="nombre-cell">
-                    <div class="nombre-wrap" [style.padding-left.px]="fila.depth * 28">
-                        @if (fila.childCount > 0) {
-                        <button type="button" class="btn-toggle" (click)="toggle(fila.categoria.id)"
-                            [attr.aria-expanded]="isExpanded(fila.categoria.id)"
-                            [attr.aria-label]="isExpanded(fila.categoria.id) ? 'Ocultar subcategorías' : 'Mostrar subcategorías'"
-                            [title]="isExpanded(fila.categoria.id) ? 'Ocultar subcategorías' : 'Mostrar subcategorías'">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                                [class.is-open]="isExpanded(fila.categoria.id)">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                            </svg>
-                        </button>
-                        } @else {
-                        <span class="toggle-spacer" aria-hidden="true"></span>
-                        }
-                        <span>{{ fila.categoria.nombre }}</span>
-                        @if (fila.childCount > 0) {
-                        <span class="sub-count">{{ fila.childCount }}</span>
-                        }
-                    </div>
-                </td>
-                <td class="muted">{{ fila.categoria.descripcion || '—' }}</td>
-                <td>
-                    <span class="badge" [class.badge-success]="fila.categoria.activo" [class.badge-danger]="!fila.categoria.activo">
-                        {{ fila.categoria.activo ? 'Activa' : 'Inactiva' }}
-                    </span>
-                </td>
-                <td class="muted">{{ fila.categoria.created_at | date:'dd/MM/yyyy' }}</td>
-                <td>
-                    <div class="actions">
-                        <button class="btn-icon btn-edit" (click)="openEdit(fila.categoria)" title="Editar">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
-                        </button>
-                        <button class="btn-icon btn-delete" (click)="confirmDelete(fila.categoria.id)" title="Eliminar">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            }
-        </tbody>
-    </table>
-    }
-</div>
-
-<!-- Modal Crear / Editar -->
-@if (showModal()) {
-<div class="modal-overlay" (click)="closeModal()">
-    <div class="modal" (click)="$event.stopPropagation()">
-        <h2 class="modal-title">{{ editingId() ? 'Editar Categoría' : 'Nueva Categoría' }}</h2>
-        <form (ngSubmit)="save()">
-            <div class="form-grid">
-                <div class="form-group full">
-                    <label>Nombre *</label>
-                    <input [(ngModel)]="form.nombre" name="nombre" required placeholder="Nombre de la categoría" />
-                </div>
-                <div class="form-group full">
-                    <label>Descripción</label>
-                    <textarea [(ngModel)]="form.descripcion" name="descripcion" rows="3"
-                        placeholder="Descripción de la categoría"></textarea>
-                </div>
-                <div class="form-group checks-row">
-                    <label class="checkbox-label">
-                        <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
-                        <span>Categoría activa</span>
-                    </label>
-                </div>
-            </div>
-            <div class="modal-actions">
-                <button type="button" class="btn-cancel" (click)="closeModal()">Cancelar</button>
-                <button type="submit" class="btn-save" [disabled]="savingModal()">
-                    {{ savingModal() ? 'Guardando...' : 'Guardar' }}
-                </button>
-            </div>
-        </form>
-    </div>
-</div>
-}
-
-<!-- Confirm Delete -->
-@if (deleteConfirmId()) {
-<div class="modal-overlay">
-    <div class="modal modal-sm">
-        <h2 class="modal-title">Eliminar Categoría</h2>
-        <p class="confirm-text">¿Estás seguro? Esta acción no se puede deshacer.</p>
-        <div class="modal-actions">
-            <button class="btn-cancel" (click)="cancelDelete()">Cancelar</button>
-            <button class="btn-danger-solid" (click)="doDelete()">Eliminar</button>
+  
+    <!-- Panel Principal con Filtros y Tabla Jerárquica -->
+    <section class="card-panel mt-4">
+      <!-- Filtros y Búsqueda -->
+      <div class="filters-bar">
+        <div class="search-field">
+          <input 
+            type="text" 
+            class="input-custom" 
+            placeholder="🔍 Buscar por nombre o descripción de la categoría..."
+            [ngModel]="busquedaTexto()"
+            (ngModelChange)="busquedaTexto.set($event)"
+          />
         </div>
+  
+        <div class="filter-group">
+          <select 
+            class="input-custom select-custom" 
+            [ngModel]="filtroEstado()"
+            (ngModelChange)="setFiltroEstado($event)"
+          >
+            <option value="todos">Todos los Estados</option>
+            <option value="activas">🟢 Solo Activas</option>
+            <option value="inactivas">🔴 Inactivas</option>
+          </select>
+        </div>
+      </div>
+  
+      <!-- Tabla de Categorías -->
+      <div class="table-responsive mt-3">
+        @if (loading()) {
+          <div class="empty-state">⏳ Cargando árbol de categorías...</div>
+        } @else if (filas().length === 0) {
+          <div class="empty-state">🏷️ No hay categorías registradas que coincidan con la búsqueda.</div>
+        } @else {
+          <table class="custom-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Nombre de Categoría</th>
+                <th>Descripción</th>
+                <th class="text-center">Estado</th>
+                <th>Creado</th>
+                <th class="text-end">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (fila of filas(); track fila.categoria.id) {
+                <tr [class.row-parent]="fila.depth === 0" [class.row-child]="fila.depth > 0">
+                  <td class="id-cell">#{{ fila.categoria.id }}</td>
+                  <td class="nombre-cell">
+                    <div class="nombre-wrap" [style.padding-left.px]="fila.depth * 24">
+                      @if (fila.childCount > 0) {
+                        <button 
+                          type="button" 
+                          class="btn-toggle" 
+                          (click)="toggle(fila.categoria.id)"
+                          [title]="isExpanded(fila.categoria.id) ? 'Contraer subcategorías' : 'Expandir subcategorías'"
+                        >
+                          <span [class.is-open]="isExpanded(fila.categoria.id)">▶</span>
+                        </button>
+                      } @else if (fila.depth > 0) {
+                        <span class="tree-bullet">↳</span>
+                      } @else {
+                        <span class="toggle-spacer"></span>
+                      }
+                      <strong class="text-white">{{ fila.categoria.nombre }}</strong>
+                      @if (fila.childCount > 0) {
+                        <span class="sub-count-badge">{{ fila.childCount }} sub</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="muted">{{ fila.categoria.descripcion || '—' }}</td>
+                  <td class="text-center">
+                    @if (fila.categoria.activo) {
+                      <span class="status-badge badge-success">Activa</span>
+                    } @else {
+                      <span class="status-badge badge-danger">Inactiva</span>
+                    }
+                  </td>
+                  <td class="muted">{{ fila.categoria.created_at | date:'dd/MM/yyyy' }}</td>
+                  <td class="text-end">
+                    <div class="actions-group">
+                      <button type="button" class="btn-icon btn-edit" (click)="openEdit(fila.categoria)" title="Editar Categoría">
+                        ✏️
+                      </button>
+                      <button type="button" class="btn-icon btn-delete" (click)="confirmDelete(fila.categoria.id)" title="Eliminar Categoría">
+                        🗑️
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </section>
+  </div>
+  
+  <!-- ===================================================
+       MODAL CREAR / EDITAR CATEGORÍA
+       =================================================== -->
+  @if (showModal()) {
+    <div class="modal-overlay-fix">
+      <div class="modal-box-center">
+        <div class="modal-header-custom">
+          <h5>{{ editingId() ? '✏️ Editar Categoría' : '➕ Nueva Categoría' }}</h5>
+          <button type="button" class="btn-close-icon" (click)="closeModal()">✕</button>
+        </div>
+  
+        <form (ngSubmit)="save()">
+          <div class="modal-body-custom">
+            <div class="form-group mb-3">
+              <label>Nombre de la Categoría *</label>
+              <input 
+                type="text" 
+                class="input-custom" 
+                [(ngModel)]="form.nombre" 
+                name="nombre" 
+                required 
+                placeholder="Ej. Farmacia, Alimentos o Servicios Médicos" 
+              />
+            </div>
+  
+            <div class="form-group mb-3">
+              <label>Categoría Padre (Opcional)</label>
+              <select class="input-custom select-custom" [(ngModel)]="form.parent_id" name="parent_id">
+                <option [ngValue]="null">— Ninguna (Categoría Principal) —</option>
+                @for (catPadre of categoriasPadreDisponibles(); track catPadre.id) {
+                  <option [ngValue]="catPadre.id">{{ catPadre.nombre }}</option>
+                }
+              </select>
+            </div>
+  
+            <div class="form-group mb-3">
+              <label>Descripción</label>
+              <textarea 
+                class="input-custom textarea-custom" 
+                [(ngModel)]="form.descripcion" 
+                name="descripcion" 
+                rows="3" 
+                placeholder="Descripción opcional de la línea de productos..."
+              ></textarea>
+            </div>
+  
+            <div class="form-group checkboxes-row">
+              <label class="checkbox-label">
+                <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
+                <span>Categoría Activa</span>
+              </label>
+            </div>
+          </div>
+  
+          <div class="modal-footer-custom">
+            <button type="submit" class="btn-primary-action" [disabled]="savingModal()">
+              {{ savingModal() ? 'Guardando...' : '💾 Guardar Categoría' }}
+            </button>
+            <button type="button" class="btn-secondary-action" (click)="closeModal()">
+              Cancelar
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-</div>
-}
+  }
+  
+  <!-- ===================================================
+       MODAL CONFIRMACIÓN ELIMINAR
+       =================================================== -->
+  @if (deleteConfirmId()) {
+    <div class="modal-overlay-fix">
+      <div class="modal-box-center">
+        <div class="modal-header-custom">
+          <h5>⚠️ Confirmar Eliminación</h5>
+          <button type="button" class="btn-close-icon" (click)="cancelDelete()">✕</button>
+        </div>
+        <div class="modal-body-custom text-center">
+          <p>¿Estás seguro de eliminar esta categoría?</p>
+          <small class="muted">Asegúrate de que no tenga subcategorías o productos vinculados.</small>
+        </div>
+        <div class="modal-footer-custom">
+          <button type="button" class="btn-danger-action" (click)="doDelete()">🗑️ Eliminar</button>
+          <button type="button" class="btn-secondary-action" (click)="cancelDelete()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  }

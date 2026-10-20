@@ -74,14 +74,29 @@ export const routes: Routes = [
                 title: 'Stock - Admin'
             },
             {
+                path: 'pos',
+                loadComponent: () => import('./features/admin/pos/nueva-venta').then(m => m.NuevaVentaComponent),
+                title: 'Nueva Venta - Admin'
+            },
+            {
+                path: 'ventas/nueva',
+                redirectTo: '/admin/pos',
+                pathMatch: 'full'
+            },
+            {
                 path: 'ventas',
                 loadComponent: () => import('./features/admin/ventas/ventas').then(m => m.Ventas),
                 title: 'Ventas - Admin'
             },
             {
+                path: 'ventas-historial',
+                loadComponent: () => import('./features/admin/ventas-historial/ventas-historial').then(m => m.VentasHistorialComponent),
+                title: 'Historial de ventas - Admin'
+            },
+            {
                 path: 'caja',
                 loadComponent: () => import('./features/admin/caja/caja').then(m => m.Caja),
-                title: 'Caja - Admin'
+                title: 'Caja y Cobranza - Admin'
             },
             {
                 path: 'proveedores',
