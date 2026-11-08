@@ -24,6 +24,8 @@ export class VentasHistorialComponent implements OnInit {
   busqueda = '';
   filtroRangoFecha: 'hoy' | 'semana' | 'mes' | 'todos' = 'todos';
   filtroEstado: 'todos' | 'completada' | 'anulada' | 'pendiente' = 'todos';
+  readonly pageSize = 10;
+  page = signal(1);
 
   // Modales
   ventaSeleccionada = signal<Venta | null>(null);
@@ -55,6 +57,35 @@ export class VentasHistorialComponent implements OnInit {
         || (v.cliente?.nombre_completo || '').toLowerCase().includes(query)
         || comprobante.includes(query);
     });
+  }
+
+  totalPages(): number {
+    return Math.max(1, Math.ceil(this.ventasFiltradas().length / this.pageSize));
+  }
+
+  currentPage(): number {
+    return Math.min(this.page(), this.totalPages());
+  }
+
+  ventasVisibles(): Venta[] {
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return this.ventasFiltradas().slice(start, start + this.pageSize);
+  }
+
+  rangoPaginacion(): string {
+    const total = this.ventasFiltradas().length;
+    if (!total) return '0 de 0';
+    const start = (this.currentPage() - 1) * this.pageSize + 1;
+    const end = Math.min(this.currentPage() * this.pageSize, total);
+    return `${start}–${end} de ${total}`;
+  }
+
+  reiniciarPagina(): void {
+    this.page.set(1);
+  }
+
+  goToPage(pagina: number): void {
+    this.page.set(Math.min(Math.max(1, pagina), this.totalPages()));
   }
 
   esCompletada(venta: Venta): boolean {

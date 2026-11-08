@@ -41,17 +41,18 @@
             class="input-custom" 
             placeholder="🔍 Buscar por N° comprobante, cliente..."
             [(ngModel)]="busqueda"
+            (ngModelChange)="reiniciarPagina()"
           />
         </div>
   
         <div class="filter-options">
-          <select class="input-custom select-custom" [(ngModel)]="filtroRangoFecha">
+          <select class="input-custom select-custom" [(ngModel)]="filtroRangoFecha" (ngModelChange)="reiniciarPagina()">
             <option value="todos">Todas las fechas</option>
             <option value="hoy">Hoy</option>
             <option value="semana">Últimos 7 días</option>
             <option value="mes">Últimos 30 días</option>
           </select>
-          <select class="input-custom select-custom" [(ngModel)]="filtroEstado">
+          <select class="input-custom select-custom" [(ngModel)]="filtroEstado" (ngModelChange)="reiniciarPagina()">
             <option value="todos">Todos los estados</option>
             <option value="completada">Completadas</option>
             <option value="pendiente">Pendientes</option>
@@ -80,7 +81,7 @@
                 <td colspan="7" class="empty-table">Cargando historial...</td>
               </tr>
             } @else {
-            @for (v of ventasFiltradas(); track v.id) {
+            @for (v of ventasVisibles(); track v.id) {
               <tr>
                 <td>
                   <strong class="text-white">#{{ v.id }}</strong>
@@ -119,6 +120,21 @@
             }
           </tbody>
         </table>
+
+        @if (!loading()) {
+          <div class="pagination-bar mt-3">
+            <span class="page-info">Mostrando {{ rangoPaginacion() }} ventas</span>
+            <div class="page-controls">
+              <button type="button" class="btn-page" [disabled]="currentPage() <= 1" (click)="goToPage(currentPage() - 1)">
+                Anterior
+              </button>
+              <span class="page-indicator">Página {{ currentPage() }} de {{ totalPages() }}</span>
+              <button type="button" class="btn-page" [disabled]="currentPage() >= totalPages()" (click)="goToPage(currentPage() + 1)">
+                Siguiente
+              </button>
+            </div>
+          </div>
+        }
       </div>
     </section>
   </div>

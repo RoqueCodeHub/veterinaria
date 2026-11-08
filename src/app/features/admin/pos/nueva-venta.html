@@ -5,6 +5,11 @@
         <h1 class="page-title">Punto de Venta (POS)</h1>
         <p class="page-subtitle">Selección rápida de productos y envío a cobranza</p>
       </div>
+      <button type="button" class="btn-ver-carrito" (click)="verCarrito()">
+        Ver carrito
+        <span class="cart-count">{{ cantidadItems() }}</span>
+        <span>S/ {{ totalCart() | number:'1.2-2' }}</span>
+      </button>
     </header>
   
     @if (error()) {
@@ -12,71 +17,86 @@
     }
   
     <div class="pos-grid">
-      <!-- COLUMNA IZQUIERDA: CATÁLOGO DE PRODUCTOS -->
-      <section class="card-panel catalog-panel">
+      <section class="pos-catalog">
         <div class="search-bar">
           <input 
             type="text" 
             class="input-custom search-input" 
             placeholder="🔍 Buscar por producto, servicio o código de barras..."
             [(ngModel)]="busqueda"
+            (ngModelChange)="onBusqueda($event)"
           />
         </div>
   
         <div class="category-chips">
-          @for (cat of categorias(); track cat) {
+          <button
+            type="button"
+            class="chip-btn"
+            [class.active]="categoriaSeleccionada === 'todas'"
+            (click)="seleccionarCategoria('todas')"
+          >
+            Todas
+          </button>
+          @for (cat of filtros(); track cat) {
             <button 
               type="button" 
               class="chip-btn" 
               [class.active]="categoriaSeleccionada.toLowerCase() === cat.toLowerCase()"
-              (click)="categoriaSeleccionada = cat"
+              (click)="seleccionarCategoria(cat)"
             >
-              {{ cat | titlecase }}
+              {{ cat }}
             </button>
           }
         </div>
   
-        <div class="products-table-wrap">
-          <table class="products-table">
-            <thead>
-              <tr>
-                <th>Producto</th>
-                <th>Categoría</th>
-                <th class="num">Precio</th>
-                <th class="num">Stock</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (prod of productosFiltrados(); track prod.id) {
-                <tr [class.agotado]="prod.stock <= 0" (click)="agregarAlCarrito(prod)">
-                  <td class="product-name">{{ prod.nombre }}</td>
-                  <td class="product-cat">{{ prod.categoria }}</td>
-                  <td class="num product-price">S/ {{ prod.precio | number:'1.2-2' }}</td>
-                  <td class="num product-stock" [class.no-stock]="prod.stock <= 0">
-                    {{ prod.stock > 0 ? prod.stock : 'Agotado' }}
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="4" class="empty-catalog">
-                    @if (loadingProductos()) {
-                      Cargando productos desde la base de datos...
-                    } @else {
-                      No se encontraron productos disponibles.
-                    }
-                  </td>
-                </tr>
+        <div class="product-cards" #catalogo (scroll)="onScroll($event)">
+          @for (prod of productosVisibles(); track prod.id) {
+            <article class="product-card" [class.agotado]="prod.stock <= 0">
+              <span class="card-cat">{{ prod.categoria }}</span>
+              <h3 class="card-name">{{ prod.nombre }}</h3>
+              <p class="card-meta">{{ prod.stock > 0 ? prod.stock + ' u. en stock' : 'Agotado' }}</p>
+              <div class="card-foot">
+                <strong>S/ {{ prod.precio | number:'1.2-2' }}</strong>
+                <button
+                  type="button"
+                  class="btn-add"
+                  [disabled]="prod.stock <= 0"
+                  (click)="agregarAlCarrito(prod)"
+                >
+                  {{ prod.stock <= 0 ? 'Sin stock' : 'Agregar' }}
+                </button>
+              </div>
+            </article>
+          } @empty {
+            <p class="empty-catalog">
+              @if (loadingProductos()) {
+                Cargando productos desde la base de datos...
+              } @else {
+                No se encontraron productos disponibles.
               }
-            </tbody>
-          </table>
+            </p>
+          }
+          @if (quedanMas()) {
+            <p class="scroll-hint">Desplázate para ver más productos</p>
+          }
         </div>
       </section>
-  
-      <!-- COLUMNA DERECHA: CARRITO Y SELECCIÓN DE CLIENTE -->
-      <section class="card-panel cart-panel">
-        <h2 class="panel-title">Resumen de Venta</h2>
-  
-        <!-- Lista desplegable de Clientes -->
+    </div>
+  </div>
+
+  <!-- Resumen oculto hasta pulsar Ver carrito -->
+  @if (carritoAbierto()) {
+    <div class="cart-overlay" (click)="cerrarCarrito()">
+      <section class="card-panel cart-panel cart-drawer" (click)="$event.stopPropagation()">
+        <div class="cart-head">
+          <h2 class="panel-title">Resumen de Venta</h2>
+          <button type="button" class="btn-cerrar-carrito" (click)="cerrarCarrito()">Cerrar</button>
+        </div>
+
+        @if (error()) {
+          <div class="alert alert-danger">{{ error() }}</div>
+        }
+
         <div class="client-selection-box mb-3">
           <div class="form-group">
             <label>Cliente (Base de Datos):</label>
@@ -157,8 +177,8 @@
         </div>
       </section>
     </div>
-  </div>
-  
+  }
+
   <!-- ===================================================
        VENTANA EMERGENTE CORREGIDA (OVERLAY FIX)
        =================================================== -->

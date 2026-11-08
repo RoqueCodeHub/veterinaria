@@ -127,34 +127,45 @@ html[data-theme="light"] .gal-glow {
     opacity: 0.28;
 }
 
-/* Admin: el modo oscuro queda en cada pantalla. Aquí solo el modo claro. */
+/* Admin en modo claro: la misma paleta del dashboard. */
 html[data-theme="light"] .admin-page,
-html[data-theme="light"] .admin-content {
-    background: #f4f2fb;
-    color: #1c1433;
-}
-
+html[data-theme="light"] .admin-content,
 html[data-theme="light"] .admin-content > * {
-    color: #1c1433;
+    background: #edf1f7;
+    color: #222b45;
 }
 
 html[data-theme="light"] .sidebar,
 html[data-theme="light"] .admin-topbar {
-    background: rgba(255, 255, 255, 0.96);
-    border-color: rgba(42, 22, 140, 0.12);
-    color: #1c1433;
+    background: #ffffff;
+    border-color: #e4e9f2;
+    color: #222b45;
+    box-shadow: none;
 }
 
-html[data-theme="light"] .menu-btn {
-    background: rgba(42, 22, 140, 0.08);
-    border-color: rgba(42, 22, 140, 0.18);
-    color: #1c1433;
+html[data-theme="light"] .menu-btn,
+html[data-theme="light"] .admin-page .theme-toggle {
+    background: #f7f9fc;
+    border-color: #e4e9f2;
+    color: #222b45;
+}
+
+html[data-theme="light"] .admin-page .theme-toggle:hover,
+html[data-theme="light"] .menu-btn:hover {
+    background: rgba(51, 102, 255, 0.08);
+    color: #3366ff;
 }
 
 html[data-theme="light"] .sidebar-brand,
 html[data-theme="light"] .sidebar-user,
 html[data-theme="light"] .sidebar-logout {
-    border-color: rgba(42, 22, 140, 0.12);
+    border-color: #e4e9f2;
+}
+
+html[data-theme="light"] .brand-icon,
+html[data-theme="light"] .sidebar-user-avatar {
+    background: #3366ff;
+    box-shadow: none;
 }
 
 html[data-theme="light"] .sidebar-brand span,
@@ -166,36 +177,35 @@ html[data-theme="light"] .admin-page .modal-title,
 html[data-theme="light"] .admin-page .user-name,
 html[data-theme="light"] .admin-page .info-name,
 html[data-theme="light"] .admin-page .stat-value,
+html[data-theme="light"] .admin-page .metric-value,
 html[data-theme="light"] .admin-page .venta-cliente,
 html[data-theme="light"] .admin-page .card-name,
 html[data-theme="light"] .admin-page .cart-name,
+html[data-theme="light"] .admin-page .card-title,
+html[data-theme="light"] .admin-page .panel-title,
+html[data-theme="light"] .admin-page .table-title,
 html[data-theme="light"] .admin-page .caja-head h2,
 html[data-theme="light"] .admin-page .total-row,
-html[data-theme="light"] .admin-page .activity-action {
-    color: #1c1433;
+html[data-theme="light"] .admin-page .grand-total,
+html[data-theme="light"] .admin-page .activity-action,
+html[data-theme="light"] .admin-page h1,
+html[data-theme="light"] .admin-page h2,
+html[data-theme="light"] .admin-page h3,
+html[data-theme="light"] .admin-page .text-white {
+    color: #222b45;
 }
 
 html[data-theme="light"] .nav-item,
 html[data-theme="light"] .sidebar-user-email,
 html[data-theme="light"] .sidebar-logout {
-    color: #5c5478;
+    color: #8f9bb3;
 }
 
 html[data-theme="light"] .nav-item:hover,
 html[data-theme="light"] .nav-item.active {
-    background: rgba(42, 22, 140, 0.08);
-    color: #4122DD;
-}
-
-html[data-theme="light"] .admin-page .theme-toggle {
-    background: rgba(42, 22, 140, 0.08);
-    border-color: rgba(42, 22, 140, 0.18);
-    color: #1c1433;
-}
-
-html[data-theme="light"] .admin-page .theme-toggle:hover {
-    background: rgba(42, 22, 140, 0.14);
-    color: #4122DD;
+    background: rgba(51, 102, 255, 0.1);
+    border-color: transparent;
+    color: #3366ff;
 }
 
 html[data-theme="light"] .admin-page .page-subtitle,
@@ -206,15 +216,20 @@ html[data-theme="light"] .admin-page .sub-text,
 html[data-theme="light"] .admin-page .product-desc,
 html[data-theme="light"] .admin-page .confirm-text,
 html[data-theme="light"] .admin-page .empty-msg,
+html[data-theme="light"] .admin-page .empty-state,
+html[data-theme="light"] .admin-page .empty-table,
 html[data-theme="light"] .admin-page .filter-label,
 html[data-theme="light"] .admin-page .stat-label,
 html[data-theme="light"] .admin-page .stat-sub,
+html[data-theme="light"] .admin-page .metric-label,
+html[data-theme="light"] .admin-page .metric-sub,
 html[data-theme="light"] .admin-page .meta-label,
 html[data-theme="light"] .admin-page .info-email,
 html[data-theme="light"] .admin-page .activity-meta,
 html[data-theme="light"] .admin-page .venta-fecha,
 html[data-theme="light"] .admin-page .greeting-text,
 html[data-theme="light"] .admin-page .page-info,
+html[data-theme="light"] .admin-page .page-indicator,
 html[data-theme="light"] .admin-page .section-label,
 html[data-theme="light"] .admin-page .card-meta,
 html[data-theme="light"] .admin-page .card-cat,
@@ -226,7 +241,7 @@ html[data-theme="light"] .admin-page .cart-sub,
 html[data-theme="light"] .admin-page label,
 html[data-theme="light"] .admin-page th,
 html[data-theme="light"] .admin-page .ticket small {
-    color: #5c5478;
+    color: #8f9bb3;
 }
 
 html[data-theme="light"] .admin-page td,
@@ -234,37 +249,54 @@ html[data-theme="light"] .admin-page .checkbox-label,
 html[data-theme="light"] .admin-page .chip,
 html[data-theme="light"] .admin-page .page-btn,
 html[data-theme="light"] .admin-page .tab-btn,
+html[data-theme="light"] .admin-page .chip-btn,
 html[data-theme="light"] .admin-page .ticket,
 html[data-theme="light"] .admin-page .cobro ul {
-    color: #1c1433;
+    color: #222b45;
+    border-color: #e4e9f2;
 }
 
 html[data-theme="light"] .admin-page .table-card,
 html[data-theme="light"] .admin-page .card,
+html[data-theme="light"] .admin-page .card-panel,
+html[data-theme="light"] .admin-page .metric-card,
 html[data-theme="light"] .admin-page .stat-card,
+html[data-theme="light"] .admin-page .date-filter-panel,
 html[data-theme="light"] .admin-page .modal,
+html[data-theme="light"] .admin-page .modal-card,
 html[data-theme="light"] .admin-page .tabs,
 html[data-theme="light"] .admin-page .lista,
 html[data-theme="light"] .admin-page .cobro,
 html[data-theme="light"] .admin-page .catalog,
 html[data-theme="light"] .admin-page .caja {
     background: #ffffff;
-    border-color: rgba(42, 22, 140, 0.14);
-    box-shadow: 0 8px 24px rgba(42, 22, 140, 0.06);
+    border-color: #e4e9f2;
+    box-shadow: 0 8px 24px rgba(44, 51, 73, 0.06);
+    color: #222b45;
 }
 
 html[data-theme="light"] .admin-page .product-card,
 html[data-theme="light"] .admin-page .ticket,
 html[data-theme="light"] .admin-page .venta-row,
 html[data-theme="light"] .admin-page .add-item-section,
-html[data-theme="light"] .admin-page .row-parent td {
-    background: #f7f5ff;
+html[data-theme="light"] .admin-page .row-parent td,
+html[data-theme="light"] .admin-page .tab-btn,
+html[data-theme="light"] .admin-page .chip,
+html[data-theme="light"] .admin-page .chip-btn,
+html[data-theme="light"] .admin-page .page-btn {
+    background: #f7f9fc;
 }
 
 html[data-theme="light"] .admin-page tr:hover td,
 html[data-theme="light"] .admin-page .row-child:hover td,
 html[data-theme="light"] .admin-page .row-parent:hover td {
-    background: rgba(42, 22, 140, 0.06);
+    background: #f7f9fc;
+}
+
+html[data-theme="light"] .admin-page .custom-table,
+html[data-theme="light"] .admin-page .products-table,
+html[data-theme="light"] .admin-page .items-table {
+    color: #222b45;
 }
 
 html[data-theme="light"] .admin-page input,
@@ -272,16 +304,18 @@ html[data-theme="light"] .admin-page select,
 html[data-theme="light"] .admin-page textarea,
 html[data-theme="light"] .admin-page .search,
 html[data-theme="light"] .admin-page .filter-select,
+html[data-theme="light"] .admin-page .input-custom,
 html[data-theme="light"] .admin-page .item-select,
 html[data-theme="light"] .admin-page .item-qty {
     background: #ffffff;
-    color: #1c1433;
-    border-color: rgba(42, 22, 140, 0.18);
+    color: #222b45;
+    border-color: #e4e9f2;
+    color-scheme: light;
 }
 
 html[data-theme="light"] .admin-page input::placeholder,
 html[data-theme="light"] .admin-page textarea::placeholder {
-    color: rgba(28, 20, 51, 0.45);
+    color: #8f9bb3;
 }
 
 html[data-theme="light"] .admin-page select option,
@@ -289,43 +323,312 @@ html[data-theme="light"] .admin-page .filter-select option,
 html[data-theme="light"] .admin-page .item-select option,
 html[data-theme="light"] .admin-page .caja select option {
     background: #ffffff;
-    color: #1c1433;
+    color: #222b45;
 }
 
-html[data-theme="light"] .admin-page .modal .btn-cancel {
-    color: #5c5478;
-    border-color: rgba(42, 22, 140, 0.22);
+html[data-theme="light"] .admin-page .btn-primary,
+html[data-theme="light"] .admin-page .btn-save,
+html[data-theme="light"] .admin-page .btn-add,
+html[data-theme="light"] .admin-page .btn-add-item {
+    background: #3366ff;
+    background-image: none;
+    border-color: transparent;
+    color: #ffffff;
 }
 
-html[data-theme="light"] .admin-page .modal .btn-cancel:hover {
-    color: #1c1433;
+html[data-theme="light"] .admin-page .btn-primary:hover,
+html[data-theme="light"] .admin-page .btn-save:hover,
+html[data-theme="light"] .admin-page .btn-add:hover {
+    background: #274bdb;
+    color: #ffffff;
 }
 
+html[data-theme="light"] .admin-page .btn-link,
+html[data-theme="light"] .admin-page .table-title,
+html[data-theme="light"] .admin-page .total-cell,
 html[data-theme="light"] .admin-page .ticket span,
 html[data-theme="light"] .admin-page .card-foot strong,
 html[data-theme="light"] .admin-page .total strong,
 html[data-theme="light"] .admin-page .caja-totales strong,
-html[data-theme="light"] .admin-page .cliente-tag {
-    color: #4122DD;
+html[data-theme="light"] .admin-page .cliente-tag,
+html[data-theme="light"] .admin-page .text-primary,
+html[data-theme="light"] .admin-page .text-indigo {
+    color: #3366ff;
 }
 
-html[data-theme="light"] .admin-page .ticket.active {
-    background: linear-gradient(135deg, #2A168C, #4122DD);
+html[data-theme="light"] .admin-page .text-success,
+html[data-theme="light"] .admin-page .text-ok,
+html[data-theme="light"] .admin-page .caja-ok {
+    color: #00b887;
+}
+
+html[data-theme="light"] .admin-page .text-danger,
+html[data-theme="light"] .admin-page .caja-error {
+    color: #ff3d71;
+}
+
+html[data-theme="light"] .admin-page .text-warning {
+    color: #ffaa00;
+}
+
+html[data-theme="light"] .admin-page .text-teal,
+html[data-theme="light"] .admin-page .text-info {
+    color: #0095ff;
+}
+
+html[data-theme="light"] .admin-page .badge-success,
+html[data-theme="light"] .admin-page .badge-completada,
+html[data-theme="light"] .admin-page .badge-active {
+    background: rgba(0, 214, 143, 0.15);
+    color: #00b887;
     border-color: transparent;
 }
 
+html[data-theme="light"] .admin-page .badge-danger,
+html[data-theme="light"] .admin-page .badge-anulada {
+    background: rgba(255, 61, 113, 0.12);
+    color: #ff3d71;
+    border-color: transparent;
+}
+
+html[data-theme="light"] .admin-page .badge-pendiente {
+    background: rgba(51, 102, 255, 0.12);
+    color: #3366ff;
+    border-color: transparent;
+}
+
+html[data-theme="light"] .admin-page .modal .btn-cancel,
+html[data-theme="light"] .admin-page .btn-cancel,
+html[data-theme="light"] .admin-page .btn-close-modal {
+    background: #ffffff;
+    color: #8f9bb3;
+    border-color: #e4e9f2;
+}
+
+html[data-theme="light"] .admin-page .modal .btn-cancel:hover,
+html[data-theme="light"] .admin-page .btn-cancel:hover,
+html[data-theme="light"] .admin-page .btn-close-modal:hover {
+    color: #222b45;
+    background: #f7f9fc;
+}
+
+html[data-theme="light"] .admin-page .btn-danger-solid,
+html[data-theme="light"] .admin-page .btn-anular,
+html[data-theme="light"] .admin-page .btn-delete,
+html[data-theme="light"] .admin-page .btn-cancel-sale {
+    color: #ff3d71;
+    border-color: rgba(255, 61, 113, 0.35);
+}
+
 html[data-theme="light"] .admin-page .ticket.active,
-html[data-theme="light"] .admin-page .ticket.active span,
-html[data-theme="light"] .admin-page .ticket.active small,
 html[data-theme="light"] .admin-page .chip.active,
-html[data-theme="light"] .admin-page .tab-btn.active,
-html[data-theme="light"] .admin-page .page-btn.active {
+html[data-theme="light"] .admin-page .chip-btn.active,
+html[data-theme="light"] .admin-page .page-btn.active,
+html[data-theme="light"] .admin-page .segmented-control button.active,
+html[data-theme="light"] .admin-page .method-chips button.active {
+    background: #3366ff;
+    border-color: #3366ff;
     color: #ffffff;
 }
 
+html[data-theme="light"] .admin-page .ticket.active span,
+html[data-theme="light"] .admin-page .ticket.active small {
+    color: #ffffff;
+}
+
+html[data-theme="light"] .admin-page .tab-btn.active {
+    background: #ffffff;
+    color: #3366ff;
+    border-color: #3366ff;
+}
+
+html[data-theme="light"] .admin-page .tabs-navigation .tab-btn,
+html[data-theme="light"] .admin-page .tabs-navigation .tab-btn.active {
+    background: transparent;
+}
+
 html[data-theme="light"] .admin-page .qty button {
-    color: #1c1433;
-    border-color: rgba(42, 22, 140, 0.25);
+    color: #222b45;
+    border-color: #e4e9f2;
+    background: #ffffff;
+}
+
+html[data-theme="light"] .admin-page .modal-overlay,
+html[data-theme="light"] .admin-page .modal-overlay-fix,
+html[data-theme="light"] .admin-page .modal-backdrop {
+    background: rgba(34, 43, 69, 0.45) !important;
+}
+
+html[data-theme="light"] .admin-page .modal-box-center,
+html[data-theme="light"] .admin-page .modal-card,
+html[data-theme="light"] .admin-page .modal-header-custom,
+html[data-theme="light"] .admin-page .modal-body-custom,
+html[data-theme="light"] .admin-page .modal-footer-custom,
+html[data-theme="light"] .admin-page .modal-header,
+html[data-theme="light"] .admin-page .modal-body,
+html[data-theme="light"] .admin-page .modal-footer {
+    background: #ffffff !important;
+    border-color: #e4e9f2 !important;
+    color: #222b45 !important;
+    box-shadow: 0 18px 40px rgba(44, 51, 73, 0.16);
+}
+
+html[data-theme="light"] .admin-page .text-success,
+html[data-theme="light"] .admin-page .metric-value.text-success { color: #00b887 !important; }
+html[data-theme="light"] .admin-page .text-primary,
+html[data-theme="light"] .admin-page .text-indigo,
+html[data-theme="light"] .admin-page .metric-value.text-primary,
+html[data-theme="light"] .admin-page .metric-value.text-indigo { color: #3366ff !important; }
+html[data-theme="light"] .admin-page .text-danger,
+html[data-theme="light"] .admin-page .metric-value.text-danger { color: #ff3d71 !important; }
+html[data-theme="light"] .admin-page .text-warning,
+html[data-theme="light"] .admin-page .metric-value.text-warning { color: #ffaa00 !important; }
+html[data-theme="light"] .admin-page .text-teal,
+html[data-theme="light"] .admin-page .text-info,
+html[data-theme="light"] .admin-page .metric-value.text-teal { color: #0095ff !important; }
+html[data-theme="light"] .admin-page .text-white,
+html[data-theme="light"] .admin-page .metric-value { color: #222b45 !important; }
+
+html[data-theme="light"] .admin-page .category-badge,
+html[data-theme="light"] .admin-page .ref-tag,
+html[data-theme="light"] .admin-page .btn-icon,
+html[data-theme="light"] .admin-page .btn-page,
+html[data-theme="light"] .admin-page .btn-action-adjust,
+html[data-theme="light"] .admin-page .btn-secondary-action {
+    background: #f7f9fc !important;
+    border-color: #e4e9f2 !important;
+    color: #222b45 !important;
+}
+
+html[data-theme="light"] .admin-page .btn-edit,
+html[data-theme="light"] .admin-page .btn-view,
+html[data-theme="light"] .admin-page .btn-action-adjust {
+    color: #3366ff !important;
+}
+
+html[data-theme="light"] .admin-page .btn-delete,
+html[data-theme="light"] .admin-page .btn-anular {
+    color: #ff3d71 !important;
+    background: #fff5f8 !important;
+}
+
+html[data-theme="light"] .admin-page .btn-primary-action {
+    background: #3366ff !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="light"] .admin-page .btn-danger-action {
+    background: #ff3d71 !important;
+    color: #ffffff !important;
+}
+
+html[data-theme="light"] .admin-page .pagination-bar,
+html[data-theme="light"] .admin-page .table-header,
+html[data-theme="light"] .admin-page .custom-table th,
+html[data-theme="light"] .admin-page .custom-table td {
+    border-color: #edf1f7;
+}
+
+html[data-theme="light"] .admin-page .btn-cerrar-carrito {
+    color: #222b45;
+    border-color: #e4e9f2;
+    background: #f7f9fc;
+}
+
+html[data-theme="light"] .admin-page .caja-status-badge,
+html[data-theme="light"] .admin-page .ticket-card,
+html[data-theme="light"] .admin-page .summary-box,
+html[data-theme="light"] .admin-page .digital-box,
+html[data-theme="light"] .admin-page .segmented-control button,
+html[data-theme="light"] .admin-page .method-chips button,
+html[data-theme="light"] .admin-page .quick-cash-buttons button {
+    background: #f7f9fc;
+    border-color: #e4e9f2;
+    color: #222b45;
+}
+
+html[data-theme="light"] .admin-page .ticket-card.active {
+    background: #3366ff;
+    border-color: #3366ff;
+    color: #ffffff;
+}
+
+html[data-theme="light"] .admin-page .ticket-card.active .ticket-header,
+html[data-theme="light"] .admin-page .ticket-card.active .ticket-footer {
+    color: #ffffff;
+}
+
+html[data-theme="light"] .admin-page .badge-price {
+    background: #3366ff;
+    color: #ffffff;
+}
+
+html[data-theme="light"] .admin-page .ticket-card.active .badge-price {
+    background: #ffffff;
+    color: #3366ff;
+}
+
+html[data-theme="light"] .admin-page .summary-row,
+html[data-theme="light"] .admin-page .status-info {
+    color: #222b45;
+}
+
+html[data-theme="light"] .admin-page .total-amount {
+    color: #3366ff;
+}
+
+html[data-theme="light"] .admin-page .prefix {
+    background: #edf1f7;
+    color: #222b45;
+}
+
+html[data-theme="light"] .admin-page .dot-open {
+    color: #00b887;
+}
+
+html[data-theme="light"] .admin-page .products-table-wrap,
+html[data-theme="light"] .admin-page .cart-item {
+    background: #ffffff;
+    border-color: #e4e9f2;
+    color: #222b45;
+}
+
+html[data-theme="light"] .admin-page .products-table th {
+    background: #f7f9fc;
+    color: #8f9bb3;
+    border-color: #e4e9f2;
+}
+
+html[data-theme="light"] .admin-page .products-table td,
+html[data-theme="light"] .admin-page .product-name,
+html[data-theme="light"] .admin-page .product-stock,
+html[data-theme="light"] .admin-page .item-title {
+    color: #222b45;
+    border-color: #edf1f7;
+}
+
+html[data-theme="light"] .admin-page .product-cat,
+html[data-theme="light"] .admin-page .item-subtotal {
+    color: #3366ff;
+}
+
+html[data-theme="light"] .admin-page .products-table td.product-price,
+html[data-theme="light"] .admin-page .product-price {
+    color: #00b887;
+}
+
+html[data-theme="light"] .admin-page .products-table tbody tr:hover {
+    background: #f7f9fc;
+}
+
+html[data-theme="light"] .admin-page .btn-qty {
+    background: #edf1f7;
+    color: #222b45;
+}
+
+html[data-theme="light"] .admin-page .btn-send-caja {
+    background: #3366ff;
+    color: #ffffff;
 }
 
 /* Admin en celular y tablet. En escritorio cada pantalla conserva su diseño. */
@@ -429,5 +732,172 @@ html[data-theme="light"] .admin-page .qty button {
         flex: 1;
         padding-left: 8px;
         padding-right: 8px;
+    }
+}
+
+/* Celular: tarjetas en dos columnas y tablas que se leen deslizando, sin aplastar el texto. */
+@media (max-width: 900px) {
+    html .admin-page .metrics-grid,
+    html .admin-page .payment-methods-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    html .admin-page .caja-grid,
+    html .admin-page .content-grid,
+    html .admin-page .form-grid-2,
+    html .admin-page .digital-summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    html .admin-content > *,
+    html .admin-page .caja-wrapper,
+    html .admin-page .caja-grid,
+    html .admin-page .caja-grid > *,
+    html .admin-page .card-panel,
+    html .admin-page .ventas-wrapper,
+    html .admin-page .reportes-wrapper,
+    html .admin-page .productos-wrapper,
+    html .admin-page .table-container,
+    html .admin-page .table-responsive {
+        min-width: 0;
+        max-width: 100%;
+    }
+
+    html .admin-page .filters-bar,
+    html .admin-page .filter-options,
+    html .admin-page .filter-presets,
+    html .admin-page .custom-dates-group,
+    html .admin-page .caja-header,
+    html .admin-page .caja-status-badge,
+    html .admin-page .pagination-bar,
+    html .admin-page .quick-cash-buttons {
+        flex-wrap: wrap;
+    }
+
+    html .admin-page .filters-bar > *,
+    html .admin-page .filter-options,
+    html .admin-page .search-field,
+    html .admin-page .filters-bar .input-custom,
+    html .admin-page .filter-options .input-custom,
+    html .admin-page .date-field,
+    html .admin-page .date-field .input-custom {
+        min-width: 0;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 720px) {
+    html .admin-page .page-header,
+    html .admin-page .filters-bar,
+    html .admin-page .filter-options,
+    html .admin-page .custom-dates-group,
+    html .admin-page .caja-header,
+    html .admin-page .caja-status-badge,
+    html .admin-page .pagination-bar {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+    }
+
+    html .admin-page .filters-bar > *,
+    html .admin-page .filter-options,
+    html .admin-page .search-field,
+    html .admin-page .filters-bar .input-custom,
+    html .admin-page .filter-options .input-custom,
+    html .admin-page .search-field input,
+    html .admin-page .date-field .input-custom,
+    html .admin-page .btn-refresh {
+        width: 100%;
+    }
+
+    html .admin-page .metric-card {
+        min-width: 0;
+        padding: 12px;
+    }
+
+    html .admin-page .metric-label {
+        font-size: 0.68rem;
+        line-height: 1.25;
+    }
+
+    html .admin-page .metric-value {
+        font-size: 1.2rem;
+    }
+
+    html .admin-page .table-responsive,
+    html .admin-page .table-container,
+    html .admin-page .items-table-wrap {
+        display: block;
+        width: 100%;
+        max-width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    html .admin-page .custom-table {
+        table-layout: auto !important;
+        width: max-content;
+        min-width: 680px;
+    }
+
+    html .admin-page .custom-table th,
+    html .admin-page .custom-table td {
+        width: auto !important;
+        white-space: nowrap;
+        overflow-wrap: normal;
+    }
+
+    html .admin-page .tabs-navigation,
+    html .admin-page .tab-container {
+        flex-wrap: wrap;
+    }
+
+    html .admin-page .tabs-navigation .tab-btn {
+        flex: 1 1 100%;
+    }
+
+    html .admin-page .page-controls {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+
+    html .admin-page .modal-box-center,
+    html .admin-page .modal-lg {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+    }
+
+    html .admin-page .checkboxes-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    html .admin-page .quick-cash-buttons button {
+        flex: 1 1 30%;
+    }
+
+    html .admin-page app-stock,
+    html .admin-page app-clientes,
+    html .admin-page app-proveedores,
+    html .admin-page app-categorias,
+    html .admin-page app-caja,
+    html .admin-page app-reportes,
+    html .admin-page app-ventas-historial {
+        min-height: 0;
+        padding: 0;
+        background: transparent;
+    }
+
+    html .admin-page .pos-header {
+        align-items: flex-start;
+    }
+
+    html .admin-page .btn-ver-carrito {
+        padding: 8px 10px;
+        font-size: 0.82rem;
     }
 }

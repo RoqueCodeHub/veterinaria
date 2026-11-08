@@ -31,13 +31,15 @@ export class Dashboard implements OnInit, OnDestroy {
   productos = signal<Producto[]>([]);
   clientes = signal<Cliente[]>([]);
 
+  private readonly dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
   // Métricas Calculadas
   totalProductosActivos = computed(() => this.productos().filter(p => p.activo !== false).length);
   totalClientesActivos = computed(() => this.clientes().filter(c => c.activo !== false).length);
 
   ventasHoy = computed(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return this.ventas().filter(v => (v.fecha || '').startsWith(today) && (v.estado || '').toLowerCase() !== 'anulada');
+    const today = this.clave(new Date());
+    return this.ventas().filter(v => this.claveVenta(v) === today && this.estadoDe(v) !== 'anulada');
   });
 
   totalVentasHoy = computed(() =>
@@ -63,6 +65,83 @@ export class Dashboard implements OnInit, OnDestroy {
   ultimasVentas = computed(() =>
     [...this.ventas()].reverse().slice(0, 6)
   );
+
+  semana = computed(() => {
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const puntos: {
+      clave: string;
+      label: string;
+      ordenes: number;
+      ingresos: number;
+      cobradas: number;
+      pendientes: number;
+      anuladas: number;
+      todas: number;
+    }[] = [];
+    const fin = this.finGrafico(hoy);
+    for (let i = 6; i >= 0; i--) {
+      const fecha = new Date(fin);
+      fecha.setDate(fin.getDate() - i);
+      const clave = this.clave(fecha);
+      const delDia = this.ventas().filter(v => this.claveVenta(v) === clave);
+      const vigentes = delDia.filter(v => this.estadoDe(v) !== 'anulada');
+      puntos.push({
+        clave,
+        label: this.dias[fecha.getDay()],
+        ordenes: vigentes.length,
+        ingresos: vigentes.reduce((sum, v) => sum + (parseFloat(v.total) || 0), 0),
+        cobradas: delDia.filter(v => this.estadoDe(v) === 'completada').length,
+        pendientes: delDia.filter(v => this.estadoDe(v) === 'pendiente').length,
+        anuladas: delDia.filter(v => this.estadoDe(v) === 'anulada').length,
+        todas: delDia.length,
+      });
+    }
+    return puntos.map((punto, index) => {
+      const anterior = index > 0 ? puntos[index - 1].ordenes : null;
+      const variacion = anterior == null || anterior === 0
+        ? null
+        : ((punto.ordenes - anterior) / anterior) * 100;
+      return { ...punto, variacion };
+    });
+  });
+
+  rangoEtiqueta = computed(() => {
+    const dias = this.semana();
+    const primero = dias[0]?.clave;
+    const ultimo = dias.at(-1)?.clave;
+    if (!primero || !ultimo || ultimo === this.clave(new Date())) return '7 días';
+    const corto = (clave: string) => {
+      const [, mes, dia] = clave.split('-');
+      return `${Number(dia)}/${Number(mes)}`;
+    };
+    return `${corto(primero)} – ${corto(ultimo)}`;
+  });
+
+  ingresoAyer = computed(() => this.semana().at(-2)?.ingresos ?? 0);
+
+  variacionHoy = computed(() => {
+    const ayer = this.ingresoAyer();
+    if (!ayer) return null;
+    return ((this.totalVentasHoy() - ayer) / ayer) * 100;
+  });
+
+  ordenesSemana = computed(() => this.semana().reduce((sum, d) => sum + d.todas, 0));
+  cobradasSemana = computed(() => this.semana().reduce((sum, d) => sum + d.cobradas, 0));
+  pendientesSemana = computed(() => this.semana().reduce((sum, d) => sum + d.pendientes, 0));
+  anuladasSemana = computed(() => this.semana().reduce((sum, d) => sum + d.anuladas, 0));
+
+  maxOrdenes = computed(() => Math.max(...this.semana().map(d => d.ordenes), 1));
+
+  trazoIngresos = computed(() => this.trazo(this.semana().map(d => d.ingresos)));
+  areaIngresos = computed(() => this.area(this.semana().map(d => d.ingresos)));
+  trazoOrdenes = computed(() => this.trazo(this.semana().map(d => d.ordenes)));
+  trazoCobradas = computed(() => this.trazo(this.semana().map(d => d.cobradas)));
+  trazoAnuladas = computed(() => this.trazo(this.semana().map(d => d.anuladas)));
+  trazoTodas = computed(() => this.trazo(this.semana().map(d => d.todas)));
+  areaCobradas = computed(() => this.area(this.semana().map(d => d.cobradas)));
+  areaAnuladas = computed(() => this.area(this.semana().map(d => d.anuladas)));
+  areaTodas = computed(() => this.area(this.semana().map(d => d.todas)));
 
   ngOnInit(): void {
     this.user = this.authService.getUser();
@@ -102,10 +181,90 @@ export class Dashboard implements OnInit, OnDestroy {
     this.router.navigate([ruta]);
   }
 
+  barra(ordenes: number): number {
+    return Math.round((ordenes / this.maxOrdenes()) * 100);
+  }
+
+  private finGrafico(hoy: Date): Date {
+    const claves = this.ventas()
+      .map(v => this.claveVenta(v))
+      .filter(clave => /^\d{4}-\d{2}-\d{2}$/.test(clave))
+      .sort();
+    const ultima = claves.at(-1);
+    if (!ultima) return hoy;
+    const [anio, mes, dia] = ultima.split('-').map(Number);
+    const ultimaFecha = new Date(anio, mes - 1, dia);
+    const limite = new Date(hoy);
+    limite.setDate(hoy.getDate() - 6);
+    return ultimaFecha < limite ? ultimaFecha : hoy;
+  }
+
+  private clave(fecha: Date): string {
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    return `${fecha.getFullYear()}-${mes}-${dia}`;
+  }
+
+  private claveVenta(venta: Venta): string {
+    return (venta.fecha || venta.created_at || '').slice(0, 10);
+  }
+
+  private estadoDe(venta: Venta): 'completada' | 'pendiente' | 'anulada' | 'otra' {
+    const estado = (venta.estado || venta.status || '').toLowerCase();
+    if (estado === 'anulada' || estado === 'voided' || estado === 'cancelada') return 'anulada';
+    if (estado === 'completada' || estado === 'completed' || estado === 'pagada' || estado === 'activa') return 'completada';
+    if (estado === 'pendiente' || estado === 'pending') return 'pendiente';
+    return 'otra';
+  }
+
+  private puntos(valores: number[], ancho = 320, alto = 120): { x: number; y: number }[] {
+    if (!valores.length) return [];
+    const max = Math.max(...valores, 1);
+    const paso = valores.length === 1 ? 0 : ancho / (valores.length - 1);
+    return valores.map((valor, i) => ({
+      x: i * paso,
+      y: alto - (valor / max) * (alto - 18) - 8,
+    }));
+  }
+
+  private trazo(valores: number[], ancho = 320, alto = 120): string {
+    const pts = this.puntos(valores, ancho, alto);
+    if (!pts.length) return '';
+    const n = (v: number) => v.toFixed(1);
+    if (pts.length === 1) return `M${n(pts[0].x)} ${n(pts[0].y)}`;
+    let d = `M${n(pts[0].x)} ${n(pts[0].y)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[Math.max(i - 1, 0)];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[Math.min(i + 2, pts.length - 1)];
+      const c1x = p1.x + (p2.x - p0.x) / 6;
+      const c1y = Math.min(alto - 8, Math.max(6, p1.y + (p2.y - p0.y) / 6));
+      const c2x = p2.x - (p3.x - p1.x) / 6;
+      const c2y = Math.min(alto - 8, Math.max(6, p2.y - (p3.y - p1.y) / 6));
+      d += ` C${n(c1x)} ${n(c1y)} ${n(c2x)} ${n(c2y)} ${n(p2.x)} ${n(p2.y)}`;
+    }
+    return d;
+  }
+
+  private area(valores: number[], ancho = 320, alto = 120): string {
+    const linea = this.trazo(valores, ancho, alto);
+    if (!linea) return '';
+    return `${linea} L${ancho} ${alto} L0 ${alto} Z`;
+  }
+
   estadoBadgeClass(estado: string): string {
-    const st = (estado || '').toLowerCase();
+    const st = this.estadoDe({ estado } as Venta);
     if (st === 'anulada') return 'badge-anulada';
-    if (st === 'completada' || st === 'pagada') return 'badge-completada';
+    if (st === 'completada') return 'badge-completada';
     return 'badge-pendiente';
+  }
+
+  etiquetaEstado(estado: string): string {
+    const st = this.estadoDe({ estado } as Venta);
+    if (st === 'anulada') return 'anulada';
+    if (st === 'completada') return 'cobrada';
+    if (st === 'pendiente') return 'pendiente';
+    return estado || '—';
   }
 }

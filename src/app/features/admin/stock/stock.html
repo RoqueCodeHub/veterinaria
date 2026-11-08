@@ -41,7 +41,7 @@
         type="button" 
         class="tab-btn" 
         [class.active]="tabActiva() === 'inventario'"
-        (click)="tabActiva.set('inventario')"
+        (click)="cambiarTab('inventario')"
       >
         📦 Stock Actual de Productos
       </button>
@@ -49,7 +49,7 @@
         type="button" 
         class="tab-btn" 
         [class.active]="tabActiva() === 'kardex'"
-        (click)="tabActiva.set('kardex')"
+        (click)="cambiarTab('kardex')"
       >
         📋 Historial de Movimientos (Kardex)
       </button>
@@ -65,7 +65,7 @@
             class="input-custom" 
             placeholder="🔍 Buscar producto por nombre, categoría o código..."
             [ngModel]="busquedaTexto()"
-            (ngModelChange)="busquedaTexto.set($event)"
+            (ngModelChange)="onBusqueda($event)"
           />
         </div>
   
@@ -74,7 +74,7 @@
             <select 
               class="input-custom select-custom" 
               [ngModel]="filterProductoId()" 
-              (ngModelChange)="filterProductoId.set($event)"
+              (ngModelChange)="onFiltroProducto($event)"
             >
               <option [ngValue]="null">Todos los productos</option>
               @for (p of productos(); track p.id) {
@@ -87,7 +87,7 @@
             <select 
               class="input-custom select-custom" 
               [ngModel]="filterTipo()" 
-              (ngModelChange)="filterTipo.set($event)"
+              (ngModelChange)="onFiltroTipo($event)"
             >
               <option value="todos">Todos los tipos</option>
               <option value="entrada">🟢 Entradas (Ingresos)</option>
@@ -113,7 +113,7 @@
               </tr>
             </thead>
             <tbody>
-              @for (p of productosFiltrados(); track p.id) {
+              @for (p of productosVisibles(); track p.id) {
                 @let stockActual = getProductoStockActual(p);
                 @let stockMin = p.stock_minimo || 5;
                 <tr>
@@ -144,6 +144,19 @@
               }
             </tbody>
           </table>
+
+          <div class="pagination-bar mt-3">
+            <span class="page-info">Mostrando {{ rangoPaginacion() }} productos</span>
+            <div class="page-controls">
+              <button type="button" class="btn-page" [disabled]="currentPage() <= 1" (click)="goToPage(currentPage() - 1)">
+                Anterior
+              </button>
+              <span class="page-indicator">Página {{ currentPage() }} de {{ totalPages() }}</span>
+              <button type="button" class="btn-page" [disabled]="currentPage() >= totalPages()" (click)="goToPage(currentPage() + 1)">
+                Siguiente
+              </button>
+            </div>
+          </div>
         </div>
       }
   
@@ -170,7 +183,7 @@
                 </tr>
               </thead>
               <tbody>
-                @for (m of movimientosFiltrados(); track m.id) {
+                @for (m of movimientosVisibles(); track m.id) {
                   <tr>
                     <td class="id-cell">#{{ m.id }}</td>
                     <td>
@@ -204,6 +217,19 @@
                 }
               </tbody>
             </table>
+
+            <div class="pagination-bar mt-3">
+              <span class="page-info">Mostrando {{ rangoPaginacion() }} movimientos</span>
+              <div class="page-controls">
+                <button type="button" class="btn-page" [disabled]="currentPage() <= 1" (click)="goToPage(currentPage() - 1)">
+                  Anterior
+                </button>
+                <span class="page-indicator">Página {{ currentPage() }} de {{ totalPages() }}</span>
+                <button type="button" class="btn-page" [disabled]="currentPage() >= totalPages()" (click)="goToPage(currentPage() + 1)">
+                  Siguiente
+                </button>
+              </div>
+            </div>
           }
         </div>
       }

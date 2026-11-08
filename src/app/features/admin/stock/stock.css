@@ -97,6 +97,19 @@
   .btn-action-adjust:hover { border-color: #6366f1; background-color: #312e81; color: #fff; }
   
   .empty-state { text-align: center; padding: 40px; color: #94a3b8; }
+
+  .pagination-bar {
+    display: flex; justify-content: space-between; align-items: center;
+    border-top: 1px solid #334155; padding-top: 14px; margin-top: 12px;
+  }
+  .page-info { color: #94a3b8; font-size: 0.85rem; }
+  .page-controls { display: flex; align-items: center; gap: 12px; }
+  .btn-page {
+    background-color: #0f172a; border: 1px solid #334155; color: #ffffff;
+    padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem;
+  }
+  .btn-page:disabled { opacity: 0.4; cursor: not-allowed; }
+  .page-indicator { color: #cbd5e1; font-size: 0.85rem; }
   
   .alert { padding: 12px 16px; border-radius: 8px; margin-bottom: 16px; }
   .alert-danger { background-color: rgba(239, 68, 68, 0.2); border: 1px solid #ef4444; color: #f87171; }

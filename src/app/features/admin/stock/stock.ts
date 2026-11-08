@@ -30,6 +30,8 @@ export class Stock implements OnInit {
   busquedaTexto = signal('');
   filterProductoId = signal<number | null>(null);
   filterTipo = signal<'todos' | 'entrada' | 'salida' | 'ajuste'>('todos');
+  readonly pageSize = 10;
+  page = signal(1);
 
   // Modal
   showModal = signal(false);
@@ -89,6 +91,31 @@ export class Stock implements OnInit {
 
       return coincideProd && coincideTipo && coincideTexto;
     });
+  });
+
+  private listaActiva = computed(() =>
+    this.tabActiva() === 'inventario' ? this.productosFiltrados() : this.movimientosFiltrados()
+  );
+
+  totalPages = computed(() => Math.max(1, Math.ceil(this.listaActiva().length / this.pageSize)));
+  currentPage = computed(() => Math.min(this.page(), this.totalPages()));
+
+  productosVisibles = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return this.productosFiltrados().slice(start, start + this.pageSize);
+  });
+
+  movimientosVisibles = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize;
+    return this.movimientosFiltrados().slice(start, start + this.pageSize);
+  });
+
+  rangoPaginacion = computed(() => {
+    const total = this.listaActiva().length;
+    if (!total) return '0 de 0';
+    const start = (this.currentPage() - 1) * this.pageSize + 1;
+    const end = Math.min(this.currentPage() * this.pageSize, total);
+    return `${start}–${end} de ${total}`;
   });
 
   ngOnInit(): void {
@@ -161,6 +188,30 @@ export class Stock implements OnInit {
         this.savingModal.set(false);
       }
     });
+  }
+
+  cambiarTab(tab: 'inventario' | 'kardex'): void {
+    this.tabActiva.set(tab);
+    this.page.set(1);
+  }
+
+  onBusqueda(valor: string): void {
+    this.busquedaTexto.set(valor);
+    this.page.set(1);
+  }
+
+  onFiltroProducto(id: number | null): void {
+    this.filterProductoId.set(id);
+    this.page.set(1);
+  }
+
+  onFiltroTipo(tipo: 'todos' | 'entrada' | 'salida' | 'ajuste'): void {
+    this.filterTipo.set(tipo);
+    this.page.set(1);
+  }
+
+  goToPage(pagina: number): void {
+    this.page.set(Math.min(Math.max(1, pagina), this.totalPages()));
   }
 
   getProductoNombre(id: number): string {
