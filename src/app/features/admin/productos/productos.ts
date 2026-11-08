@@ -5,6 +5,25 @@ import { ProductosService, Producto, ProductoForm } from '../../../core/services
 import { ProveedoresService, Proveedor } from '../../../core/services/proveedores.service';
 import { CategoriasService, Categoria } from '../../../core/services/categorias.service';
 
+export interface ProductoFormExtended extends ProductoForm {
+  // Ficha Médica y Regulación
+  principio_activo?: string;
+  concentracion?: string;
+  tipo_receta?: 'OTC' | 'RECETA_SIMPLE' | 'CONTROLADO';
+  especies_destino?: string[];
+  cadena_frio?: boolean;
+  tiempo_retiro_dias?: number;
+  
+  // Fraccionamiento y Dosis
+  permite_fraccionamiento?: boolean;
+  unidad_dispensacion?: string;
+  factor_conversion?: number;
+  precio_venta_dosis?: number;
+  
+  // Trazabilidad de Lotes
+  codigo_lote?: string;
+}
+
 @Component({
   selector: 'app-productos',
   standalone: true,
@@ -27,8 +46,9 @@ export class Productos implements OnInit {
   error = signal<string | null>(null);
   aviso = signal<string | null>(null);
 
-  // Modales
+  // Modales y Pestañas
   showModal = signal(false);
+  modalTab = signal<'general' | 'medico' | 'fraccionamiento'>('general');
   editingId = signal<number | null>(null);
   deleteConfirmId = signal<number | null>(null);
 
@@ -37,12 +57,15 @@ export class Productos implements OnInit {
   filtroCategoria = signal<number | 'todas'>('todas');
   filtroEstado = signal<'todos' | 'activos' | 'stock-bajo' | 'por-vencer'>('todos');
 
+  // Catálogo de Especies Destino
+  readonly listaEspecies: string[] = ['Caninos 🐶', 'Felinos 🐱', 'Bovinos 🐮', 'Equinos 🐴', 'Porcinos 🐷', 'Aves 🐔', 'Exóticos 🐰'];
+
   // Paginación
   page = signal(1);
   readonly pageSize = 10;
 
   // Formulario de edición/creación
-  form: ProductoForm = this.emptyForm();
+  form: ProductoFormExtended = this.emptyForm();
 
   // Métricas KPI
   metricas = computed(() => {
@@ -61,18 +84,19 @@ export class Productos implements OnInit {
     return { total, activos, stockBajo, porVencer };
   });
 
-  // Lista Filtrada Reactiva
+  // Lista Filtrada Reactiva (incluye búsqueda por Principio Activo)
   productosFiltrados = computed(() => {
     const q = this.busquedaTexto().toLowerCase().trim();
     const catId = this.filtroCategoria();
     const est = this.filtroEstado();
 
-    return this.productos().filter(p => {
-      // Filtro texto (Nombre, código o categoría)
+    return this.productos().filter((p: any) => {
+      // Filtro texto (Nombre, código, categoría o principio activo)
       const coincideTexto = !q || 
         p.nombre.toLowerCase().includes(q) || 
         (p.codigo || '').toLowerCase().includes(q) ||
-        (p.categoria || '').toLowerCase().includes(q);
+        (p.categoria || '').toLowerCase().includes(q) ||
+        (p.principio_activo || '').toLowerCase().includes(q);
 
       // Filtro categoría
       const coincideCat = catId === 'todas' || p.categoria_id === catId;
@@ -152,33 +176,67 @@ export class Productos implements OnInit {
     this.page.set(1);
   }
 
+  setModalTab(tab: 'general' | 'medico' | 'fraccionamiento'): void {
+    this.modalTab.set(tab);
+  }
+
   goToPage(p: number): void {
     this.page.set(Math.min(Math.max(1, p), this.totalPages()));
   }
 
   openCreate(): void {
     this.form = this.emptyForm();
+    this.modalTab.set('general');
     this.editingId.set(null);
     this.error.set(null);
     this.showModal.set(true);
   }
 
-  openEdit(p: Producto): void {
+  openEdit(p: any): void {
+    const tipoRecetaCalc: 'OTC' | 'RECETA_SIMPLE' | 'CONTROLADO' = 
+      p.tipo_receta || (p.requiere_receta ? 'RECETA_SIMPLE' : 'OTC');
+
+    let especiesArray: string[] = [];
+    if (Array.isArray(p.especies_destino)) {
+      especiesArray = p.especies_destino;
+    } else if (typeof p.especies_destino === 'string' && p.especies_destino.trim()) {
+      try { especiesArray = JSON.parse(p.especies_destino); } catch { especiesArray = []; }
+    }
+
     this.form = {
       nombre: p.nombre,
       descripcion: p.descripcion ?? '',
       codigo: p.codigo ?? '',
       categoria_id: p.categoria_id ?? this.categorias().find(c => c.nombre === p.categoria)?.id,
-      proveedor_id: p.proveedor?.id,
+      proveedor_id: p.proveedor?.id ?? p.proveedor_id,
       precio_compra: Number(p.precio_compra) || 0,
       precio_venta: Number(p.precio_venta) || 0,
       stock_actual: Number(p.stock_disponible ?? p.stock_actual) || 0,
       stock_minimo: Number(p.stock_minimo) || 0,
       unidad_medida: p.unidad_medida ?? 'unidad',
       fecha_vencimiento: p.fecha_vencimiento ? p.fecha_vencimiento.split('T')[0] : '',
-      requiere_receta: p.requiere_receta ?? false,
+      requiere_receta: p.requiere_receta ?? (tipoRecetaCalc !== 'OTC'),
       activo: p.activo ?? true,
+      
+      // Ficha clínica
+      principio_activo: p.principio_activo ?? '',
+      concentracion: p.concentracion ?? '',
+      tipo_receta: tipoRecetaCalc,
+      especies_destino: especiesArray,
+      cadena_frio: p.cadena_frio ?? false,
+      tiempo_retiro_dias: p.tiempo_retiro_dias ? Number(p.tiempo_retiro_dias) : undefined,
+      
+      // Fraccionamiento
+      permite_fraccionamiento: p.permite_fraccionamiento ?? false,
+      unidad_dispensacion: p.unidad_dispensacion ?? '',
+      factor_conversion: Number(p.factor_conversion) || 1,
+      precio_venta_dosis: Number(p.precio_venta_dosis) || 0,
+
+      // Lote
+      codigo_lote: p.codigo_lote ?? p.lote ?? ''
     };
+
+    this.modalTab.set('general');
     this.editingId.set(p.id);
     this.error.set(null);
     this.showModal.set(true);
@@ -187,6 +245,29 @@ export class Productos implements OnInit {
   closeModal(): void {
     this.showModal.set(false);
     this.savingModal.set(false);
+  }
+
+  toggleEspecie(especie: string): void {
+    const actuales = [...(this.form.especies_destino || [])];
+    const index = actuales.indexOf(especie);
+    if (index >= 0) {
+      actuales.splice(index, 1);
+    } else {
+      actuales.push(especie);
+    }
+    this.form.especies_destino = actuales;
+  }
+
+  hasEspecie(especie: string): boolean {
+    return (this.form.especies_destino || []).includes(especie);
+  }
+
+  calcularPrecioDosisAuto(): void {
+    const factor = Number(this.form.factor_conversion) || 1;
+    const pVenta = Number(this.form.precio_venta) || 0;
+    if (factor > 0 && pVenta > 0) {
+      this.form.precio_venta_dosis = Number((pVenta / factor).toFixed(2));
+    }
   }
 
   save(): void {
@@ -198,7 +279,10 @@ export class Productos implements OnInit {
     this.savingModal.set(true);
     this.error.set(null);
 
-    const payload: ProductoForm = {
+    // Sincronizar campo heredado requiere_receta con el selector tipo_receta
+    const requiereRecetaBool = this.form.tipo_receta === 'RECETA_SIMPLE' || this.form.tipo_receta === 'CONTROLADO';
+
+    const payload: ProductoFormExtended = {
       ...this.form,
       precio_compra: Number(this.form.precio_compra) || 0,
       precio_venta: Number(this.form.precio_venta) || 0,
@@ -209,6 +293,24 @@ export class Productos implements OnInit {
       fecha_vencimiento: this.form.fecha_vencimiento || undefined,
       categoria_id: this.form.categoria_id || undefined,
       proveedor_id: this.form.proveedor_id || undefined,
+      requiere_receta: requiereRecetaBool,
+
+      // Atributos Médico-Veterinarios
+      principio_activo: this.form.principio_activo?.trim() || undefined,
+      concentracion: this.form.concentracion?.trim() || undefined,
+      tipo_receta: this.form.tipo_receta || 'OTC',
+      especies_destino: this.form.especies_destino || [],
+      cadena_frio: !!this.form.cadena_frio,
+      tiempo_retiro_dias: this.form.tiempo_retiro_dias ? Number(this.form.tiempo_retiro_dias) : undefined,
+
+      // Atributos de Fraccionamiento
+      permite_fraccionamiento: !!this.form.permite_fraccionamiento,
+      unidad_dispensacion: this.form.unidad_dispensacion?.trim() || undefined,
+      factor_conversion: Number(this.form.factor_conversion) || 1,
+      precio_venta_dosis: Number(this.form.precio_venta_dosis) || 0,
+
+      // Lote
+      codigo_lote: this.form.codigo_lote?.trim() || undefined
     };
 
     const id = this.editingId();
@@ -218,7 +320,7 @@ export class Productos implements OnInit {
       payload.stock_actual = Number(this.form.stock_actual) || 0;
     }
 
-    const obs = id ? this.svc.update(id, payload) : this.svc.create(payload);
+    const obs = id ? this.svc.update(id, payload as any) : this.svc.create(payload as any);
     obs.subscribe({
       next: () => {
         this.aviso.set(id ? '✅ Producto actualizado correctamente.' : '✅ Producto registrado en el catálogo.');
@@ -263,12 +365,13 @@ export class Productos implements OnInit {
     return Number(p.stock_disponible ?? p.stock_actual) || 0;
   }
 
-  private emptyForm(): ProductoForm {
+  private emptyForm(): ProductoFormExtended {
     return {
       nombre: '',
       descripcion: '',
       codigo: '',
       categoria_id: undefined,
+      proveedor_id: undefined,
       precio_compra: 0,
       precio_venta: 0,
       stock_actual: 0,
@@ -277,6 +380,23 @@ export class Productos implements OnInit {
       fecha_vencimiento: '',
       requiere_receta: false,
       activo: true,
+
+      // Ficha clínica
+      principio_activo: '',
+      concentracion: '',
+      tipo_receta: 'OTC',
+      especies_destino: [],
+      cadena_frio: false,
+      tiempo_retiro_dias: undefined,
+
+      // Fraccionamiento
+      permite_fraccionamiento: false,
+      unidad_dispensacion: '',
+      factor_conversion: 1,
+      precio_venta_dosis: 0,
+
+      // Lote
+      codigo_lote: ''
     };
   }
 }
