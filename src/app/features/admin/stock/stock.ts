@@ -4,6 +4,19 @@ import { FormsModule } from '@angular/forms';
 import { StockService, MovimientoStock, MovimientoForm } from '../../../core/services/stock.service';
 import { ProductosService, Producto } from '../../../core/services/productos.service';
 
+interface FilaInventario {
+  key: string;
+  producto_id: number;
+  variante_id: number | null;
+  codigo: string;
+  nombre: string;
+  presentacion: string;
+  categoria: string;
+  precio_venta: number;
+  stock: number;
+  stock_minimo: number;
+}
+
 @Component({
   selector: 'app-stock',
   standalone: true,
@@ -36,20 +49,20 @@ export class Stock implements OnInit {
   // Modal
   showModal = signal(false);
   form: MovimientoForm = this.emptyForm();
+  seleccion = '';
+
+  filasInventario = computed(() => this.productos().flatMap(p => this.filasDe(p)));
 
   // Métricas KPI
   metricas = computed(() => {
     const prods = this.productos();
+    const filas = this.filasInventario();
     const movs = this.movimientos();
 
     const totalProductos = prods.length;
-    const conStockBajo = prods.filter(p => {
-      const actual = Number(p.stock_disponible ?? p.stock_actual) || 0;
-      const min = Number(p.stock_minimo) || 5;
-      return actual > 0 && actual <= min;
-    }).length;
+    const conStockBajo = filas.filter(f => f.stock > 0 && f.stock <= (f.stock_minimo || 5)).length;
 
-    const agotados = prods.filter(p => (Number(p.stock_disponible ?? p.stock_actual) || 0) <= 0).length;
+    const agotados = filas.filter(f => f.stock <= 0).length;
 
     const totalEntradas = movs
       .filter(m => m.tipo === 'entrada')
@@ -62,15 +75,16 @@ export class Stock implements OnInit {
     return { totalProductos, conStockBajo, agotados, totalEntradas, totalSalidas };
   });
 
-  // 1. Filtrado para Pestaña 1: Lista de Productos
+  // 1. Filtrado para Pestaña 1: una fila por presentación
   productosFiltrados = computed(() => {
     const q = this.busquedaTexto().toLowerCase().trim();
-    if (!q) return this.productos();
+    if (!q) return this.filasInventario();
 
-    return this.productos().filter(p => 
-      p.nombre.toLowerCase().includes(q) || 
-      (p.codigo || '').toLowerCase().includes(q) ||
-      (p.categoria || '').toLowerCase().includes(q)
+    return this.filasInventario().filter(f =>
+      f.nombre.toLowerCase().includes(q) ||
+      f.codigo.toLowerCase().includes(q) ||
+      f.presentacion.toLowerCase().includes(q) ||
+      f.categoria.toLowerCase().includes(q)
     );
   });
 
@@ -84,8 +98,10 @@ export class Stock implements OnInit {
       const prodNombre = m.producto?.nombre || this.getProductoNombre(m.producto_id);
       const coincideProd = !prodId || m.producto_id === prodId;
       const coincideTipo = tipo === 'todos' || (m.tipo as string) === tipo;
+      const presentacion = m.variante?.presentation || '';
       const coincideTexto = !text || 
         prodNombre.toLowerCase().includes(text) || 
+        presentacion.toLowerCase().includes(text) ||
         (m.motivo || '').toLowerCase().includes(text) ||
         (m.referencia || '').toLowerCase().includes(text);
 
@@ -146,15 +162,23 @@ export class Stock implements OnInit {
     });
   }
 
-  openCreateForProduct(prodId: number = 0): void {
+  openCreateForProduct(fila?: FilaInventario): void {
     this.form = this.emptyForm();
-    if (prodId > 0) {
-      this.form.producto_id = prodId;
-    } else if (this.productos().length > 0) {
-      this.form.producto_id = this.productos()[0].id;
+    const elegida = fila ?? this.filasInventario()[0];
+    if (elegida) {
+      this.form.producto_id = elegida.producto_id;
+      this.form.variante_id = elegida.variante_id;
+      this.seleccion = elegida.key;
     }
     this.error.set(null);
     this.showModal.set(true);
+  }
+
+  onSeleccion(key: string): void {
+    this.seleccion = key;
+    const fila = this.filasInventario().find(f => f.key === key);
+    this.form.producto_id = fila?.producto_id ?? 0;
+    this.form.variante_id = fila?.variante_id ?? null;
   }
 
   closeModal(): void {
@@ -218,13 +242,45 @@ export class Stock implements OnInit {
     return this.productos().find(p => p.id === id)?.nombre ?? `Producto #${id}`;
   }
 
-  getProductoStockActual(p: Producto): number {
-    return Number(p.stock_disponible ?? p.stock_actual) || 0;
+  presentacionDe(m: MovimientoStock): string {
+    return m.variante?.presentation || '—';
+  }
+
+  private filasDe(p: Producto): FilaInventario[] {
+    const presentaciones = p.presentaciones ?? [];
+    if (!presentaciones.length) {
+      return [{
+        key: `${p.id}-0`,
+        producto_id: p.id,
+        variante_id: null,
+        codigo: p.codigo || `#${p.id}`,
+        nombre: p.nombre,
+        presentacion: '—',
+        categoria: p.categoria || 'General',
+        precio_venta: Number(p.precio_venta) || 0,
+        stock: Number(p.stock_disponible ?? p.stock_actual) || 0,
+        stock_minimo: Number(p.stock_minimo) || 0,
+      }];
+    }
+
+    return presentaciones.map(v => ({
+      key: `${p.id}-${v.id}`,
+      producto_id: p.id,
+      variante_id: v.id,
+      codigo: v.sku || p.codigo || `#${p.id}`,
+      nombre: p.nombre,
+      presentacion: v.presentacion || '—',
+      categoria: p.categoria || 'General',
+      precio_venta: Number(p.precio_venta) || 0,
+      stock: Number(v.stock) || 0,
+      stock_minimo: Number(p.stock_minimo) || 0,
+    }));
   }
 
   private emptyForm(): MovimientoForm {
     return {
       producto_id: 0,
+      variante_id: null,
       tipo: 'entrada',
       cantidad: 1,
       motivo: '',

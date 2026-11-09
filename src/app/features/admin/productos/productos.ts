@@ -96,7 +96,8 @@ export class Productos implements OnInit {
         p.nombre.toLowerCase().includes(q) || 
         (p.codigo || '').toLowerCase().includes(q) ||
         (p.categoria || '').toLowerCase().includes(q) ||
-        (p.principio_activo || '').toLowerCase().includes(q);
+        (p.principio_activo || '').toLowerCase().includes(q) ||
+        this.presentacionesDe(p).some(item => item.toLowerCase().includes(q));
 
       // Filtro categoría
       const coincideCat = catId === 'todas' || p.categoria_id === catId;
@@ -363,6 +364,12 @@ export class Productos implements OnInit {
 
   getStockActual(p: Producto): number {
     return Number(p.stock_disponible ?? p.stock_actual) || 0;
+  }
+
+  presentacionesDe(p: Producto): string[] {
+    return (p.presentaciones ?? [])
+      .map(item => item.presentacion)
+      .filter(nombre => !!nombre && nombre !== '—');
   }
 
   private emptyForm(): ProductoFormExtended {

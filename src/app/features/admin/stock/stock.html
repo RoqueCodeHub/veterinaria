@@ -5,7 +5,7 @@
         <h1 class="page-title">Gestión de Inventario y Stock</h1>
         <p class="page-subtitle">Control de existencias, alertas de stock mínimo e historial Kardex</p>
       </div>
-      <button class="btn-primary" (click)="openCreateForProduct(0)">
+      <button class="btn-primary" (click)="openCreateForProduct()">
         ➕ Registrar Movimiento
       </button>
     </header>
@@ -63,7 +63,7 @@
           <input 
             type="text" 
             class="input-custom" 
-            placeholder="🔍 Buscar producto por nombre, categoría o código..."
+            placeholder="🔍 Buscar por nombre, presentación, categoría o código..."
             [ngModel]="busquedaTexto()"
             (ngModelChange)="onBusqueda($event)"
           />
@@ -105,6 +105,7 @@
               <tr>
                 <th>Código</th>
                 <th>Producto</th>
+                <th>Presentación</th>
                 <th>Categoría</th>
                 <th class="text-end">P. Venta</th>
                 <th class="text-center">Stock Actual</th>
@@ -113,12 +114,13 @@
               </tr>
             </thead>
             <tbody>
-              @for (p of productosVisibles(); track p.id) {
-                @let stockActual = getProductoStockActual(p);
+              @for (p of productosVisibles(); track p.key) {
+                @let stockActual = p.stock;
                 @let stockMin = p.stock_minimo || 5;
                 <tr>
-                  <td class="id-cell">{{ p.codigo || ('#' + p.id) }}</td>
+                  <td class="id-cell">{{ p.codigo }}</td>
                   <td><strong class="text-white">{{ p.nombre }}</strong></td>
+                  <td><span class="category-badge">{{ p.presentacion }}</span></td>
                   <td><span class="category-badge">{{ p.categoria || 'General' }}</span></td>
                   <td class="text-end bold text-success">S/ {{ p.precio_venta }}</td>
                   <td class="text-center bold text-white font-size-lg">{{ stockActual }} u.</td>
@@ -132,21 +134,21 @@
                     }
                   </td>
                   <td class="text-end">
-                    <button type="button" class="btn-action-adjust" (click)="openCreateForProduct(p.id)">
+                    <button type="button" class="btn-action-adjust" (click)="openCreateForProduct(p)">
                       ⚙️ Ajustar Stock
                     </button>
                   </td>
                 </tr>
               } @empty {
                 <tr>
-                  <td colspan="7" class="empty-state">No se encontraron productos en el inventario.</td>
+                  <td colspan="8" class="empty-state">No se encontraron productos en el inventario.</td>
                 </tr>
               }
             </tbody>
           </table>
 
           <div class="pagination-bar mt-3">
-            <span class="page-info">Mostrando {{ rangoPaginacion() }} productos</span>
+            <span class="page-info">Mostrando {{ rangoPaginacion() }} registros</span>
             <div class="page-controls">
               <button type="button" class="btn-page" [disabled]="currentPage() <= 1" (click)="goToPage(currentPage() - 1)">
                 Anterior
@@ -173,6 +175,7 @@
                 <tr>
                   <th>#</th>
                   <th>Producto</th>
+                  <th>Presentación</th>
                   <th>Tipo</th>
                   <th class="text-center">Cant.</th>
                   <th class="text-end">Stock Ant.</th>
@@ -189,6 +192,7 @@
                     <td>
                       <strong class="text-white">{{ m.producto?.nombre ?? getProductoNombre(m.producto_id) }}</strong>
                     </td>
+                    <td><span class="category-badge">{{ presentacionDe(m) }}</span></td>
                     <td>
                       <span 
                         class="status-badge" 
@@ -250,12 +254,12 @@
         <form (ngSubmit)="save()">
           <div class="modal-body-custom">
             <div class="form-group mb-3">
-              <label>Producto *</label>
-              <select class="input-custom select-custom" [(ngModel)]="form.producto_id" name="producto_id" required>
-                <option [value]="0" disabled>Selecciona un producto</option>
-                @for (p of productos(); track p.id) {
-                  <option [value]="p.id">
-                    {{ p.nombre }} (Stock actual: {{ getProductoStockActual(p) }})
+              <label>Producto y presentación *</label>
+              <select class="input-custom select-custom" [ngModel]="seleccion" (ngModelChange)="onSeleccion($event)" name="seleccion" required>
+                <option value="" disabled>Selecciona un producto</option>
+                @for (p of filasInventario(); track p.key) {
+                  <option [value]="p.key">
+                    {{ p.nombre }} — {{ p.presentacion }} (Stock: {{ p.stock }})
                   </option>
                 }
               </select>

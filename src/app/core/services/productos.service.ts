@@ -4,6 +4,13 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
+export interface PresentacionStock {
+  id: number;
+  presentacion: string;
+  sku?: string;
+  stock: number;
+}
+
 export interface Producto {
   id: number;
   nombre: string;
@@ -22,6 +29,7 @@ export interface Producto {
   fecha_vencimiento?: string;
   requiere_receta?: boolean;
   activo?: boolean;
+  presentaciones?: PresentacionStock[];
 }
 
 export interface ProductoForm {

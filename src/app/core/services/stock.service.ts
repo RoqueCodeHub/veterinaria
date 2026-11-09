@@ -8,7 +8,9 @@ export interface MovimientoStock {
   id: number;
   producto_id: number;
   user_id: number;
+  variante_id?: number | null;
   producto?: { id: number; nombre: string; codigo: string };
+  variante?: { id: number; presentation?: string; sku?: string } | null;
   user?: { id: number; name: string };
   tipo: 'entrada' | 'salida';
   cantidad: number;
@@ -22,6 +24,7 @@ export interface MovimientoStock {
 
 export interface MovimientoForm {
   producto_id: number;
+  variante_id?: number | null;
   tipo: 'entrada' | 'salida';
   cantidad: number;
   motivo?: string;

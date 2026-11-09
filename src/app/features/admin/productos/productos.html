@@ -92,7 +92,7 @@
               <th class="text-end">P. Compra</th>
               <th class="text-end">P. Venta</th>
               <th class="text-center">Stock</th>
-              <th>Proveedor / Lote</th>
+              <th>Presentación</th>
               <th>Vencimiento</th>
               <th class="text-center">Estado</th>
               <th class="text-end">Acciones</th>
@@ -152,10 +152,13 @@
                     {{ stockActual }} {{ p.unidad_medida || 'u.' }}
                   </span>
                 </td>
-                <td class="muted">
-                  <div>{{ $any(p.proveedor)?.nombre_completo || p.proveedor?.nombre || '—' }}</div>
-                  @if (pMed.codigo_lote || pMed.lote) {
-                    <small class="text-subtle">Lote: {{ pMed.codigo_lote || pMed.lote }}</small>
+                <td>
+                  @if (presentacionesDe(p).length) {
+                    @for (item of presentacionesDe(p); track item) {
+                      <span class="category-badge presentation-badge">{{ item }}</span>
+                    }
+                  } @else {
+                    <span class="muted">—</span>
                   }
                 </td>
                 <td class="muted">
