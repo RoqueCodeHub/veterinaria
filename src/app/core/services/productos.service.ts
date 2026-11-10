@@ -29,21 +29,35 @@ export interface Producto {
   fecha_vencimiento?: string;
   requiere_receta?: boolean;
   activo?: boolean;
+  presentacion?: string | null;
+  tipo_presentacion?: string | null;
   presentaciones?: PresentacionStock[];
+  principio_activo?: string | null;
+  concentracion?: string | null;
+  tipo_receta?: 'OTC' | 'RECETA_SIMPLE' | 'CONTROLADO' | null;
+  especies_destino?: string[];
+  cadena_frio?: boolean;
+  tiempo_retiro_dias?: number | null;
+  permite_fraccionamiento?: boolean;
+  unidad_dispensacion?: string | null;
+  factor_conversion?: number | null;
+  precio_venta_dosis?: number | null;
+  codigo_lote?: string | null;
+  proveedor_id?: number | null;
 }
 
 export interface ProductoForm {
   nombre: string;
-  descripcion?: string;
-  codigo?: string;
-  categoria_id?: number;
-  proveedor_id?: number;
+  descripcion?: string | null;
+  codigo?: string | null;
+  categoria_id?: number | null;
+  proveedor_id?: number | null;
   precio_compra: number;
   precio_venta: number;
   stock_actual?: number;
   stock_minimo: number;
-  unidad_medida?: string;
-  fecha_vencimiento?: string;
+  unidad_medida?: string | null;
+  fecha_vencimiento?: string | null;
   requiere_receta?: boolean;
   activo?: boolean;
 }

@@ -1,4 +1,4 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ProductosService, Producto, ProductoForm } from '../../../core/services/productos.service';
@@ -6,22 +6,26 @@ import { ProveedoresService, Proveedor } from '../../../core/services/proveedore
 import { CategoriasService, Categoria } from '../../../core/services/categorias.service';
 
 export interface ProductoFormExtended extends ProductoForm {
-  // Ficha Médica y Regulación
-  principio_activo?: string;
-  concentracion?: string;
+  // Presentación Comercial y Forma Farmacéutica
+  presentacion?: string | null;
+  tipo_presentacion?: string | null;
+
+  // Ficha Médica y Regulación Veterinaria
+  principio_activo?: string | null;
+  concentracion?: string | null;
   tipo_receta?: 'OTC' | 'RECETA_SIMPLE' | 'CONTROLADO';
   especies_destino?: string[];
   cadena_frio?: boolean;
-  tiempo_retiro_dias?: number;
+  tiempo_retiro_dias?: number | null;
   
   // Fraccionamiento y Dosis
   permite_fraccionamiento?: boolean;
-  unidad_dispensacion?: string;
+  unidad_dispensacion?: string | null;
   factor_conversion?: number;
   precio_venta_dosis?: number;
   
   // Trazabilidad de Lotes
-  codigo_lote?: string;
+  codigo_lote?: string | null;
 }
 
 @Component({
@@ -31,7 +35,7 @@ export interface ProductoFormExtended extends ProductoForm {
   templateUrl: './productos.html',
   styleUrl: './productos.css',
 })
-export class Productos implements OnInit {
+export class Productos implements OnInit, OnDestroy {
   private svc = inject(ProductosService);
   private proveedoresSvc = inject(ProveedoresService);
   private categoriasSvc = inject(CategoriasService);
@@ -43,8 +47,8 @@ export class Productos implements OnInit {
   
   loading = signal(false);
   savingModal = signal(false);
-  error = signal<string | null>(null);
-  aviso = signal<string | null>(null);
+  aviso = signal<{ texto: string; tipo: 'ok' | 'error' } | null>(null);
+  private avisoTimer: ReturnType<typeof setTimeout> | null = null;
 
   // Modales y Pestañas
   showModal = signal(false);
@@ -52,13 +56,31 @@ export class Productos implements OnInit {
   editingId = signal<number | null>(null);
   deleteConfirmId = signal<number | null>(null);
 
+  // Catálogos Veterinarios
+  readonly listaTiposPresentacion: string[] = [
+    '💉 Inyectable (Solución/Suspensión)',
+    '💊 Comprimidos / Tabletas / Cápsulas',
+    '🧪 Suspensión / Jarabe Oral',
+    '🌾 Polvo Soluble / Granulado / Premezcla',
+    '🐴 Gel / Pasta Oral',
+    '🧴 Tópico / Spray / Pomada / Crema',
+    '💧 Pour-On / Pipeta (Spot-On)',
+    '👁️ Gotas Otálgicas / Oftálmicas',
+    '💉 Suero / Infusión IV',
+    '🧼 Champú / Baño Medicado',
+    '📦 Alimento / Suplemento / Accesorio'
+  ];
+
+  readonly listaEspecies: string[] = [
+    'Caninos 🐶', 'Felinos 🐱', 'Bovinos 🐮', 'Equinos 🐴', 
+    'Porcinos 🐷', 'Ovinos/Caprinos 🐐', 'Aves 🐔', 'Exóticos 🐰'
+  ];
+
   // Filtros reactivos con Signals
   busquedaTexto = signal('');
   filtroCategoria = signal<number | 'todas'>('todas');
   filtroEstado = signal<'todos' | 'activos' | 'stock-bajo' | 'por-vencer'>('todos');
-
-  // Catálogo de Especies Destino
-  readonly listaEspecies: string[] = ['Caninos 🐶', 'Felinos 🐱', 'Bovinos 🐮', 'Equinos 🐴', 'Porcinos 🐷', 'Aves 🐔', 'Exóticos 🐰'];
+  filtroTipoPresentacion = signal<string>('todos');
 
   // Paginación
   page = signal(1);
@@ -84,23 +106,29 @@ export class Productos implements OnInit {
     return { total, activos, stockBajo, porVencer };
   });
 
-  // Lista Filtrada Reactiva (incluye búsqueda por Principio Activo)
+  // Lista Filtrada Reactiva
   productosFiltrados = computed(() => {
     const q = this.busquedaTexto().toLowerCase().trim();
     const catId = this.filtroCategoria();
     const est = this.filtroEstado();
+    const presFiltro = this.filtroTipoPresentacion();
 
     return this.productos().filter((p: any) => {
-      // Filtro texto (Nombre, código, categoría o principio activo)
+      // Filtro por texto
       const coincideTexto = !q || 
         p.nombre.toLowerCase().includes(q) || 
         (p.codigo || '').toLowerCase().includes(q) ||
         (p.categoria || '').toLowerCase().includes(q) ||
         (p.principio_activo || '').toLowerCase().includes(q) ||
+        (p.tipo_presentacion || '').toLowerCase().includes(q) ||
+        (p.presentacion || '').toLowerCase().includes(q) ||
         this.presentacionesDe(p).some(item => item.toLowerCase().includes(q));
 
-      // Filtro categoría
-      const coincideCat = catId === 'todas' || p.categoria_id === catId;
+      // Filtro por categoría
+      const coincideCat = catId === 'todas' || Number(p.categoria_id) === Number(catId);
+
+      // Filtro por tipo de presentación
+      const coincideTipoPres = presFiltro === 'todos' || p.tipo_presentacion === presFiltro;
 
       // Filtro por Estado / Alerta
       let coincideEstado = true;
@@ -115,7 +143,7 @@ export class Productos implements OnInit {
         }
       }
 
-      return coincideTexto && coincideCat && coincideEstado;
+      return coincideTexto && coincideCat && coincideTipoPres && coincideEstado;
     });
   });
 
@@ -142,6 +170,28 @@ export class Productos implements OnInit {
     this.load();
   }
 
+  ngOnDestroy(): void {
+    this.limpiarAvisoTimer();
+  }
+
+  cerrarAviso(): void {
+    this.aviso.set(null);
+    this.limpiarAvisoTimer();
+  }
+
+  private mostrarAviso(texto: string, tipo: 'ok' | 'error' = 'ok'): void {
+    this.aviso.set({ texto, tipo });
+    this.limpiarAvisoTimer();
+    this.avisoTimer = setTimeout(() => this.cerrarAviso(), 3000);
+  }
+
+  private limpiarAvisoTimer(): void {
+    if (this.avisoTimer) {
+      clearTimeout(this.avisoTimer);
+      this.avisoTimer = null;
+    }
+  }
+
   loadProveedores(): void {
     this.proveedoresSvc.getAll().subscribe({
       next: (data) => this.proveedores.set(data),
@@ -158,7 +208,6 @@ export class Productos implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.error.set(null);
 
     this.svc.getAll().subscribe({
       next: (data) => {
@@ -166,7 +215,7 @@ export class Productos implements OnInit {
         this.loading.set(false);
       },
       error: () => {
-        this.error.set('Error al cargar la lista de productos.');
+        this.mostrarAviso('No se pudo cargar la lista de productos.', 'error');
         this.loading.set(false);
       }
     });
@@ -189,7 +238,6 @@ export class Productos implements OnInit {
     this.form = this.emptyForm();
     this.modalTab.set('general');
     this.editingId.set(null);
-    this.error.set(null);
     this.showModal.set(true);
   }
 
@@ -204,12 +252,14 @@ export class Productos implements OnInit {
       try { especiesArray = JSON.parse(p.especies_destino); } catch { especiesArray = []; }
     }
 
+    const primeraPresentacionAlt = this.presentacionesDe(p)[0] || '';
+
     this.form = {
       nombre: p.nombre,
       descripcion: p.descripcion ?? '',
       codigo: p.codigo ?? '',
-      categoria_id: p.categoria_id ?? this.categorias().find(c => c.nombre === p.categoria)?.id,
-      proveedor_id: p.proveedor?.id ?? p.proveedor_id,
+      categoria_id: p.categoria_id ?? this.categorias().find(c => c.nombre === p.categoria)?.id ?? null,
+      proveedor_id: p.proveedor?.id ?? p.proveedor_id ?? null,
       precio_compra: Number(p.precio_compra) || 0,
       precio_venta: Number(p.precio_venta) || 0,
       stock_actual: Number(p.stock_disponible ?? p.stock_actual) || 0,
@@ -219,13 +269,19 @@ export class Productos implements OnInit {
       requiere_receta: p.requiere_receta ?? (tipoRecetaCalc !== 'OTC'),
       activo: p.activo ?? true,
       
+      // Presentación Comercial y Forma Farmacéutica
+      presentacion: p.presentacion ?? primeraPresentacionAlt,
+      tipo_presentacion: p.tipo_presentacion ?? '',
+
       // Ficha clínica
       principio_activo: p.principio_activo ?? '',
       concentracion: p.concentracion ?? '',
       tipo_receta: tipoRecetaCalc,
       especies_destino: especiesArray,
       cadena_frio: p.cadena_frio ?? false,
-      tiempo_retiro_dias: p.tiempo_retiro_dias ? Number(p.tiempo_retiro_dias) : undefined,
+      tiempo_retiro_dias: p.tiempo_retiro_dias === null || p.tiempo_retiro_dias === undefined || p.tiempo_retiro_dias === ''
+        ? null
+        : Number(p.tiempo_retiro_dias),
       
       // Fraccionamiento
       permite_fraccionamiento: p.permite_fraccionamiento ?? false,
@@ -239,7 +295,6 @@ export class Productos implements OnInit {
 
     this.modalTab.set('general');
     this.editingId.set(p.id);
-    this.error.set(null);
     this.showModal.set(true);
   }
 
@@ -273,45 +328,49 @@ export class Productos implements OnInit {
 
   save(): void {
     if (!this.form.nombre.trim()) {
-      this.error.set('El nombre del producto es obligatorio.');
+      this.mostrarAviso('El nombre del producto es obligatorio.', 'error');
       return;
     }
 
     this.savingModal.set(true);
-    this.error.set(null);
 
-    // Sincronizar campo heredado requiere_receta con el selector tipo_receta
     const requiereRecetaBool = this.form.tipo_receta === 'RECETA_SIMPLE' || this.form.tipo_receta === 'CONTROLADO';
+    const texto = (valor?: string | null) => {
+      const limpio = valor?.trim();
+      return limpio ? limpio : null;
+    };
 
     const payload: ProductoFormExtended = {
       ...this.form,
       precio_compra: Number(this.form.precio_compra) || 0,
       precio_venta: Number(this.form.precio_venta) || 0,
       stock_minimo: Number(this.form.stock_minimo) || 0,
-      codigo: this.form.codigo?.trim() || undefined,
-      descripcion: this.form.descripcion?.trim() || undefined,
-      unidad_medida: this.form.unidad_medida?.trim() || undefined,
-      fecha_vencimiento: this.form.fecha_vencimiento || undefined,
-      categoria_id: this.form.categoria_id || undefined,
-      proveedor_id: this.form.proveedor_id || undefined,
+      codigo: texto(this.form.codigo),
+      descripcion: texto(this.form.descripcion),
+      unidad_medida: texto(this.form.unidad_medida) || 'unidad',
+      fecha_vencimiento: this.form.fecha_vencimiento || null,
+      categoria_id: this.form.categoria_id || null,
+      proveedor_id: this.form.proveedor_id || null,
       requiere_receta: requiereRecetaBool,
+      activo: this.form.activo !== false,
 
-      // Atributos Médico-Veterinarios
-      principio_activo: this.form.principio_activo?.trim() || undefined,
-      concentracion: this.form.concentracion?.trim() || undefined,
+      presentacion: texto(this.form.presentacion),
+      tipo_presentacion: texto(this.form.tipo_presentacion),
+
+      principio_activo: texto(this.form.principio_activo),
+      concentracion: texto(this.form.concentracion),
       tipo_receta: this.form.tipo_receta || 'OTC',
       especies_destino: this.form.especies_destino || [],
       cadena_frio: !!this.form.cadena_frio,
-      tiempo_retiro_dias: this.form.tiempo_retiro_dias ? Number(this.form.tiempo_retiro_dias) : undefined,
+      tiempo_retiro_dias: this.form.tiempo_retiro_dias === undefined || this.form.tiempo_retiro_dias === null
+        ? null
+        : Number(this.form.tiempo_retiro_dias),
 
-      // Atributos de Fraccionamiento
       permite_fraccionamiento: !!this.form.permite_fraccionamiento,
-      unidad_dispensacion: this.form.unidad_dispensacion?.trim() || undefined,
+      unidad_dispensacion: texto(this.form.unidad_dispensacion),
       factor_conversion: Number(this.form.factor_conversion) || 1,
       precio_venta_dosis: Number(this.form.precio_venta_dosis) || 0,
-
-      // Lote
-      codigo_lote: this.form.codigo_lote?.trim() || undefined
+      codigo_lote: texto(this.form.codigo_lote),
     };
 
     const id = this.editingId();
@@ -324,14 +383,14 @@ export class Productos implements OnInit {
     const obs = id ? this.svc.update(id, payload as any) : this.svc.create(payload as any);
     obs.subscribe({
       next: () => {
-        this.aviso.set(id ? '✅ Producto actualizado correctamente.' : '✅ Producto registrado en el catálogo.');
+        this.mostrarAviso(id ? '✅ Producto actualizado correctamente.' : '✅ Producto registrado en el catálogo.');
         this.closeModal();
         this.load();
       },
       error: (err) => {
         const apiErrors = err?.error?.errors;
         const detail = apiErrors ? Object.values(apiErrors).flat().join(' ') : err?.error?.message;
-        this.error.set(detail || 'Error al guardar el producto.');
+        this.mostrarAviso(detail || 'No se pudo guardar el producto.', 'error');
         this.savingModal.set(false);
       }
     });
@@ -351,12 +410,12 @@ export class Productos implements OnInit {
 
     this.svc.delete(id).subscribe({
       next: () => {
-        this.aviso.set('✅ Producto eliminado del catálogo.');
+        this.mostrarAviso('✅ Producto eliminado del catálogo.');
         this.deleteConfirmId.set(null);
         this.load();
       },
       error: () => {
-        this.error.set('No se pudo eliminar el producto.');
+        this.mostrarAviso('No se pudo eliminar el producto.', 'error');
         this.deleteConfirmId.set(null);
       }
     });
@@ -377,8 +436,8 @@ export class Productos implements OnInit {
       nombre: '',
       descripcion: '',
       codigo: '',
-      categoria_id: undefined,
-      proveedor_id: undefined,
+      categoria_id: null,
+      proveedor_id: null,
       precio_compra: 0,
       precio_venta: 0,
       stock_actual: 0,
@@ -387,6 +446,10 @@ export class Productos implements OnInit {
       fecha_vencimiento: '',
       requiere_receta: false,
       activo: true,
+
+      // Presentación Comercial y Forma Farmacéutica
+      presentacion: '',
+      tipo_presentacion: '',
 
       // Ficha clínica
       principio_activo: '',
