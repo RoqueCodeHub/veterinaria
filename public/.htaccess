@@ -12,7 +12,6 @@
   # Todo lo demás va a index.html
   RewriteRule ^ index.html [L]
 </IfModule>
-
 # Caché de assets compilados (llevan hash en el nombre)
 <IfModule mod_expires.c>
   ExpiresActive On
