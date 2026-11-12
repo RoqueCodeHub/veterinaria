@@ -1,4 +1,9 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { ButtonDirective } from 'primeng/button';
+import { Card } from 'primeng/card';
+import { Tag } from 'primeng/tag';
+import { webpSrc } from '../../../shared/utils/webp-src';
 
 /**
  * Una especialidad (especie animal) que atiende la veterinaria.
@@ -8,6 +13,7 @@ import { Component } from '@angular/core';
 interface Especialidad {
   id: string;
   nombre: string;
+  pastilla: string;
   /** Ruta de la foto (recomendado: 800×1000 px, vertical, .jpg o .webp) */
   imagen: string;
   alt: string;
@@ -21,6 +27,7 @@ const ESPECIALIDADES: readonly Especialidad[] = [
   {
     id: 'bovinos',
     nombre: 'Bovinos',
+    pastilla: 'Bovinos',
     imagen: 'assets/img/bovino.jpg',
     alt: 'Ganado bovino pastando en una finca de Madre de Dios',
     descripcion:
@@ -35,6 +42,7 @@ const ESPECIALIDADES: readonly Especialidad[] = [
   {
     id: 'porcinos',
     nombre: 'Porcinos',
+    pastilla: 'Porcinos',
     imagen: 'assets/img/porcino.png',
     alt: 'Cerdos en una granja porcina',
     descripcion:
@@ -49,6 +57,7 @@ const ESPECIALIDADES: readonly Especialidad[] = [
   {
     id: 'aves',
     nombre: 'Aves de corral',
+    pastilla: 'Aves de corral',
     imagen: 'assets/img/aves.webp',
     alt: 'Gallinas y pollos en un corral',
     descripcion:
@@ -63,6 +72,7 @@ const ESPECIALIDADES: readonly Especialidad[] = [
   {
     id: 'ovinos-caprinos',
     nombre: 'Ovinos y caprinos',
+    pastilla: 'Ovinos',
     imagen: 'assets/img/CABRA_OVEJA.jpg',
     alt: 'Ovejas y cabras en un potrero',
     descripcion:
@@ -77,6 +87,7 @@ const ESPECIALIDADES: readonly Especialidad[] = [
   {
     id: 'equinos',
     nombre: 'Equinos',
+    pastilla: 'Equinos',
     imagen: 'assets/img/equinos.jpg',
     alt: 'Caballo de trabajo en el campo',
     descripcion:
@@ -91,6 +102,7 @@ const ESPECIALIDADES: readonly Especialidad[] = [
   {
     id: 'mascotas',
     nombre: 'Mascotas',
+    pastilla: 'Perros y gatos',
     imagen: 'assets/img/mascotas.jpg',
     alt: 'Perro y gato atendidos en consulta veterinaria',
     descripcion:
@@ -107,12 +119,14 @@ const ESPECIALIDADES: readonly Especialidad[] = [
 
 @Component({
   selector: 'app-especialidades',
-  imports: [],
+  imports: [RouterLink, ButtonDirective, Card, Tag],
   templateUrl: './especialidades.html',
-  styleUrl: './especialidades.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Especialidades {
+  readonly compact = input(false);
   readonly especialidades = ESPECIALIDADES;
+  readonly toWebp = webpSrc;
 
   /** Si la foto aún no existe, se oculta y queda el fondo de color de la tarjeta. */
   ocultarImagen(evento: Event): void {

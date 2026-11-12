@@ -1,66 +1,21 @@
-<header class="site-header" [class.menu-open]="menuOpen()">
-    <div class="header-bar">
-        <a routerLink="/" class="brand" (click)="closeMenu()">
-            <span class="brand-name">
-                <span class="brand-ali">ALI-</span><span class="brand-vet">VET</span>
-            </span>
-            <span class="brand-sub">Veterinaria</span>
-        </a>
-
-        <nav class="nav-desktop" aria-label="Principal">
-            @for (link of navLinks; track link.path) {
-            <a [routerLink]="link.path" routerLinkActive="is-active"
-                [routerLinkActiveOptions]="{ exact: link.exact ?? false }" class="nav-link">
-                {{ link.label }}
-            </a>
-            }
-        </nav>
-
-        <div class="header-actions">
-            <button type="button" class="theme-toggle" (click)="theme.toggle()"
-                [attr.aria-label]="theme.theme() === 'dark' ? 'Activar modo claro' : 'Activar modo oscuro'"
-                [title]="theme.theme() === 'dark' ? 'Modo claro' : 'Modo oscuro'">
-                @if (theme.theme() === 'dark') {
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-                } @else {
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-                }
-            </button>
-
-            <a routerLink="/login" class="btn-login">Iniciar Sesión</a>
-
-            <button type="button" class="menu-toggle" (click)="toggleMenu()"
-                [attr.aria-expanded]="menuOpen()" aria-controls="menu-movil"
-                [attr.aria-label]="menuOpen() ? 'Cerrar menú' : 'Abrir menú'">
-                @if (menuOpen()) {
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                } @else {
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-                }
-            </button>
-        </div>
-    </div>
-
-    @if (menuOpen()) {
-    <nav id="menu-movil" class="nav-mobile" aria-label="Menú">
-        @for (link of navLinks; track link.path) {
-        <a [routerLink]="link.path" routerLinkActive="is-active"
-            [routerLinkActiveOptions]="{ exact: link.exact ?? false }" class="nav-link"
-            (click)="closeMenu()">
-            {{ link.label }}
-        </a>
-        }
-        <a routerLink="/login" class="btn-login btn-login--block" (click)="closeMenu()">Iniciar Sesión</a>
-    </nav>
-    }
+<header class="alivet-header">
+  <p-menubar [model]="items">
+    <ng-template #start>
+      <a routerLink="/" class="font-heading text-xl font-bold text-primary no-underline">AliVet</a>
+    </ng-template>
+    <ng-template #end>
+      <a pButton class="min-h-11" routerLink="/login" label="Iniciar sesión" icon="pi pi-sign-in" aria-label="Iniciar sesión" [outlined]="true" [rounded]="true"></a>
+      <a
+        pButton
+        class="min-h-11"
+        href="https://wa.me/51932898744"
+        target="_blank"
+        rel="noopener noreferrer"
+        label="Escribir por WhatsApp"
+        icon="pi pi-whatsapp"
+        [rounded]="true"
+        aria-label="Escribir por WhatsApp al 932 898 744"
+      ></a>
+    </ng-template>
+  </p-menubar>
 </header>

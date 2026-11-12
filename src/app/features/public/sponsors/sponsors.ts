@@ -1,19 +1,20 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Card } from 'primeng/card';
+import { Tag } from 'primeng/tag';
 
 export interface Sponsor {
   id: number;
   nombre: string;
   sigla: string;
   color: string;
+  imagen?: string;
 }
 
 @Component({
   selector: 'app-sponsors',
   standalone: true,
-  imports: [CommonModule],
+  imports: [Card, Tag],
   templateUrl: './sponsors.html',
-  styleUrl: './sponsors.css',
 })
 export class SponsorsComponent {
 

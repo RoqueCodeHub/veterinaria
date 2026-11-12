@@ -1,320 +1,149 @@
-<div class="dash-wrapper">
-    <!-- Cabecera Principal -->
-    <header class="dash-header">
-      <div class="header-left">
-        <span class="greeting-badge">👋 {{ greeting }}</span>
-        <h1 class="user-name">{{ user?.nombre ?? 'Administrador' }}</h1>
-        <p class="dash-subtitle">Resumen operativo general de Ali-Vet</p>
+<div class="dash">
+  <header class="dash-header">
+    <div>
+      <span class="dash-greet">{{ greeting }}</span>
+      <h1>Hola, {{ user?.nombre ?? 'Administrador' }}</h1>
+      <p>Resumen operativo general de Ali-Vet</p>
+      <div class="dash-actions">
+        <button type="button" class="dash-primary" (click)="navegarA('/admin/pos')">
+          <i class="pi pi-plus" aria-hidden="true"></i>
+          Nueva venta
+        </button>
+        <button type="button" class="dash-chip" (click)="navegarA('/admin/caja')">Caja</button>
+        <button type="button" class="dash-chip" (click)="navegarA('/admin/stock')">Stock</button>
+        <button type="button" class="dash-chip" (click)="navegarA('/admin/productos')">Productos</button>
+        <button type="button" class="dash-chip" (click)="navegarA('/admin/clientes')">Clientes</button>
       </div>
-  
-      <div class="header-right">
-        <div class="clock-badge">
-          <span class="clock-icon">⏰</span>
-          <span>{{ currentTime() | date:'HH:mm:ss' }}</span>
-          <small class="date-sub">{{ currentTime() | date:'dd/MM/yyyy' }}</small>
-        </div>
-        <div class="user-avatar" title="Perfil de Administrador">
-          {{ (user?.nombre ?? 'A').charAt(0).toUpperCase() }}
-        </div>
+    </div>
+    <div class="dash-tools">
+      <form class="dash-search" (submit)="buscar($event)">
+        <i class="pi pi-search" aria-hidden="true"></i>
+        <input
+          type="search"
+          placeholder="Buscar producto o cliente..."
+          [ngModel]="busqueda()"
+          (ngModelChange)="busqueda.set($event)"
+          name="busqueda"
+        />
+      </form>
+      <div class="dash-clock">
+        <strong>{{ currentTime() | date:'HH:mm' }}</strong>
+        <span>{{ currentTime() | date:'dd/MM/yyyy' }}</span>
       </div>
-    </header>
-  
-    <!-- Barra de Accesos Rápidos (Directos) -->
-    <section class="quick-actions-bar">
-      <button type="button" class="btn-quick action-pos" (click)="navegarA('/admin/pos')">
-        🛒 Nueva Venta (POS)
+    </div>
+  </header>
+
+  @if (loading()) {
+    <p class="dash-loading">Cargando resumen...</p>
+  } @else {
+    <section class="dash-kpis">
+      <button type="button" class="dash-kpi" (click)="navegarA('/admin/ventas-historial')">
+        <span class="dash-kpi-icon is-green"><i class="pi pi-wallet" aria-hidden="true"></i></span>
+        <span>
+          <small>Ingresos de hoy</small>
+          <strong>S/ {{ totalVentasHoy() | number:'1.2-2' }}</strong>
+          <em>{{ ventasHoy().length }} órdenes procesadas hoy</em>
+        </span>
       </button>
-      <button type="button" class="btn-quick action-caja" (click)="navegarA('/admin/caja')">
-        💳 Ir a Caja y Cobros
+      <button type="button" class="dash-kpi" (click)="navegarA('/admin/productos')">
+        <span class="dash-kpi-icon is-violet"><i class="pi pi-box" aria-hidden="true"></i></span>
+        <span>
+          <small>Productos activos</small>
+          <strong>{{ totalProductosActivos() }}</strong>
+          <em>Ítems disponibles en tienda</em>
+        </span>
       </button>
-      <button type="button" class="btn-quick action-stock" (click)="navegarA('/admin/stock')">
-        📦 Movimientos / Stock
+      <button type="button" class="dash-kpi" (click)="navegarA('/admin/clientes')">
+        <span class="dash-kpi-icon is-blue"><i class="pi pi-users" aria-hidden="true"></i></span>
+        <span>
+          <small>Clientes registrados</small>
+          <strong>{{ totalClientesActivos() }}</strong>
+          <em>Propietarios en base de datos</em>
+        </span>
       </button>
-      <button type="button" class="btn-quick action-prod" (click)="navegarA('/admin/productos')">
-        🏷️ Catálogo Productos
-      </button>
-      <button type="button" class="btn-quick action-client" (click)="navegarA('/admin/clientes')">
-        👤 Directorio Clientes
+      <button type="button" class="dash-kpi" (click)="navegarA('/admin/stock')">
+        <span class="dash-kpi-icon is-amber"><i class="pi pi-exclamation-triangle" aria-hidden="true"></i></span>
+        <span>
+          <small>Alertas de stock</small>
+          <strong>{{ productosStockBajoCount() }}</strong>
+          <em>{{ productosStockBajoCount() > 0 ? 'Ítems por reponer urgente' : 'Stock en niveles óptimos' }}</em>
+        </span>
       </button>
     </section>
-  
-    <!-- Métricas KPI principales -->
-    @if (loading()) {
-      <div class="loading-stats">
-        <div class="loading-pulse"></div>
-        <div class="loading-pulse"></div>
-        <div class="loading-pulse"></div>
-        <div class="loading-pulse"></div>
-      </div>
-    } @else {
-      <section class="stats-grid">
-        <!-- Ventas del Día -->
-        <div class="stat-card" (click)="navegarA('/admin/ventas-historial')">
-          <div class="stat-header">
-            <span class="stat-label">Ingresos de Hoy</span>
-            <span class="stat-icon-bg icon-green">💰</span>
-          </div>
-          <div class="stat-value text-success">S/ {{ totalVentasHoy() | number:'1.2-2' }}</div>
-          <div class="stat-sub">{{ ventasHoy().length }} órdenes procesadas hoy</div>
-        </div>
-  
-        <!-- Productos Activos -->
-        <div class="stat-card" (click)="navegarA('/admin/productos')">
-          <div class="stat-header">
-            <span class="stat-label">Productos Activos</span>
-            <span class="stat-icon-bg icon-indigo">📦</span>
-          </div>
-          <div class="stat-value text-indigo">{{ totalProductosActivos() }}</div>
-          <div class="stat-sub">Ítems disponibles en tienda</div>
-        </div>
-  
-        <!-- Clientes Registrados -->
-        <div class="stat-card" (click)="navegarA('/admin/clientes')">
-          <div class="stat-header">
-            <span class="stat-label">Clientes Registrados</span>
-            <span class="stat-icon-bg icon-teal">👤</span>
-          </div>
-          <div class="stat-value text-teal">{{ totalClientesActivos() }}</div>
-          <div class="stat-sub">Propietarios en base de datos</div>
-        </div>
-  
-        <!-- Alerta de Stock Bajo -->
-        <div 
-          class="stat-card" 
-          [class.stat-alert]="productosStockBajoCount() > 0"
-          (click)="navegarA('/admin/stock')"
-        >
-          <div class="stat-header">
-            <span class="stat-label">Alertas de Stock</span>
-            <span class="stat-icon-bg icon-amber">⚠️</span>
-          </div>
-          <div 
-            class="stat-value" 
-            [class.text-warning]="productosStockBajoCount() > 0" 
-            [class.text-ok]="productosStockBajoCount() === 0"
-          >
-            {{ productosStockBajoCount() }}
-          </div>
-          <div class="stat-sub font-bold">
-            {{ productosStockBajoCount() > 0 ? 'Ítems por reponer urgente' : 'Stock en niveles óptimos' }}
-          </div>
-        </div>
-      </section>
-    }
-  
-    <section class="charts">
-      <article class="panel chart-ventas">
-        <div class="panel-head">
+
+    <section class="dash-grid">
+      <article class="dash-card dash-chart-card">
+        <div class="dash-card-head">
           <h2>Ventas de la semana</h2>
-          <div class="legend">
-            <span><i class="dot blue"></i> Ingresos</span>
-            <span><i class="dot green"></i> Órdenes</span>
+          @if (sinActividad()) {
+            <span class="dash-sample">Datos de ejemplo</span>
+          }
+        </div>
+        <div class="dash-legend">
+          <span><i class="is-green"></i>Ingresos (S/)</span>
+          <span><i class="is-amber"></i>Órdenes</span>
+        </div>
+        <div class="dash-chart">
+          <p-chart type="line" [data]="ingresosChart()" [options]="chartOptions" />
+        </div>
+      </article>
+
+      <article class="dash-card">
+        <h2>Órdenes · {{ rangoEtiqueta() }}</h2>
+        <div class="dash-donut-row">
+          <div class="dash-donut">
+            <p-chart type="doughnut" [data]="ordenesDonut()" [options]="donutOptions" />
+            <strong>{{ ordenesSemana() }}</strong>
           </div>
+          <ul class="dash-donut-legend">
+            <li><i class="is-green"></i>Cobradas · {{ cobradasSemana() }}</li>
+            <li><i class="is-amber"></i>Pendientes · {{ pendientesSemana() }}</li>
+            <li><i class="is-red"></i>Anuladas · {{ anuladasSemana() }}</li>
+          </ul>
         </div>
-        <svg class="chart" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="dashIngreso" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#3366ff" stop-opacity="0.45" />
-              <stop offset="100%" stop-color="#3366ff" stop-opacity="0.02" />
-            </linearGradient>
-          </defs>
-          <g stroke="#edf1f7" stroke-width="1">
-            <line x1="0" y1="30" x2="320" y2="30" />
-            <line x1="0" y1="60" x2="320" y2="60" />
-            <line x1="0" y1="90" x2="320" y2="90" />
-          </g>
-          <path [attr.d]="areaIngresos()" fill="url(#dashIngreso)" />
-          <path [attr.d]="trazoIngresos()" fill="none" stroke="#3366ff" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
-          <path [attr.d]="trazoOrdenes()" fill="none" stroke="#00d68f" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" />
-        </svg>
-        <div class="axis">
-          @for (d of semana(); track d.clave) {
-            <span>{{ d.label }}</span>
-          }
-        </div>
+        @if (ordenesSemana() === 0) {
+          <p class="dash-empty">
+            Aún no hay órdenes esta semana.
+            <a routerLink="/admin/pos">Registrar una venta →</a>
+          </p>
+        }
+      </article>
+    </section>
+
+    <section class="dash-bottom">
+      <article class="dash-card">
+        <h2>Ingreso de hoy</h2>
+        <p class="dash-money">S/ {{ totalVentasHoy() | number:'1.2-2' }}</p>
+        <p class="dash-note">{{ comparacionHoy() }}</p>
       </article>
 
-      <article class="panel chart-hoy">
-        <div class="panel-head">
-          <h2>Ingreso de hoy</h2>
-          @if (variacionHoy() != null) {
-            <span class="delta" [class.up]="variacionHoy()! >= 0" [class.down]="variacionHoy()! < 0">
-              {{ variacionHoy()! >= 0 ? '▲' : '▼' }} {{ variacionHoy()! | number:'1.0-0' }}%
-            </span>
-          }
-        </div>
-        <p class="big">S/ {{ totalVentasHoy() | number:'1.2-2' }}</p>
-        <p class="hint">{{ ventasHoy().length }} órdenes · frente a ayer</p>
-        <svg class="chart spark" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true">
-          <path [attr.d]="areaIngresos()" fill="#3366ff" opacity="0.85" />
-        </svg>
-      </article>
-
-      <article class="panel chart-ordenes">
-        <div class="panel-head">
-          <h2>Órdenes</h2>
-          <span class="pill">{{ rangoEtiqueta() }}</span>
-        </div>
-        <div class="order-stats">
-          <div><span>Total</span><strong>{{ ordenesSemana() }}</strong></div>
-          <div><span>Cobradas</span><strong>{{ cobradasSemana() }}</strong></div>
-          <div><span>Pendientes</span><strong>{{ pendientesSemana() }}</strong></div>
-          <div><span>Anuladas</span><strong>{{ anuladasSemana() }}</strong></div>
-        </div>
-        <div class="legend">
-          <span><i class="dot green"></i> Cobradas</span>
-          <span><i class="dot blue"></i> Anuladas</span>
-          <span><i class="dot gray"></i> Todas</span>
-        </div>
-        <svg class="chart" viewBox="0 0 320 120" preserveAspectRatio="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="dashTodas" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#c5cee0" stop-opacity="0.45" />
-              <stop offset="100%" stop-color="#c5cee0" stop-opacity="0.02" />
-            </linearGradient>
-            <linearGradient id="dashCobradas" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#00d68f" stop-opacity="0.35" />
-              <stop offset="100%" stop-color="#00d68f" stop-opacity="0.02" />
-            </linearGradient>
-            <linearGradient id="dashAnuladas" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stop-color="#3366ff" stop-opacity="0.28" />
-              <stop offset="100%" stop-color="#3366ff" stop-opacity="0.02" />
-            </linearGradient>
-          </defs>
-          <g stroke="#edf1f7" stroke-width="1">
-            <line x1="0" y1="30" x2="320" y2="30" />
-            <line x1="0" y1="60" x2="320" y2="60" />
-            <line x1="0" y1="90" x2="320" y2="90" />
-          </g>
-          <path [attr.d]="areaTodas()" fill="url(#dashTodas)" />
-          <path [attr.d]="areaCobradas()" fill="url(#dashCobradas)" />
-          <path [attr.d]="areaAnuladas()" fill="url(#dashAnuladas)" />
-          <path [attr.d]="trazoTodas()" fill="none" stroke="#c5cee0" stroke-width="2.5" stroke-linecap="round" />
-          <path [attr.d]="trazoCobradas()" fill="none" stroke="#00d68f" stroke-width="2.5" stroke-linecap="round" />
-          <path [attr.d]="trazoAnuladas()" fill="none" stroke="#3366ff" stroke-width="2.5" stroke-linecap="round" />
-        </svg>
-        <div class="axis">
-          @for (d of semana(); track d.clave) {
-            <span>{{ d.label }}</span>
-          }
-        </div>
-      </article>
-
-      <article class="panel chart-mov">
-        <div class="panel-head">
-          <h2>Movimiento</h2>
-          <span class="pill">{{ rangoEtiqueta() }}</span>
-        </div>
-        <table class="mov">
+      <article class="dash-card">
+        <h2>Movimiento · {{ rangoEtiqueta() }}</h2>
+        <table class="dash-table">
+          <thead>
+            <tr>
+              <th>Día</th>
+              <th>Órdenes</th>
+              <th>Variación</th>
+            </tr>
+          </thead>
           <tbody>
             @for (d of semana(); track d.clave) {
               <tr>
                 <td>{{ d.label }}</td>
-                <td class="num">{{ d.ordenes }}</td>
-                <td class="delta" [class.up]="d.variacion != null && d.variacion >= 0" [class.down]="d.variacion != null && d.variacion < 0" [class.flat]="d.variacion == null">
-                  @if (d.variacion == null) { — } @else { {{ d.variacion >= 0 ? '▲' : '▼' }} {{ d.variacion | number:'1.0-0' }}% }
+                <td>{{ d.ordenes }}</td>
+                <td>
+                  @if (d.variacion == null) {
+                    —
+                  } @else {
+                    {{ d.variacion >= 0 ? '+' : '' }}{{ d.variacion | number:'1.0-0' }}%
+                  }
                 </td>
-                <td><span class="bar" [style.width.%]="barra(d.ordenes)"></span></td>
               </tr>
             }
           </tbody>
         </table>
       </article>
     </section>
-
-    <!-- Grilla de Contenido Principal -->
-    <section class="content-grid mt-4">
-      <!-- COLUMNA IZQUIERDA: Últimas Ventas del Día -->
-      <div class="card-panel">
-        <div class="card-header-flex">
-          <h2 class="card-title">🛒 Últimas Ventas Registradas</h2>
-          <button type="button" class="btn-link" (click)="navegarA('/admin/ventas-historial')">
-            Ver Historial Completo →
-          </button>
-        </div>
-  
-        @if (ultimasVentas().length === 0) {
-          <div class="empty-msg">No hay ventas registradas.</div>
-        } @else {
-          <div class="ventas-list">
-            @for (v of ultimasVentas(); track v.id) {
-              <div class="venta-row">
-                <div class="venta-id">#{{ v.id }}</div>
-                <div class="venta-info">
-                  <strong class="venta-cliente">
-                    {{ $any(v.cliente)?.nombre_completo || $any(v.cliente)?.nombre || 'Cliente General' }}
-                  </strong>
-                  <span class="venta-fecha">{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
-                </div>
-                <div class="venta-right">
-                  <span class="venta-total">S/ {{ v.total | number:'1.2-2' }}</span>
-                  <span class="badge-mini" [ngClass]="estadoBadgeClass(v.estado)">{{ etiquetaEstado(v.estado) }}</span>
-                </div>
-              </div>
-            }
-          </div>
-        }
-      </div>
-  
-      <!-- COLUMNA DERECHA: Alertas Críticas de Stock & Cuenta -->
-      <div class="right-stack">
-        <!-- Widget: Reposición Urgente -->
-        <div class="card-panel">
-          <div class="card-header-flex">
-            <h2 class="card-title text-warning">⚠️ Reposición Urgente</h2>
-            <button type="button" class="btn-link" (click)="navegarA('/admin/stock')">
-              Ir a Kardex →
-            </button>
-          </div>
-  
-          @if (productosStockBajoList().length === 0) {
-            <div class="empty-msg text-success">
-              ✅ ¡Todo en orden! No hay productos con stock crítico.
-            </div>
-          } @else {
-            <div class="stock-alerts-list">
-              @for (p of productosStockBajoList(); track p.id) {
-                @let stockActual = $any(p).stock_disponible ?? p.stock_actual ?? 0;
-                <div class="stock-alert-item">
-                  <div class="stock-item-info">
-                    <strong>{{ p.nombre }}</strong>
-                    <small class="muted">{{ p.categoria || 'General' }}</small>
-                  </div>
-                  <div class="stock-item-qty">
-                    <span class="stock-badge-critical">{{ stockActual }} u. restantes</span>
-                    <small class="muted">Mín: {{ p.stock_minimo || 5 }}</small>
-                  </div>
-                </div>
-              }
-            </div>
-          }
-        </div>
-  
-        <!-- Widget: Información de Cuenta y Estado -->
-        <div class="card-panel">
-          <h2 class="card-title">👤 Datos del Usuario en Sesión</h2>
-          <div class="user-info-block">
-            <div class="user-info-avatar">
-              {{ (user?.nombre ?? 'A').charAt(0).toUpperCase() }}
-            </div>
-            <div class="user-info-details">
-              <h3 class="info-name">{{ user?.nombre || 'Administrador' }}</h3>
-              <p class="info-email">{{ user?.email || 'admin@alivet.pe' }}</p>
-              <span class="info-badge badge-active">● Cuenta Activa</span>
-            </div>
-          </div>
-  
-          <div class="info-meta mt-3">
-            <div class="info-meta-item">
-              <span class="meta-label">ID de Usuario</span>
-              <span class="meta-value">#{{ user?.id || 1 }}</span>
-            </div>
-            <div class="info-meta-item">
-              <span class="meta-label">Estado del Sistema</span>
-              <span class="meta-value text-success">🟢 Conectado (Laravel API)</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
+  }
+</div>

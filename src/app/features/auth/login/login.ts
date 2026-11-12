@@ -1,67 +1,111 @@
-import { Component, OnInit, OnDestroy, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
+import { isPlatformBrowser } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, OnInit, OnDestroy, PLATFORM_ID, inject, signal } from '@angular/core';
+import { ReactiveFormsModule, FormBuilder, Validators } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { Button } from 'primeng/button';
+import { Checkbox } from 'primeng/checkbox';
+import { InputText } from 'primeng/inputtext';
+import { Message } from 'primeng/message';
 import { AuthService } from '../../../core/auth/auth';
+
+type LoginView = 'login' | 'forgot' | 'reset';
 
 interface SlideItem {
   image: string;
-  title: string;
-  subtitle: string;
+  alt: string;
 }
 
 @Component({
   selector: 'app-login',
-  imports: [CommonModule, ReactiveFormsModule],
+  imports: [ReactiveFormsModule, RouterLink, Button, Checkbox, InputText, Message],
   templateUrl: './login.html',
   styleUrl: './login.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Login implements OnInit, OnDestroy {
-  loginForm: FormGroup;
-  showPassword = signal(false);
-  isLoading = signal(false);
-  currentSlide = signal(0);
-  errorMessage = signal<string | null>(null);
+  private readonly platformId = inject(PLATFORM_ID);
+  private readonly fb = inject(FormBuilder);
+  private readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
+
+  readonly year = new Date().getFullYear();
+  readonly mode = signal<LoginView>('login');
+  readonly isLoading = signal(false);
+  readonly showPassword = signal(false);
+  readonly showResetPassword = signal(false);
+  readonly currentSlide = signal(0);
+  readonly errorMessage = signal<string | null>(null);
+  readonly noticeMessage = signal<string | null>(null);
+  private readonly resetToken = signal('');
   private sliderInterval: ReturnType<typeof setInterval> | null = null;
 
-  slides: SlideItem[] = [
+  readonly loginForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    remember: [false],
+  });
+
+  readonly forgotForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+  });
+
+  readonly resetForm = this.fb.group({
+    email: ['', [Validators.required, Validators.email]],
+    password: ['', [Validators.required, Validators.minLength(6)]],
+    confirmation: ['', [Validators.required]],
+  });
+
+  readonly slides: SlideItem[] = [
     {
-      image: 'https://images.unsplash.com/photo-1551434678-e076c223a692?w=800&q=80',
-      title: 'Gestión Inteligente',
-      subtitle: 'Administra tus recursos de forma eficiente y moderna',
+      image: 'assets/img/nosotros.webp',
+      alt: 'Veterinaria de Alivet con un perro y un gato en consulta',
     },
     {
-      image: 'https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=800&q=80',
-      title: 'Análisis en Tiempo Real',
-      subtitle: 'Visualiza tus datos con paneles interactivos y reportes avanzados',
+      image: 'assets/img/mascota.webp',
+      alt: 'Atención de mascotas en Veterinaria Alivet',
     },
     {
-      image: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=800&q=80',
-      title: 'Colaboración Total',
-      subtitle: 'Conecta a tu equipo en una sola plataforma integrada',
+      image: 'assets/img/campo.webp',
+      alt: 'Atención veterinaria en campo, Madre de Dios',
     },
   ];
 
-  constructor(
-    private fb: FormBuilder,
-    private authService: AuthService,
-    private router: Router
-  ) {
-    this.loginForm = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]],
-      remember: [false],
-    });
-  }
-
   ngOnInit(): void {
-    // Limpiar sesión corrupta y redirigir si ya hay token válido
-    if (this.authService.isLoggedIn()) {
-      this.router.navigate(['/admin/dashboard']);
-    } else {
-      this.authService.clearSession(); // elimina cualquier token inválido previo
+    if (!isPlatformBrowser(this.platformId)) {
+      return;
     }
-    this.startSlider();
+    const params = this.route.snapshot.queryParamMap;
+    const token = params.get('token');
+    const emailFromLink = params.get('email');
+    const recovering = this.router.url.startsWith('/recuperar-contrasena');
+
+    if (recovering && token && emailFromLink) {
+      this.mode.set('reset');
+      this.resetToken.set(token);
+      this.resetForm.patchValue({ email: emailFromLink });
+    } else if (recovering) {
+      this.mode.set('forgot');
+      const remembered = this.authService.rememberedEmail();
+      if (remembered) {
+        this.forgotForm.patchValue({ email: remembered });
+      }
+    } else if (this.authService.isLoggedIn()) {
+      this.router.navigate(['/admin/dashboard']);
+      return;
+    } else {
+      this.authService.clearSession();
+      const remembered = this.authService.rememberedEmail();
+      if (remembered) {
+        this.loginForm.patchValue({ email: remembered, remember: true });
+      }
+    }
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (!reduceMotion) {
+      this.startSlider();
+    }
   }
 
   ngOnDestroy(): void {
@@ -83,12 +127,11 @@ export class Login implements OnInit, OnDestroy {
 
   goToSlide(index: number): void {
     this.currentSlide.set(index);
+    if (!this.sliderInterval) {
+      return;
+    }
     this.stopSlider();
     this.startSlider();
-  }
-
-  togglePassword(): void {
-    this.showPassword.update(v => !v);
   }
 
   onSubmit(): void {
@@ -100,25 +143,121 @@ export class Login implements OnInit, OnDestroy {
     this.isLoading.set(true);
     this.errorMessage.set(null);
 
-    const { email, password } = this.loginForm.value;
+    const email = this.loginForm.controls.email.value;
+    const password = this.loginForm.controls.password.value;
+    if (!email || !password) {
+      this.isLoading.set(false);
+      return;
+    }
 
-    this.authService.login({ email, password }).subscribe({
+    this.authService.login({
+      email,
+      password,
+      remember: this.loginForm.controls.remember.value === true,
+    }).subscribe({
       next: () => {
         this.isLoading.set(false);
         this.router.navigate(['/admin/dashboard']);
       },
-      error: (err) => {
+      error: (err: HttpErrorResponse) => {
         this.isLoading.set(false);
         if (err.status === 401 || err.status === 422) {
           this.errorMessage.set('Credenciales incorrectas. Verifica tu correo y contraseña.');
-        } else if (err.status === 0) {
-          this.errorMessage.set('No se puede conectar al servidor. Verifica que el backend esté activo.');
-        } else {
-          this.errorMessage.set('Ocurrió un error inesperado. Intenta de nuevo.');
+          return;
         }
-        console.error('Error de login:', err);
+        this.errorMessage.set(this.readError(err, 'Ocurrió un error inesperado. Intenta de nuevo.'));
       }
     });
+  }
+
+  openForgot(): void {
+    this.errorMessage.set(null);
+    this.noticeMessage.set(null);
+    const email = this.loginForm.controls.email.value;
+    if (email) {
+      this.forgotForm.patchValue({ email });
+    }
+    this.mode.set('forgot');
+    void this.router.navigate(['/recuperar-contrasena']);
+  }
+
+  backToLogin(): void {
+    this.errorMessage.set(null);
+    this.noticeMessage.set(null);
+    this.mode.set('login');
+    void this.router.navigate(['/login']);
+  }
+
+  sendResetLink(): void {
+    if (this.forgotForm.invalid) {
+      this.forgotForm.markAllAsTouched();
+      return;
+    }
+    const email = this.forgotForm.controls.email.value;
+    if (!email) {
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+    this.noticeMessage.set(null);
+    this.authService.requestPasswordReset(email).subscribe({
+      next: (response) => {
+        this.isLoading.set(false);
+        this.noticeMessage.set(response.message);
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isLoading.set(false);
+        this.errorMessage.set(this.readError(err, 'No se pudo enviar el enlace. Intenta de nuevo.'));
+      },
+    });
+  }
+
+  saveNewPassword(): void {
+    if (this.resetForm.invalid) {
+      this.resetForm.markAllAsTouched();
+      return;
+    }
+    const email = this.resetForm.controls.email.value;
+    const password = this.resetForm.controls.password.value;
+    const confirmation = this.resetForm.controls.confirmation.value;
+    if (!email || !password || !confirmation) {
+      return;
+    }
+    if (password !== confirmation) {
+      this.errorMessage.set('Las contraseñas no coinciden.');
+      return;
+    }
+
+    this.isLoading.set(true);
+    this.errorMessage.set(null);
+    this.noticeMessage.set(null);
+    this.authService.resetPassword({
+      email,
+      token: this.resetToken(),
+      password,
+      password_confirmation: confirmation,
+    }).subscribe({
+      next: (response) => {
+        this.isLoading.set(false);
+        this.noticeMessage.set(response.message);
+        this.resetForm.reset({ email, password: '', confirmation: '' });
+      },
+      error: (err: HttpErrorResponse) => {
+        this.isLoading.set(false);
+        this.errorMessage.set(this.readError(err, 'No se pudo actualizar la contraseña.'));
+      },
+    });
+  }
+
+  private readError(err: HttpErrorResponse, fallback: string): string {
+    if (err.status === 0) {
+      return 'No se puede conectar al servidor. Verifica que el backend esté activo.';
+    }
+    const message = err.error && typeof err.error === 'object' && 'message' in err.error
+      ? err.error.message
+      : null;
+    return typeof message === 'string' && message.trim() ? message : fallback;
   }
 
   get emailControl() {

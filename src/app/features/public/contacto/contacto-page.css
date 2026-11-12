@@ -5,9 +5,10 @@
    ============================================ */
 
 .ct-section {
-    background: #06161a;
-    padding: 4rem 1.5rem 5rem;
-    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 48px 16px 64px;
+    font-family: var(--font-body);
 }
 
 .ct-container {
@@ -26,17 +27,21 @@
 }
 
 @media (min-width: 560px) {
-    .ct-info-grid { grid-template-columns: repeat(3, 1fr); }
+    .ct-info-grid { grid-template-columns: 1fr 1fr; }
+}
+
+.ct-info-card--primary {
+    border-color: var(--accent-line);
 }
 
 .ct-info-card {
     display: flex;
     align-items: flex-start;
     gap: 1rem;
-    padding: 1.25rem;
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(154, 210, 217, 0.09);
-    border-radius: 1rem;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
 }
 
 .ct-info-icon {
@@ -54,7 +59,7 @@
 .ct-info-icon svg {
     width: 20px;
     height: 20px;
-    color: #4122DD;
+    color: var(--violet-500);
 }
 
 .ct-info-body {
@@ -64,29 +69,35 @@
 }
 
 .ct-info-label {
-    font-size: 0.72rem;
+    font-size: 12px;
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: rgba(154, 210, 217, 0.55);
+    color: var(--muted);
     margin: 0;
 }
 
 .ct-info-value {
-    font-size: 0.875rem;
-    color: rgba(255, 255, 255, 0.75);
-    font-weight: 500;
+    font-size: 18px;
+    color: var(--text);
+    font-weight: 600;
     margin: 0;
     text-decoration: none;
     transition: color 0.2s;
 }
 
-a.ct-info-value:hover { color: #4122DD; }
+a.ct-info-value {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+}
+
+a.ct-info-value:hover { color: var(--accent); }
 
 /* ── Tarjeta de formulario ── */
 .ct-form-card {
-    background: rgba(255, 255, 255, 0.025);
-    border: 1px solid rgba(154, 210, 217, 0.09);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 1.5rem;
     padding: 2.5rem 2rem;
     display: flex;
@@ -112,9 +123,9 @@ a.ct-info-value:hover { color: #4122DD; }
 .ct-alert svg { width: 20px; height: 20px; flex-shrink: 0; }
 
 .ct-alert--success {
-    background: rgba(42, 22, 140, 0.18);
-    border: 1px solid rgba(154, 210, 217, 0.30);
-    color: #4122DD;
+    background: var(--leaf-soft);
+    border: 1px solid var(--leaf-line);
+    color: var(--leaf);
 }
 
 .ct-alert--error {
@@ -146,18 +157,19 @@ a.ct-info-value:hover { color: #4122DD; }
 .ct-label {
     font-size: 0.8rem;
     font-weight: 600;
-    color: rgba(255, 255, 255, 0.65);
+    color: var(--muted);
 }
 
 .ct-required { color: #4122DD; }
 
 .ct-input {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(154, 210, 217, 0.14);
-    border-radius: 0.65rem;
-    padding: 0.7rem 0.95rem;
-    font-size: 0.875rem;
-    color: #fff;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 16px;
+    color: var(--text);
+    min-height: 44px;
     font-family: inherit;
     outline: none;
     transition: border-color 0.2s, box-shadow 0.2s;
@@ -165,7 +177,7 @@ a.ct-info-value:hover { color: #4122DD; }
     box-sizing: border-box;
 }
 
-.ct-input::placeholder { color: rgba(255, 255, 255, 0.22); }
+.ct-input::placeholder { color: var(--muted); }
 
 .ct-input:focus {
     border-color: rgba(154, 210, 217, 0.40);
@@ -184,11 +196,12 @@ a.ct-info-value:hover { color: #4122DD; }
     align-items: center;
     justify-content: center;
     gap: 0.6rem;
-    padding: 0.9rem 2rem;
-    border-radius: 0.75rem;
-    background: linear-gradient(135deg, #2A168C, #1a4d55);
-    border: 1px solid rgba(154, 210, 217, 0.25);
-    color: #fff;
+    min-height: 44px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    background: var(--violet-500);
+    border: 1px solid var(--violet-500);
+    color: #ffffff;
     font-size: 0.9rem;
     font-weight: 700;
     font-family: inherit;

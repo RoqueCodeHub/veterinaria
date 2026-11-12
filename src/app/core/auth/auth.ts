@@ -41,6 +41,14 @@ export interface LoginResponse {
 export interface LoginRequest {
   email: string;
   password: string;
+  remember?: boolean;
+}
+
+export interface PasswordResetRequest {
+  email: string;
+  token: string;
+  password: string;
+  password_confirmation: string;
 }
 
 @Injectable({
@@ -49,21 +57,40 @@ export interface LoginRequest {
 export class AuthService {
   private readonly TOKEN_KEY = 'auth_token';
   private readonly USER_KEY = 'auth_user';
+  private readonly REMEMBER_EMAIL_KEY = 'auth_remember_email';
   private readonly platformId = inject(PLATFORM_ID);
 
   constructor(private http: HttpClient) { }
 
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
+    const remember = credentials.remember === true;
     return this.http
-      .post<LoginResponse>(`${environment.apiUrl}/auth/login`, credentials)
+      .post<LoginResponse>(`${environment.apiUrl}/auth/login`, {
+        email: credentials.email,
+        password: credentials.password,
+        remember,
+      })
       .pipe(
         tap((response) => {
           const { token, user } = response;
-          this.saveToken(token);
-          this.saveUser(this.mapUser(user));
+          this.persistSession(token, this.mapUser(user), remember);
+          this.persistRememberedEmail(remember ? credentials.email : null);
         })
       );
+  }
+
+  requestPasswordReset(email: string): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/auth/forgot-password`, { email });
+  }
+
+  resetPassword(payload: PasswordResetRequest): Observable<{ message: string }> {
+    return this.http.post<{ message: string }>(`${environment.apiUrl}/auth/reset-password`, payload);
+  }
+
+  rememberedEmail(): string | null {
+    if (!isPlatformBrowser(this.platformId)) return null;
+    return localStorage.getItem(this.REMEMBER_EMAIL_KEY);
   }
 
   logout(): Observable<void> {
@@ -76,17 +103,14 @@ export class AuthService {
   }
 
   getToken(): string | null {
-    if (!isPlatformBrowser(this.platformId)) return null;
-    const token = localStorage.getItem(this.TOKEN_KEY);
-    // Descartar valores corruptos que pudo haber guardado código anterior
+    const token = this.readStored(this.TOKEN_KEY);
     if (!token || token === 'undefined' || token === 'null') return null;
     return token;
   }
 
   getUser(): User | null {
-    if (!isPlatformBrowser(this.platformId)) return null;
-    const userStr = localStorage.getItem(this.USER_KEY);
-    return userStr ? JSON.parse(userStr) : null;
+    const userStr = this.readStored(this.USER_KEY);
+    return userStr ? JSON.parse(userStr) as User : null;
   }
 
   isLoggedIn(): boolean {
@@ -116,22 +140,42 @@ export class AuthService {
     };
   }
 
-  private saveToken(token: string): void {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem(this.TOKEN_KEY, token);
-    }
-  }
-
   private saveUser(user: User): void {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.setItem(this.USER_KEY, JSON.stringify(user));
-    }
+    const persistent = !isPlatformBrowser(this.platformId) || localStorage.getItem(this.TOKEN_KEY) !== null;
+    this.writeStored(this.USER_KEY, JSON.stringify(user), persistent);
   }
 
   clearSession(): void {
-    if (isPlatformBrowser(this.platformId)) {
-      localStorage.removeItem(this.TOKEN_KEY);
-      localStorage.removeItem(this.USER_KEY);
+    if (!isPlatformBrowser(this.platformId)) return;
+    for (const storage of [localStorage, sessionStorage]) {
+      storage.removeItem(this.TOKEN_KEY);
+      storage.removeItem(this.USER_KEY);
     }
+  }
+
+  private persistSession(token: string, user: User, remember: boolean): void {
+    this.clearSession();
+    this.writeStored(this.TOKEN_KEY, token, remember);
+    this.writeStored(this.USER_KEY, JSON.stringify(user), remember);
+  }
+
+  private persistRememberedEmail(email: string | null): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    if (email) {
+      localStorage.setItem(this.REMEMBER_EMAIL_KEY, email);
+      return;
+    }
+    localStorage.removeItem(this.REMEMBER_EMAIL_KEY);
+  }
+
+  private readStored(key: string): string | null {
+    if (!isPlatformBrowser(this.platformId)) return null;
+    return sessionStorage.getItem(key) ?? localStorage.getItem(key);
+  }
+
+  private writeStored(key: string, value: string, persistent: boolean): void {
+    if (!isPlatformBrowser(this.platformId)) return;
+    const storage = persistent ? localStorage : sessionStorage;
+    storage.setItem(key, value);
   }
 }

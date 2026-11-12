@@ -1,272 +1,104 @@
-<div class="proveedores-wrapper">
-    <!-- Cabecera -->
-    <header class="page-header">
-      <div>
-        <h1 class="page-title">Directorio de Proveedores</h1>
-        <p class="page-subtitle">Gestión de distribuidores, empresas, RUC y contactos comerciales</p>
-      </div>
-      <button type="button" class="btn-primary" (click)="openCreate()">
-        ➕ Nuevo Proveedor
-      </button>
-    </header>
-  
-    @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
-    @if (aviso()) { <div class="alert alert-success">{{ aviso() }}</div> }
-  
-    <!-- Tarjetas KPI -->
-    <div class="metrics-grid">
-      <div class="metric-card" (click)="setFiltroEstado('todos')">
-        <span class="metric-label">Total Proveedores</span>
-        <strong class="metric-value">{{ metricas().total }}</strong>
-      </div>
-      <div class="metric-card" (click)="setFiltroEstado('activos')">
-        <span class="metric-label">Proveedores Activos</span>
-        <strong class="metric-value text-success">{{ metricas().activos }}</strong>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Con RUC / Empresa</span>
-        <strong class="metric-value text-primary">{{ metricas().empresasConRuc }}</strong>
-      </div>
-      <div class="metric-card" (click)="setFiltroEstado('inactivos')">
-        <span class="metric-label">Inactivos</span>
-        <strong class="metric-value text-danger">{{ metricas().inactivos }}</strong>
-      </div>
+<div class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Proveedores</h1>
+      <p>Directorio de empresas y contactos comerciales</p>
     </div>
-  
-    <!-- Panel Principal -->
-    <section class="card-panel mt-4">
-      <!-- Filtros y Búsqueda -->
-      <div class="filters-bar">
-        <!-- Buscador -->
-        <div class="search-field">
-          <input 
-            type="text" 
-            class="input-custom" 
-            placeholder="🔍 Buscar por RUC, Empresa, Nombre o Teléfono..."
-            [ngModel]="busquedaTexto()"
-            (ngModelChange)="busquedaTexto.set($event)"
-          />
-        </div>
-  
-        <!-- Filtro Tipo Documento -->
-        <div class="filter-group">
-          <select 
-            class="input-custom select-custom" 
-            [ngModel]="filtroTipoDoc()"
-            (ngModelChange)="filtroTipoDoc.set($event)"
-          >
-            <option value="todos">Todos los Documentos</option>
-            <option value="RUC">Empresas (RUC)</option>
-            <option value="DNI">Personas (DNI)</option>
-            <option value="CE">Carnet Extranjería (CE)</option>
-          </select>
-        </div>
-  
-        <!-- Filtro Estado -->
-        <div class="filter-group">
-          <select 
-            class="input-custom select-custom" 
-            [ngModel]="filtroEstado()"
-            (ngModelChange)="setFiltroEstado($event)"
-          >
-            <option value="todos">Todos los Estados</option>
-            <option value="activos">🟢 Solo Activos</option>
-            <option value="inactivos">🔴 Inactivos</option>
-          </select>
-        </div>
-      </div>
-  
-      <!-- Tabla de Proveedores -->
-      <div class="table-responsive mt-3">
-        @if (loading()) {
-          <div class="empty-state">⏳ Cargando directorio de proveedores...</div>
-        } @else if (proveedoresFiltrados().length === 0) {
-          <div class="empty-state">📦 No se encontraron proveedores registrados.</div>
-        } @else {
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Empresa / Razón Social</th>
-                <th>Contacto</th>
-                <th>Documento</th>
-                <th>Teléfono</th>
-                <th>Email</th>
-                <th>Dirección</th>
-                <th class="text-center">Estado</th>
-                <th class="text-end">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (p of visibleProveedores(); track p.id) {
-                <tr>
-                  <td class="id-cell">#{{ p.id }}</td>
-                  <td>
-                    <strong class="text-white">{{ p.empresa || p.nombre_completo || p.nombres }}</strong>
-                    @if (p.empresa && p.nombre_completo) {
-                      <small class="sub-text">Contacto: {{ p.nombre_completo }}</small>
-                    }
-                  </td>
-                  <td class="muted">{{ p.nombre_completo || p.nombres }}</td>
-                  <td>
-                    @if (p.tipo_documento && p.numero_documento) {
-                      <span class="doc-badge">{{ p.tipo_documento }}: {{ p.numero_documento }}</span>
-                    } @else {
-                      <span class="muted">—</span>
-                    }
-                  </td>
-                  <td class="muted">{{ p.telefono || '—' }}</td>
-                  <td class="muted">{{ p.email || '—' }}</td>
-                  <td class="muted address-col">{{ p.direccion || '—' }}</td>
-                  <td class="text-center">
-                    @if (p.activo) {
-                      <span class="status-badge badge-success">Activo</span>
-                    } @else {
-                      <span class="status-badge badge-danger">Inactivo</span>
-                    }
-                  </td>
-                  <td class="text-end">
-                    <div class="actions-group">
-                      <button type="button" class="btn-icon btn-edit" (click)="openEdit(p)" title="Editar Proveedor">
-                        ✏️
-                      </button>
-                      <button type="button" class="btn-icon btn-delete" (click)="confirmDelete(p.id)" title="Eliminar Proveedor">
-                        🗑️
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          </table>
-  
-          <!-- Paginación -->
-          <div class="pagination-bar mt-3">
-            <span class="page-info">Mostrando {{ rangoPaginacion() }} proveedores</span>
-            <div class="page-controls">
-              <button 
-                type="button" 
-                class="btn-page" 
-                [disabled]="currentPage() <= 1" 
-                (click)="goToPage(currentPage() - 1)"
-              >
-                Anterior
-              </button>
-              <span class="page-indicator">Página {{ currentPage() }} de {{ totalPages() }}</span>
-              <button 
-                type="button" 
-                class="btn-page" 
-                [disabled]="currentPage() >= totalPages()" 
-                (click)="goToPage(currentPage() + 1)"
-              >
-                Siguiente
-              </button>
-            </div>
-          </div>
-        }
-      </div>
-    </section>
+    <button type="button" class="list-primary" (click)="openCreate()">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Nuevo proveedor
+    </button>
+  </header>
+
+  @if (error() && !showModal()) { <p class="list-error">{{ error() }}</p> }
+  <section class="list-kpis">
+    <article><small>Total</small><strong>{{ metricas().total }}</strong></article>
+    <article><small>Activos</small><strong>{{ metricas().activos }}</strong></article>
+    <article><small>Inactivos</small><strong>{{ metricas().inactivos }}</strong></article>
+    <article><small>Con RUC o empresa</small><strong>{{ metricas().empresasConRuc }}</strong></article>
+  </section>
+
+  <div class="list-tools">
+    <label class="list-search">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      <input type="search" placeholder="Buscar empresa, contacto o documento" [ngModel]="busquedaTexto()" (ngModelChange)="busquedaTexto.set($event)" />
+    </label>
+    <p-select [options]="opcionesDocumento" optionLabel="label" optionValue="value" [ngModel]="filtroTipoDoc()" (ngModelChange)="filtroTipoDoc.set($event)" appendTo="body" />
+    <p-select [options]="estadosFiltro" optionLabel="label" optionValue="value" [ngModel]="filtroEstado()" (ngModelChange)="setFiltroEstado($event)" appendTo="body" />
   </div>
-  
-  <!-- ===================================================
-       MODAL CREAR / EDITAR PROVEEDOR
-       =================================================== -->
-  @if (showModal()) {
-    <div class="modal-overlay-fix">
-      <div class="modal-box-center modal-lg">
-        <div class="modal-header-custom">
-          <h5>{{ editingId() ? '✏️ Editar Proveedor' : '➕ Nuevo Proveedor' }}</h5>
-          <button type="button" class="btn-close-icon" (click)="closeModal()">✕</button>
-        </div>
-  
-        <form (ngSubmit)="save()">
-          <div class="modal-body-custom">
-            <div class="form-grid-2 mb-3">
-              <div class="form-group full-width">
-                <label>Empresa / Razón Social</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.empresa" name="empresa" placeholder="Ej. Distribuidora FarmaVet S.A.C." />
-              </div>
-  
-              <div class="form-group">
-                <label>Nombres del Contacto *</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.nombres" name="nombres" required placeholder="Nombre comercial o de contacto" />
-              </div>
-  
-              <div class="form-group">
-                <label>Apellidos del Contacto</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.apellidos" name="apellidos" placeholder="Apellidos" />
-              </div>
-  
-              <div class="form-group">
-                <label>Tipo de Documento</label>
-                <select class="input-custom select-custom" [(ngModel)]="form.tipo_documento" name="tipo_documento">
-                  <option value="RUC">RUC</option>
-                  <option value="DNI">DNI</option>
-                  <option value="CE">Carnet de Extranjería</option>
-                  <option value="Pasaporte">Pasaporte</option>
-                </select>
-              </div>
-  
-              <div class="form-group">
-                <label>Número de Documento</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.numero_documento" name="numero_documento" placeholder="Ej. 20601234567" />
-              </div>
-  
-              <div class="form-group">
-                <label>Teléfono / WhatsApp</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.telefono" name="telefono" placeholder="Ej. 987654321" />
-              </div>
-  
-              <div class="form-group">
-                <label>Correo Electrónico</label>
-                <input type="email" class="input-custom" [(ngModel)]="form.email" name="email" placeholder="ventas@proveedor.com" />
-              </div>
-  
-              <div class="form-group full-width">
-                <label>Dirección Fiscal / Comercial</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.direccion" name="direccion" placeholder="Av. Los Industriales 456 - Lima" />
-              </div>
-  
-              <div class="form-group full-width checkboxes-row">
-                <label class="checkbox-label">
-                  <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
-                  <span>Proveedor Activo</span>
-                </label>
-              </div>
-            </div>
-          </div>
-  
-          <div class="modal-footer-custom">
-            <button type="submit" class="btn-primary-action" [disabled]="savingModal()">
-              {{ savingModal() ? 'Guardando...' : '💾 Guardar Proveedor' }}
-            </button>
-            <button type="button" class="btn-secondary-action" (click)="closeModal()">
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+
+  @if (loading()) {
+    <p class="list-note">Cargando directorio de proveedores...</p>
+  } @else {
+    <app-admin-table
+      [rows]="proveedoresFiltrados()"
+      [pageSize]="12"
+      [columns]="9"
+      itemLabel="proveedores"
+      emptyIcon="pi pi-truck"
+      emptyTitle="Sin proveedores"
+      emptyText="No se encontraron proveedores registrados."
+      [resetKey]="busquedaTexto() + '|' + filtroTipoDoc() + '|' + filtroEstado()"
+    >
+      <ng-template #head>
+        <tr>
+          <th>#</th><th>Empresa</th><th>Contacto</th><th>Documento</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Estado</th><th></th>
+        </tr>
+      </ng-template>
+      <ng-template #row let-p>
+        <tr>
+          <td class="list-id">#{{ p.id }}</td>
+          <td>
+            <div class="list-name">{{ p.empresa || p.nombre_completo || p.nombres }}</div>
+            @if (p.empresa && p.nombre_completo) { <div class="list-muted">Contacto: {{ p.nombre_completo }}</div> }
+          </td>
+          <td>{{ p.nombre_completo || p.nombres }}</td>
+          <td>{{ p.tipo_documento && p.numero_documento ? p.tipo_documento + ': ' + p.numero_documento : '—' }}</td>
+          <td>{{ p.telefono || '—' }}</td>
+          <td>{{ p.email || '—' }}</td>
+          <td>{{ p.direccion || '—' }}</td>
+          <td><span class="list-state" [class.is-off]="!p.activo">{{ p.activo ? 'Activo' : 'Inactivo' }}</span></td>
+          <td class="list-actions">
+            <button type="button" class="list-icon" (click)="openEdit(p)" aria-label="Editar proveedor"><i class="pi pi-pencil" aria-hidden="true"></i></button>
+            <button type="button" class="list-icon is-danger" (click)="confirmDelete(p.id)" aria-label="Eliminar proveedor"><i class="pi pi-trash" aria-hidden="true"></i></button>
+          </td>
+        </tr>
+      </ng-template>
+    </app-admin-table>
   }
-  
-  <!-- ===================================================
-       MODAL CONFIRMACIÓN ELIMINAR
-       =================================================== -->
-  @if (deleteConfirmId()) {
-    <div class="modal-overlay-fix">
-      <div class="modal-box-center">
-        <div class="modal-header-custom">
-          <h5>⚠️ Confirmar Eliminación</h5>
-          <button type="button" class="btn-close-icon" (click)="cancelDelete()">✕</button>
-        </div>
-        <div class="modal-body-custom text-center">
-          <p>¿Estás seguro de eliminar este proveedor del directorio?</p>
-          <small class="muted">Esta acción no se puede deshacer.</small>
-        </div>
-        <div class="modal-footer-custom">
-          <button type="button" class="btn-danger-action" (click)="doDelete()">🗑️ Eliminar</button>
-          <button type="button" class="btn-secondary-action" (click)="cancelDelete()">Cancelar</button>
-        </div>
-      </div>
+</div>
+
+<p-dialog [header]="editingId() ? 'Editar proveedor' : 'Nuevo proveedor'" [visible]="showModal()" (visibleChange)="$event ? showModal.set(true) : closeModal()" [modal]="true" [style]="{ width: '40rem' }">
+  <form class="grid gap-6 md:grid-cols-2" (ngSubmit)="save()">
+    <label class="field flex flex-col gap-1 md:col-span-2" [class.is-invalid]="!!formError()">
+      Empresa
+      <input pInputText class="w-full" [ngModel]="form.empresa" (ngModelChange)="onEmpresa($event)" name="empresa" />
+      <span class="field-error">{{ formError() }}</span>
+    </label>
+    <label class="flex flex-col gap-1">Nombres *<input pInputText class="w-full" [ngModel]="form.nombres" (ngModelChange)="onNombres($event)" name="nombres" /></label>
+    <label class="flex flex-col gap-1">Apellidos<input pInputText class="w-full" [(ngModel)]="form.apellidos" name="apellidos" /></label>
+    <label class="flex flex-col gap-1">Tipo de documento
+      <p-select [options]="tiposDocumento" optionLabel="label" optionValue="value" [(ngModel)]="form.tipo_documento" name="tipo_documento" appendTo="body" />
+    </label>
+    <label class="flex flex-col gap-1">Número<input pInputText class="w-full" [(ngModel)]="form.numero_documento" name="numero_documento" /></label>
+    <label class="flex flex-col gap-1">Teléfono<input pInputText class="w-full" [(ngModel)]="form.telefono" name="telefono" /></label>
+    <label class="flex flex-col gap-1">Correo<input pInputText class="w-full" type="email" [(ngModel)]="form.email" name="email" /></label>
+    <label class="flex flex-col gap-1 md:col-span-2">Dirección<input pInputText class="w-full" [(ngModel)]="form.direccion" name="direccion" /></label>
+    <div class="flex items-center gap-2 md:col-span-2">
+      <p-checkbox [(ngModel)]="form.activo" name="activo" [binary]="true" inputId="prov-activo" />
+      <label for="prov-activo">Proveedor activo</label>
     </div>
-  }
+    <div class="md:col-span-2 flex justify-end gap-2">
+      <p-button type="button" label="Cancelar" [outlined]="true" (onClick)="closeModal()" />
+      <p-button type="submit" [label]="savingModal() ? 'Guardando...' : 'Guardar'" [disabled]="savingModal()" />
+    </div>
+  </form>
+</p-dialog>
+
+<p-dialog header="Confirmar eliminación" [visible]="deleteConfirmId() !== null" (visibleChange)="!$event && cancelDelete()" [modal]="true" [style]="{ width: '28rem' }">
+  <p>¿Estás seguro de eliminar este proveedor?</p>
+  <div class="flex justify-end gap-2">
+    <p-button label="Cancelar" [outlined]="true" (onClick)="cancelDelete()" />
+    <p-button label="Eliminar" severity="danger" icon="pi pi-trash" (onClick)="doDelete()" />
+  </div>
+</p-dialog>

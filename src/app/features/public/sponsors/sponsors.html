@@ -1,42 +1,18 @@
-<section class="sp-section">
-
-    <!-- Encabezado -->
-    <div class="sp-header">
-        <span class="sp-label">NUESTROS SPONSORS</span>
-        <div class="sp-line"></div>
-    </div>
-
-    <!-- Marquee wrapper -->
-    <div class="sp-marquee-outer">
-
-        <!-- Fade left / right -->
-        <div class="sp-fade sp-fade--left"></div>
-        <div class="sp-fade sp-fade--right"></div>
-
-        <!-- Track duplicado para loop infinito -->
-        <div class="sp-track">
-
-            <!-- Set 1 -->
-            @for (s of sponsors; track s.id) {
-            <div class="sp-item">
-                <div class="sp-logo" [style.background]="s.color + '22'" [style.border-color]="s.color + '44'">
-                    <span class="sp-sigla" [style.color]="s.color">{{ s.sigla }}</span>
-                </div>
-                <span class="sp-nombre">{{ s.nombre }}</span>
-            </div>
-            }
-
-            <!-- Set 2 (duplicado para seamless loop) -->
-            @for (s of sponsors; track 'b' + s.id) {
-            <div class="sp-item" aria-hidden="true">
-                <div class="sp-logo" [style.background]="s.color + '22'" [style.border-color]="s.color + '44'">
-                    <span class="sp-sigla" [style.color]="s.color">{{ s.sigla }}</span>
-                </div>
-                <span class="sp-nombre">{{ s.nombre }}</span>
-            </div>
-            }
-
-        </div>
-    </div>
-
+<section class="py-10" aria-label="Nuestros sponsors">
+  <div class="mb-6">
+    <p-tag value="Sponsors" />
+    <h2 class="text-3xl mt-3 mb-0">Nuestros sponsors</h2>
+  </div>
+  <div class="grid gap-3 grid-cols-2 md:grid-cols-4">
+    @for (s of sponsors; track s.id) {
+      <p-card>
+        @if (s.imagen) {
+          <img class="w-full" [src]="s.imagen" [alt]="s.nombre" />
+        } @else {
+          <p class="m-0 text-center font-semibold">{{ s.nombre }}</p>
+          <p class="m-0 text-center">{{ s.sigla }}</p>
+        }
+      </p-card>
+    }
+  </div>
 </section>

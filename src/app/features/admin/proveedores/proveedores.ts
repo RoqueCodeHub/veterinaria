@@ -1,24 +1,31 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Button } from 'primeng/button';
+import { Checkbox } from 'primeng/checkbox';
+import { Dialog } from 'primeng/dialog';
+import { InputText } from 'primeng/inputtext';
+import { Select } from 'primeng/select';
 import { ProveedoresService, Proveedor, ProveedorForm } from '../../../core/services/proveedores.service';
+import { NotifyService } from '../../../core/ui/notify';
+import { AdminTable } from '../../../shared/components/admin-table/admin-table';
 
 @Component({
   selector: 'app-proveedores',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, Button, Checkbox, Dialog, InputText, Select, AdminTable],
   templateUrl: './proveedores.html',
-  styleUrl: './proveedores.css',
 })
 export class Proveedores implements OnInit {
   private svc = inject(ProveedoresService);
+  private notify = inject(NotifyService);
 
   // Estados de Datos (Signals)
   proveedores = signal<Proveedor[]>([]);
   loading = signal(false);
   savingModal = signal(false);
   error = signal<string | null>(null);
-  aviso = signal<string | null>(null);
+  formError = signal<string | null>(null);
 
   // Modales
   showModal = signal(false);
@@ -29,10 +36,20 @@ export class Proveedores implements OnInit {
   busquedaTexto = signal('');
   filtroTipoDoc = signal<string>('todos');
   filtroEstado = signal<'todos' | 'activos' | 'inactivos'>('todos');
-
-  // Paginación
-  page = signal(1);
-  readonly pageSize = 10;
+  readonly tiposDocumento = [
+    { label: 'RUC', value: 'RUC' },
+    { label: 'DNI', value: 'DNI' },
+    { label: 'Carnet de extranjería', value: 'CE' },
+    { label: 'Pasaporte', value: 'Pasaporte' },
+  ];
+  readonly estadosFiltro = [
+    { label: 'Todos los estados', value: 'todos' },
+    { label: 'Solo activos', value: 'activos' },
+    { label: 'Inactivos', value: 'inactivos' },
+  ];
+  get opcionesDocumento() {
+    return [{ label: 'Todos los documentos', value: 'todos' }, ...this.tiposDocumento];
+  }
 
   // Formulario
   form: ProveedorForm = this.emptyForm();
@@ -81,23 +98,6 @@ export class Proveedores implements OnInit {
     });
   });
 
-  // Paginación calculada
-  totalPages = computed(() => Math.max(1, Math.ceil(this.proveedoresFiltrados().length / this.pageSize)));
-  currentPage = computed(() => Math.min(this.page(), this.totalPages()));
-
-  visibleProveedores = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.proveedoresFiltrados().slice(start, start + this.pageSize);
-  });
-
-  rangoPaginacion = computed(() => {
-    const total = this.proveedoresFiltrados().length;
-    if (!total) return '0 de 0';
-    const start = (this.currentPage() - 1) * this.pageSize + 1;
-    const end = Math.min(this.currentPage() * this.pageSize, total);
-    return `${start}–${end} de ${total}`;
-  });
-
   ngOnInit(): void {
     this.load();
   }
@@ -120,17 +120,12 @@ export class Proveedores implements OnInit {
 
   setFiltroEstado(estado: 'todos' | 'activos' | 'inactivos'): void {
     this.filtroEstado.set(estado);
-    this.page.set(1);
-  }
-
-  goToPage(p: number): void {
-    this.page.set(Math.min(Math.max(1, p), this.totalPages()));
   }
 
   openCreate(): void {
     this.form = this.emptyForm();
     this.editingId.set(null);
-    this.error.set(null);
+    this.formError.set(null);
     this.showModal.set(true);
   }
 
@@ -147,23 +142,38 @@ export class Proveedores implements OnInit {
       activo: p.activo ?? true,
     };
     this.editingId.set(p.id);
-    this.error.set(null);
+    this.formError.set(null);
     this.showModal.set(true);
   }
 
   closeModal(): void {
     this.showModal.set(false);
     this.savingModal.set(false);
+    this.formError.set(null);
+  }
+
+  onEmpresa(valor: string): void {
+    this.form.empresa = valor;
+    this.ocultarErrorProveedor();
+  }
+
+  onNombres(valor: string): void {
+    this.form.nombres = valor;
+    this.ocultarErrorProveedor();
+  }
+
+  private ocultarErrorProveedor(): void {
+    if (this.form.empresa?.trim() || this.form.nombres.trim()) this.formError.set(null);
   }
 
   save(): void {
     if (!this.form.nombres.trim() && !this.form.empresa?.trim()) {
-      this.error.set('Debes ingresar al menos la Empresa o el Nombre Comercial.');
+      this.formError.set('Debes ingresar al menos la Empresa o el Nombre Comercial.');
       return;
     }
 
     this.savingModal.set(true);
-    this.error.set(null);
+    this.formError.set(null);
 
     const payload: ProveedorForm = {
       ...this.form,
@@ -181,14 +191,14 @@ export class Proveedores implements OnInit {
 
     obs.subscribe({
       next: () => {
-        this.aviso.set(id ? '✅ Proveedor actualizado correctamente.' : '✅ Proveedor registrado con éxito.');
+        this.notify.success(id ? 'Proveedor actualizado.' : 'Proveedor registrado.');
         this.closeModal();
         this.load();
       },
       error: (err) => {
         const apiErrors = err?.error?.errors;
         const detail = apiErrors ? Object.values(apiErrors).flat().join(' ') : err?.error?.message;
-        this.error.set(detail || 'Error al guardar el proveedor.');
+        this.formError.set(detail || 'Error al guardar el proveedor.');
         this.savingModal.set(false);
       }
     });
@@ -208,12 +218,12 @@ export class Proveedores implements OnInit {
 
     this.svc.delete(id).subscribe({
       next: () => {
-        this.aviso.set('✅ Proveedor eliminado del directorio.');
+        this.notify.success('Proveedor eliminado del directorio.');
         this.deleteConfirmId.set(null);
         this.load();
       },
       error: () => {
-        this.error.set('No se pudo eliminar el proveedor.');
+        this.notify.error('No se pudo eliminar el proveedor.');
         this.deleteConfirmId.set(null);
       }
     });

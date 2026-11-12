@@ -137,9 +137,24 @@ export class VentasService {
       })),
     };
 
+    const cuerpo: Record<string, unknown> = {
+      cliente_id: payload.cliente_id,
+      descuento: payload.descuento,
+      observaciones: payload.observaciones,
+      items: payload.items,
+    };
+    if (payload.metodo_pago) {
+      cuerpo['metodo_pago'] = payload.metodo_pago;
+      cuerpo['monto_pagado'] = payload.monto_pagado;
+    }
+
     return this.http
-      .post<VentasResponse>(this.url, payload)
+      .post<VentasResponse>(this.url, cuerpo)
       .pipe(map(res => this.mapSale(res.venta)));
+  }
+
+  ticket(id: number): Observable<Blob> {
+    return this.http.get(`${this.url}/${id}/ticket`, { responseType: 'blob' });
   }
 
   cobrar(

@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { ButtonDirective } from 'primeng/button';
 
 export interface RedSocial {
   id: number;
@@ -15,72 +16,51 @@ export interface RedSocial {
 @Component({
   selector: 'app-redes-sociales',
   standalone: true,
-  imports: [CommonModule],
+  imports: [RouterLink, ButtonDirective],
   templateUrl: './redes-sociales.html',
-  styleUrl: './redes-sociales.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class RedesSocialesComponent {
-
   redes: RedSocial[] = [
     {
       id: 1,
       plataforma: 'Instagram',
       handle: '@AliVetOficial',
       seguidores: '45.2K',
-      descripcion: 'Fotos de premios, ganadores y sorteos en vivo.',
+      descripcion: 'Fotos del trabajo en campo, mascotas y animales de la zona.',
       url: 'https://instagram.com',
       colorFrom: '#833ab4',
-      colorTo:   '#fd1d1d',
+      colorTo: '#fd1d1d',
     },
     {
       id: 2,
       plataforma: 'Facebook',
       handle: 'AliVetOficial',
       seguidores: '120K',
-      descripcion: 'Comunidad oficial. Resultados y transmisiones en directo.',
+      descripcion: 'Comunidad de Alivet en Iberia. Avisos de atención y novedades de la clínica.',
       url: 'https://www.facebook.com/profile.php?id=61564744831448',
       colorFrom: '#1877f2',
-      colorTo:   '#0d5dbf',
+      colorTo: '#0d5dbf',
     },
     {
       id: 3,
       plataforma: 'TikTok',
       handle: '@AliVetOficial',
       seguidores: '28.5K',
-      descripcion: 'Videos cortos de sorteos y reacciones de ganadores.',
+      descripcion: 'Videos cortos de atención en campo y cuidado de animales.',
       url: 'https://tiktok.com',
       colorFrom: '#010101',
-      colorTo:   '#69c9d0',
+      colorTo: '#69c9d0',
     },
     {
       id: 4,
       plataforma: 'YouTube',
       handle: 'AliVetOficial',
       seguidores: '12.8K',
-      descripcion: 'Sorteos en vivo y grabaciones completas de cada evento.',
+      descripcion: 'Registros de atención veterinaria y cuidado animal en Tahuamanu.',
       url: 'https://youtube.com',
       colorFrom: '#ff0000',
-      colorTo:   '#cc0000',
-    },
-    {
-      id: 5,
-      plataforma: 'WhatsApp',
-      handle: '932 898 744',
-      seguidores: '5,200 miembros',
-      descripcion: 'Grupo oficial para notificaciones y atención al cliente.',
-      url: 'https://wa.me/51932898744',
-      colorFrom: '#25d366',
-      colorTo:   '#128c7e',
-    },
-    {
-      id: 6,
-      plataforma: 'Twitter / X',
-      handle: '@AliVetOficial',
-      seguidores: '9.4K',
-      descripcion: 'Noticias en tiempo real y anuncios de nuevos sorteos.',
-      url: 'https://x.com',
-      colorFrom: '#14171a',
-      colorTo:   '#657786',
+      colorTo: '#cc0000',
     },
   ];
 }

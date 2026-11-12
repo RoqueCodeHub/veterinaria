@@ -1,262 +1,115 @@
-<header class="page-header">
-    <div>
-        <h1 class="page-title">Ventas</h1>
-        <p class="page-subtitle">Registra la venta a nombre de un cliente. El cobro lo hace la cajera en el menú Caja.</p>
+<div class="grid gap-4 lg:grid-cols-[1fr_22rem]">
+  <section class="flex flex-col gap-3">
+    <h1 class="text-2xl m-0">Ventas</h1>
+    @if (error()) { <p-message severity="error" [text]="error()!" /> }
+    <p-iconfield>
+      <p-inputicon class="pi pi-search" />
+      <input pInputText class="w-full" placeholder="Buscar producto" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)" />
+    </p-iconfield>
+    <p-selectbutton [options]="opcionesCategoria()" optionLabel="label" optionValue="value" [ngModel]="categoriaFiltro()" (ngModelChange)="setFiltro($event)" />
+    <div class="grid gap-3 sm:grid-cols-2">
+      @for (p of productosVisibles(); track p.id) {
+        <p-card [header]="p.nombre" [subheader]="grupoDe(p)">
+          <p class="m-0">Stock: {{ stockDe(p) }} · S/ {{ precioDe(p) | number:'1.2-2' }}</p>
+          @if (enCarrito(p.id) > 0) { <p-tag [value]="enCarrito(p.id) + ' en carrito'" /> }
+          <p-button class="mt-2" label="Agregar" icon="pi pi-plus" [disabled]="stockDe(p) <= 0" (onClick)="agregar(p)" />
+        </p-card>
+      }
     </div>
-</header>
+  </section>
 
-@if (error()) {
-<div class="error-banner">{{ error() }}</div>
-}
-
-<div class="pos">
-    <section class="catalog">
-        <div class="catalog-tools">
-            <input class="search" [ngModel]="busqueda()" (ngModelChange)="busqueda.set($event)"
-                placeholder="Buscar producto o código" />
-            <span class="table-count">{{ productosVisibles().length }} productos</span>
+  <aside class="flex flex-col gap-3">
+    <h2 class="m-0">Caja de la venta</h2>
+    <label class="flex flex-col gap-1">Cliente
+      <p-select [options]="clientes()" optionLabel="nombre_completo" optionValue="id" [ngModel]="selectedClienteId()" (ngModelChange)="selectedClienteId.set($event)" placeholder="Selecciona un cliente" [showClear]="true" appendTo="body" />
+    </label>
+    @for (item of items(); track item.producto_id) {
+      <div class="flex items-center justify-between gap-2">
+        <span>{{ item.nombre }}</span>
+        <div class="flex items-center gap-1">
+          <p-button icon="pi pi-minus" [text]="true" (onClick)="cambiarCantidad(productoDe(item.producto_id), item.cantidad - 1)" />
+          <span>{{ item.cantidad }}</span>
+          <p-button icon="pi pi-plus" [text]="true" (onClick)="cambiarCantidad(productoDe(item.producto_id), item.cantidad + 1)" />
+          <p-button icon="pi pi-times" [text]="true" severity="danger" (onClick)="quitar(item.producto_id)" />
         </div>
-
-        <div class="chips">
-            <button type="button" class="chip" [class.active]="categoriaFiltro() === 'todas'"
-                (click)="setFiltro('todas')">Todas</button>
-            @for (nombre of filtros(); track nombre) {
-            <button type="button" class="chip" [class.active]="categoriaFiltro() === nombre"
-                (click)="setFiltro(nombre)">{{ nombre }}</button>
-            }
-        </div>
-
-        @if (productosVisibles().length === 0) {
-        <div class="empty-state">
-            <p>No hay productos para este filtro</p>
-        </div>
-        } @else {
-        <div class="cards">
-            @for (p of productosVisibles(); track p.id) {
-            <article class="product-card">
-                <div class="card-top">
-                    <span class="card-cat">{{ p.categoria || 'Sin categoría' }}</span>
-                    @if (enCarrito(p.id) > 0) {
-                    <span class="card-qty">{{ enCarrito(p.id) }}</span>
-                    }
-                </div>
-                <h3 class="card-name">{{ p.nombre }}</h3>
-                <p class="card-meta">Stock {{ stockDe(p) }}</p>
-                <div class="card-foot">
-                    <strong>{{ precioDe(p) | currency:'PEN':'S/ ' }}</strong>
-                    <button type="button" class="btn-add" (click)="agregar(p)"
-                        [disabled]="stockDe(p) < 1 || precioDe(p) <= 0 || enCarrito(p.id) >= stockDe(p)">
-                        {{ stockDe(p) < 1 ? 'Sin stock' : 'Agregar' }}
-                    </button>
-                </div>
-            </article>
-            }
-        </div>
-        }
-    </section>
-
-    <aside class="caja">
-        <div class="caja-head">
-            <h2>Pedido</h2>
-            <span>{{ cantidadItems() }} und.</span>
-        </div>
-
-        <label class="caja-label">Cliente *</label>
-        <select [ngModel]="selectedClienteId()" (ngModelChange)="selectedClienteId.set($event)">
-            <option [ngValue]="null">Selecciona un cliente</option>
-            @for (c of clientes(); track c.id) {
-            <option [ngValue]="c.id">{{ c.nombre_completo }}</option>
-            }
-        </select>
-        @if (clienteActual(); as cliente) {
-        <p class="cliente-tag">Venta a nombre de <strong>{{ cliente.nombre_completo }}</strong></p>
-        } @else {
-        <p class="cliente-hint">El cliente identifica la venta para que la cajera la cobre.</p>
-        }
-
-        <div class="cart">
-            @if (items().length === 0) {
-            <p class="cart-empty">El carrito está vacío</p>
-            } @else {
-            @for (item of items(); track item.producto_id) {
-            <div class="cart-line">
-                <div>
-                    <p class="cart-name">{{ item.nombre }}</p>
-                    <p class="cart-sub">{{ item.subtotal | currency:'PEN':'S/ ' }}</p>
-                </div>
-                <div class="qty">
-                    <button type="button" (click)="cambiarCantidad(productoDe(item.producto_id), item.cantidad - 1)">−</button>
-                    <span>{{ item.cantidad }}</span>
-                    <button type="button" (click)="cambiarCantidad(productoDe(item.producto_id), item.cantidad + 1)">+</button>
-                </div>
-                <button type="button" class="btn-remove-item" (click)="quitar(item.producto_id)">✕</button>
-            </div>
-            }
-            }
-        </div>
-
-        <label class="caja-label">Descuento (S/.)</label>
-        <input type="number" [(ngModel)]="descuento" min="0" step="0.01" placeholder="0.00" />
-
-        <div class="caja-totales">
-            <span>Total</span>
-            <strong>{{ totalAPagar() | currency:'PEN':'S/ ' }}</strong>
-        </div>
-
-        <label class="caja-label">Nota</label>
-        <input [(ngModel)]="observaciones" placeholder="Opcional" />
-
-        @if (cajaError()) {
-        <p class="caja-error">{{ cajaError() }}</p>
-        }
-        @if (aviso()) {
-        <p class="caja-ok">{{ aviso() }}</p>
-        }
-
-        <button type="button" class="btn-save caja-btn" (click)="registrar()"
-            [disabled]="saving() || items().length === 0 || !selectedClienteId()">
-            {{ saving() ? 'Registrando...' : 'Registrar venta' }}
-        </button>
-    </aside>
-</div>
-
-<div class="table-card">
-    <div class="table-header">
-        <h2 class="table-title">Historial de Ventas</h2>
-        <span class="table-count">{{ ventas().length }} registros</span>
-    </div>
-
-    @if (loading()) {
-    <div class="loading-state">Cargando ventas...</div>
-    } @else if (ventas().length === 0) {
-    <div class="empty-state">
-        <p>No hay ventas registradas</p>
-    </div>
-    } @else {
-    <div class="table-wrap">
-    <table>
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Cliente</th>
-                <th>Items</th>
-                <th>Cobranza</th>
-                <th>Total</th>
-                <th>Estado</th>
-                <th>Fecha</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            @for (v of ventas(); track v.id) {
-            <tr>
-                <td class="id-cell">#{{ v.id }}</td>
-                <td>{{ v.cliente?.nombre_completo || '—' }}</td>
-                <td class="muted">{{ v.items.length }} producto(s)</td>
-                <td class="muted">{{ etiquetaMetodo(v.metodo_pago) }}</td>
-                <td class="total-cell">{{ parseMoney(v.total) | currency:'PEN':'S/ ' }}</td>
-                <td>
-                    <span class="badge" [ngClass]="estadoBadgeClass(v.estado)">{{ v.estado }}</span>
-                </td>
-                <td class="muted">{{ v.fecha ? (v.fecha | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
-                <td>
-                    <div class="actions">
-                        <button class="btn-icon btn-view" (click)="openDetalle(v)" title="Ver detalle">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                            </svg>
-                        </button>
-                        @if (v.estado !== 'anulada') {
-                        <button class="btn-icon btn-anular" (click)="confirmAnular(v.id)" title="Anular venta">
-                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                            </svg>
-                        </button>
-                        }
-                    </div>
-                </td>
-            </tr>
-            }
-        </tbody>
-    </table>
-    </div>
+        <strong>{{ item.subtotal | currency:'PEN':'S/ ' }}</strong>
+      </div>
     }
+    <label class="flex flex-col gap-1">Descuento (S/)
+      <input pInputText type="number" [(ngModel)]="descuento" min="0" step="0.01" />
+    </label>
+    <p class="flex justify-between m-0"><span>Total</span><strong>{{ totalAPagar() | currency:'PEN':'S/ ' }}</strong></p>
+    <label class="flex flex-col gap-1">Nota
+      <input pInputText [(ngModel)]="observaciones" placeholder="Opcional" />
+    </label>
+    @if (cajaError()) { <p-message severity="error" [text]="cajaError()!" /> }
+    <p-button label="Registrar venta" icon="pi pi-check" [loading]="saving()" [disabled]="saving() || items().length === 0 || !selectedClienteId()" (onClick)="registrar()" />
+  </aside>
 </div>
 
-@if (detalleVenta()) {
-<div class="modal-overlay" (click)="closeDetalle()">
-    <div class="modal modal-lg" (click)="$event.stopPropagation()">
-        <div class="detalle-header">
-            <h2 class="modal-title">Venta #{{ detalleVenta()!.id }}</h2>
-            <span class="badge" [ngClass]="estadoBadgeClass(detalleVenta()!.estado)">
-                {{ detalleVenta()!.estado }}
-            </span>
-        </div>
-        <div class="detalle-meta">
-            @if (detalleVenta()!.fecha) {
-            <span class="muted">Fecha: {{ detalleVenta()!.fecha | date:'dd/MM/yyyy HH:mm' }}</span>
-            }
-            <span class="muted">Cliente: {{ detalleVenta()!.cliente?.nombre_completo || '—' }}</span>
-            <span class="muted">Cobranza: {{ etiquetaMetodo(detalleVenta()!.metodo_pago) }}
-                @if (detalleVenta()!.monto_pagado != null) {
-                · {{ parseMoney(detalleVenta()!.monto_pagado) | currency:'PEN':'S/ ' }}
-                }
-            </span>
-            @if (detalleVenta()!.observaciones) {
-            <span class="muted">Obs: {{ detalleVenta()!.observaciones }}</span>
-            }
-        </div>
-        @if (detalleVenta()!.items.length > 0) {
-        <table class="items-table">
-            <thead>
-                <tr>
-                    <th>Producto</th>
-                    <th>Cant.</th>
-                    <th>P. Unit.</th>
-                    <th>Subtotal</th>
-                </tr>
-            </thead>
-            <tbody>
-                @for (item of detalleVenta()!.items; track item.producto_id) {
-                <tr>
-                    <td>{{ item.producto?.nombre ?? 'Producto #' + item.producto_id }}</td>
-                    <td>{{ item.cantidad }}</td>
-                    <td>{{ item.precio_unitario | currency:'PEN':'S/ ' }}</td>
-                    <td>{{ item.subtotal | currency:'PEN':'S/ ' }}</td>
-                </tr>
-                }
-            </tbody>
-        </table>
-        } @else {
-        <div class="empty-items">Sin ítems registrados</div>
-        }
-        <div class="total-row">
-            @if (parseMoney(detalleVenta()!.descuento) > 0) {
-            <span class="muted">Descuento: -{{ parseMoney(detalleVenta()!.descuento) | currency:'PEN':'S/ ' }}</span>
-            }
-            <span>Total:</span>
-            <strong>{{ parseMoney(detalleVenta()!.total) | currency:'PEN':'S/ ' }}</strong>
-        </div>
-        <div class="modal-actions">
-            <button class="btn-save" (click)="closeDetalle()">Cerrar</button>
-        </div>
-    </div>
-</div>
-}
+<section class="mt-6">
+  <h2>Historial de ventas <p-tag [value]="ventas().length + ' registros'" /></h2>
+  @if (loading()) {
+    <p>Cargando ventas...</p>
+  } @else {
+    <p-table [value]="ventas()" styleClass="p-datatable-sm">
+      <ng-template #header>
+        <tr>
+          <th>#</th><th>Cliente</th><th>Items</th><th>Cobranza</th><th>Total</th><th>Estado</th><th>Fecha</th><th></th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-v>
+        <tr>
+          <td>#{{ v.id }}</td>
+          <td>{{ v.cliente?.nombre_completo || '—' }}</td>
+          <td>{{ v.items.length }} producto(s)</td>
+          <td>{{ etiquetaMetodo(v.metodo_pago) }}</td>
+          <td>{{ parseMoney(v.total) | currency:'PEN':'S/ ' }}</td>
+          <td><p-tag [value]="v.estado" /></td>
+          <td>{{ v.fecha ? (v.fecha | date:'dd/MM/yyyy HH:mm') : '—' }}</td>
+          <td class="text-right">
+            <p-button icon="pi pi-eye" [text]="true" (onClick)="openDetalle(v)" ariaLabel="Ver detalle" />
+            <p-button icon="pi pi-ban" [text]="true" severity="danger" (onClick)="confirmAnular(v.id)" ariaLabel="Anular venta" />
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr><td colspan="8">No hay ventas registradas</td></tr>
+      </ng-template>
+    </p-table>
+  }
+</section>
 
-@if (anularConfirmId()) {
-<div class="modal-overlay">
-    <div class="modal modal-sm">
-        <h2 class="modal-title">Anular Venta</h2>
-        <p class="confirm-text">¿Confirmas anular la venta #{{ anularConfirmId() }}? Esta acción no se puede deshacer.</p>
-        <div class="modal-actions">
-            <button class="btn-cancel" (click)="cancelAnular()">Cancelar</button>
-            <button class="btn-danger-solid" (click)="doAnular()">Anular Venta</button>
-        </div>
+<p-dialog [header]="'Venta #' + (detalleVenta()?.id ?? '')" [visible]="detalleVenta() !== null" (visibleChange)="!$event && closeDetalle()" [modal]="true" [style]="{ width: '36rem' }">
+  @if (detalleVenta(); as venta) {
+    <p-tag [value]="venta.estado" />
+    <p>Fecha: {{ venta.fecha ? (venta.fecha | date:'dd/MM/yyyy HH:mm') : '—' }}</p>
+    <p>Cliente: {{ venta.cliente?.nombre_completo || '—' }}</p>
+    <p>Cobranza: {{ etiquetaMetodo(venta.metodo_pago) }}
+      @if (venta.monto_pagado != null) { · {{ parseMoney(venta.monto_pagado) | currency:'PEN':'S/ ' }} }
+    </p>
+    @if (venta.observaciones) { <p>Obs: {{ venta.observaciones }}</p> }
+    <p-table [value]="venta.items" styleClass="p-datatable-sm">
+      <ng-template #header><tr><th>Producto</th><th>Cant.</th><th>P. Unit.</th><th>Subtotal</th></tr></ng-template>
+      <ng-template #body let-item>
+        <tr>
+          <td>{{ item.producto?.nombre || item.nombre }}</td>
+          <td>{{ item.cantidad }}</td>
+          <td>{{ parseMoney(item.precio_unitario) | currency:'PEN':'S/ ' }}</td>
+          <td>{{ parseMoney(item.subtotal) | currency:'PEN':'S/ ' }}</td>
+        </tr>
+      </ng-template>
+    </p-table>
+    <div class="flex justify-end mt-3">
+      <p-button label="Cerrar" (onClick)="closeDetalle()" />
     </div>
-</div>
-}
+  }
+</p-dialog>
+
+<p-dialog header="Anular venta" [visible]="anularConfirmId() !== null" (visibleChange)="!$event && cancelAnular()" [modal]="true" [style]="{ width: '28rem' }">
+  <p>¿Confirmas la anulación de esta venta?</p>
+  <div class="flex justify-end gap-2">
+    <p-button label="Cancelar" [outlined]="true" (onClick)="cancelAnular()" />
+    <p-button label="Anular venta" severity="danger" (onClick)="doAnular()" />
+  </div>
+</p-dialog>

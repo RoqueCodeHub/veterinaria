@@ -1,7 +1,15 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Button } from 'primeng/button';
+import { Checkbox } from 'primeng/checkbox';
+import { Dialog } from 'primeng/dialog';
+import { InputText } from 'primeng/inputtext';
+import { Select } from 'primeng/select';
+import { Textarea } from 'primeng/textarea';
 import { CategoriasService, Categoria, CategoriaForm } from '../../../core/services/categorias.service';
+import { NotifyService } from '../../../core/ui/notify';
+import { AdminTable } from '../../../shared/components/admin-table/admin-table';
 
 interface CategoriaNodo {
   categoria: Categoria;
@@ -17,12 +25,13 @@ interface FilaCategoria {
 @Component({
   selector: 'app-categorias',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe],
+  imports: [CommonModule, FormsModule, DatePipe, Button, Checkbox, Dialog, InputText, Select, Textarea, AdminTable],
   templateUrl: './categorias.html',
   styleUrl: './categorias.css',
 })
 export class Categorias implements OnInit {
   private svc = inject(CategoriasService);
+  private notify = inject(NotifyService);
 
   // Estados de datos (Signals)
   categorias = signal<Categoria[]>([]);
@@ -30,11 +39,17 @@ export class Categorias implements OnInit {
   loading = signal(false);
   savingModal = signal(false);
   error = signal<string | null>(null);
-  aviso = signal<string | null>(null);
+  formError = signal<string | null>(null);
 
   // Filtros reactivos con Signals
   busquedaTexto = signal('');
   filtroEstado = signal<'todos' | 'activas' | 'inactivas'>('todos');
+  vista = signal<'arbol' | 'lista'>('arbol');
+  readonly estadosFiltro = [
+    { label: 'Todas', value: 'todos' },
+    { label: 'Solo activas', value: 'activas' },
+    { label: 'Inactivas', value: 'inactivas' },
+  ];
 
   // Modales
   showModal = signal(false);
@@ -64,8 +79,8 @@ export class Categorias implements OnInit {
     const est = this.filtroEstado();
     const open = this.expanded();
 
-    // Si hay búsqueda o filtro por estado, mostramos lista plana filtrada
-    if (q || est !== 'todos') {
+    // Si hay búsqueda, filtro por estado o vista de lista, mostramos lista plana
+    if (q || est !== 'todos' || this.vista() === 'lista') {
       return this.categorias()
         .filter(c => {
           const coincideTexto = !q || c.nombre.toLowerCase().includes(q) || (c.descripcion || '').toLowerCase().includes(q);
@@ -131,10 +146,18 @@ export class Categorias implements OnInit {
     this.filtroEstado.set(estado);
   }
 
+  setVista(vista: 'arbol' | 'lista'): void {
+    this.vista.set(vista);
+  }
+
+  buscar(texto: string): void {
+    this.busquedaTexto.set(texto);
+  }
+
   openCreate(): void {
     this.form = this.emptyForm();
     this.editingId.set(null);
-    this.error.set(null);
+    this.formError.set(null);
     this.showModal.set(true);
   }
 
@@ -146,23 +169,29 @@ export class Categorias implements OnInit {
       activo: !!c.activo,
     };
     this.editingId.set(c.id);
-    this.error.set(null);
+    this.formError.set(null);
     this.showModal.set(true);
   }
 
   closeModal(): void {
     this.showModal.set(false);
     this.savingModal.set(false);
+    this.formError.set(null);
+  }
+
+  onNombre(valor: string): void {
+    this.form.nombre = valor;
+    if (valor.trim()) this.formError.set(null);
   }
 
   save(): void {
     if (!this.form.nombre.trim()) {
-      this.error.set('El nombre de la categoría es obligatorio.');
+      this.formError.set('El nombre de la categoría es obligatorio.');
       return;
     }
 
     this.savingModal.set(true);
-    this.error.set(null);
+    this.formError.set(null);
 
     const payload: any = {
       ...this.form,
@@ -176,14 +205,14 @@ export class Categorias implements OnInit {
 
     obs.subscribe({
       next: () => {
-        this.aviso.set(id ? '✅ Categoría actualizada correctamente.' : '✅ Categoría creada con éxito.');
+        this.notify.success(id ? 'Categoría actualizada.' : 'Categoría creada.');
         this.closeModal();
         this.load();
       },
       error: (err) => {
         const apiErrors = err?.error?.errors;
         const detail = apiErrors ? Object.values(apiErrors).flat().join(' ') : err?.error?.message;
-        this.error.set(detail || 'Error al guardar la categoría.');
+        this.formError.set(detail || 'Error al guardar la categoría.');
         this.savingModal.set(false);
       }
     });
@@ -203,12 +232,12 @@ export class Categorias implements OnInit {
 
     this.svc.delete(id).subscribe({
       next: () => {
-        this.aviso.set('✅ Categoría eliminada.');
+        this.notify.success('Categoría eliminada.');
         this.deleteConfirmId.set(null);
         this.load();
       },
       error: () => {
-        this.error.set('No se pudo eliminar la categoría. Asegúrate de que no tenga productos asociados.');
+        this.notify.error('No se pudo eliminar la categoría. Asegúrate de que no tenga productos asociados.');
         this.deleteConfirmId.set(null);
       }
     });

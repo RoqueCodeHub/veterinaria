@@ -1,55 +1,49 @@
-<!-- Fotos en assets/img/servicios/ (800×500 px). Las rutas están en servicios.ts. -->
-<section class="srv-section" aria-labelledby="srv-title">
+<section id="servicios" class="scroll-mt-24 bg-white py-16" aria-labelledby="srv-title">
+  <div class="max-w-6xl mx-auto px-4">
+    <p class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Lo que ofrecemos</p>
+    @if (featured()) {
+      <h2 class="text-3xl md:text-4xl mt-2 mb-3" id="srv-title">Nuestros servicios</h2>
+    } @else {
+      <h1 class="text-3xl md:text-4xl mt-2 mb-3" id="srv-title">Nuestros servicios</h1>
+    }
+    <p class="m-0 text-muted max-w-2xl">Soluciones para el cuidado de todos tus animales, en un solo lugar.</p>
 
-  <div class="srv-glow srv-glow-t" aria-hidden="true"></div>
-  <div class="srv-glow srv-glow-b" aria-hidden="true"></div>
-
-  <div class="srv-wrap">
-
-    <div class="sec-head">
-      <div class="sec-tag">
-        <span class="sec-tag-dot" aria-hidden="true"></span>
-        Lo que ofrecemos
-      </div>
-      <h2 class="sec-title" id="srv-title">Nuestros servicios</h2>
-      <p class="sec-sub">Soluciones integrales para el cuidado de todos tus animales y mascotas en la selva peruana</p>
-    </div>
-
-    <ul class="srv-legend">
-      <li><span class="srv-legend-dot is-prod" aria-hidden="true"></span>Productos</li>
-      <li><span class="srv-legend-dot is-serv" aria-hidden="true"></span>Servicios</li>
-    </ul>
-
-    <div class="srv-grid">
-      @for (item of servicios; track item.titulo) {
-      <article class="srv-card" [class.srv-card--prod]="item.tipo === 'prod'" [class.srv-card--serv]="item.tipo === 'serv'">
-        <div class="srv-media">
-          <img class="srv-img" [src]="item.imagen" [alt]="item.alt"
-               width="800" height="500" loading="lazy" (error)="ocultarImagen($event)" />
-          <span class="srv-kind">{{ item.etiqueta }}</span>
-        </div>
-        <div class="srv-body">
-          <h3 class="srv-title">{{ item.titulo }}</h3>
-          <p class="srv-text">{{ item.texto }}</p>
-          <div class="srv-tag-row">
-            @for (tag of item.tags; track tag) {
-            <span class="srv-tag">{{ tag }}</span>
-            }
-          </div>
-        </div>
-      </article>
+    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3 mt-8">
+      @for (item of visibles(); track item.titulo) {
+        <p-card styleClass="alivet-card h-full overflow-hidden">
+          <ng-template #header>
+            <picture>
+              <source [srcset]="toWebp(item.imagen)" type="image/webp" />
+              <img
+                class="block w-full h-52 object-cover"
+                [src]="item.imagen"
+                [alt]="item.alt"
+                width="800"
+                height="500"
+                loading="lazy"
+                decoding="async"
+                (error)="ocultarImagen($event)"
+              />
+            </picture>
+          </ng-template>
+          <h3 class="text-xl mt-0 mb-2">{{ item.titulo }}</h3>
+          <p class="text-muted">{{ featured() && item.resumen ? item.resumen : item.texto }}</p>
+          @if (featured() && item.accion) {
+            <a class="alivet-link" [href]="whatsapp(item)" target="_blank" rel="noopener noreferrer">{{ item.accion }} →</a>
+          } @else {
+            <div class="flex flex-wrap gap-2">
+              <p-tag [value]="item.etiqueta" [icon]="item.tipo === 'prod' ? 'pi pi-box' : 'pi pi-briefcase'" />
+              @for (tag of item.tags; track tag) {
+                <p-tag [value]="tag" severity="secondary" />
+              }
+            </div>
+          }
+        </p-card>
       }
     </div>
 
-    <div class="srv-cta">
-      <p class="srv-cta-text">¿Necesitas un servicio personalizado?</p>
-      <a href="#contacto" class="srv-cta-btn">
-        Contáctanos
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-        </svg>
-      </a>
-    </div>
-
+    @if (featured()) {
+      <a routerLink="/servicios" class="alivet-link inline-flex mt-8">Ver todos los servicios</a>
+    }
   </div>
 </section>

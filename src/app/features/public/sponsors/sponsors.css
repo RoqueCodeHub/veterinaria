@@ -3,9 +3,10 @@
    ============================================ */
 
 .sp-section {
-    background: #060312;
-    padding: 3rem 0 3.5rem;
-    font-family: 'Inter', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 48px 0;
+    font-family: var(--font-body);
     position: relative;
     overflow: hidden;
 }
@@ -25,26 +26,29 @@
 /* ── Encabezado ── */
 .sp-header {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 1.25rem;
-    justify-content: center;
-    margin-bottom: 2.25rem;
-    padding: 0 1.5rem;
+    gap: 8px;
+    margin-bottom: 32px;
+    padding: 0 16px;
+    text-align: center;
 }
 
 .sp-label {
-    font-size: 0.68rem;
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.16em;
-    color: rgba(65, 34, 221, 0.45);
+    letter-spacing: 0.14em;
+    color: var(--accent);
     text-transform: uppercase;
-    white-space: nowrap;
 }
 
-.sp-line {
-    height: 1px;
-    width: 80px;
-    background: linear-gradient(90deg, rgba(65, 34, 221, 0.20), transparent);
+.sp-title {
+    margin: 0;
+    font-family: var(--font-head);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: var(--text);
 }
 
 /* ── Marquee outer ── */
@@ -65,12 +69,12 @@
 
 .sp-fade--left {
     left: 0;
-    background: linear-gradient(to right, #060312 0%, transparent 100%);
+    background: linear-gradient(to right, var(--bg) 0%, transparent 100%);
 }
 
 .sp-fade--right {
     right: 0;
-    background: linear-gradient(to left, #060312 0%, transparent 100%);
+    background: linear-gradient(to left, var(--bg) 0%, transparent 100%);
 }
 
 /* ── Track ── */
@@ -82,8 +86,29 @@
     animation: marquee-scroll 28s linear infinite;
 }
 
-.sp-track:hover {
+.sp-track:hover,
+.sp-marquee-outer:focus-within .sp-track {
     animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sp-track {
+        animation: none;
+        flex-wrap: wrap;
+        width: auto;
+        max-width: 1100px;
+        margin: 0 auto;
+        justify-content: center;
+        padding: 0 16px;
+    }
+
+    .sp-item[aria-hidden="true"] {
+        display: none;
+    }
+
+    .sp-fade {
+        display: none;
+    }
 }
 
 @keyframes marquee-scroll {
@@ -95,47 +120,29 @@
 .sp-item {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    flex-shrink: 0;
-    padding: 0.5rem 1.25rem 0.5rem 0.5rem;
-    border-radius: 0.875rem;
-    border: 1px solid rgba(65, 34, 221, 0.07);
-    background: rgba(255, 255, 255, 0.018);
-    transition: border-color 0.25s ease, background 0.25s ease;
-    cursor: default;
-}
-
-.sp-item:hover {
-    border-color: rgba(65, 34, 221, 0.20);
-    background: rgba(255, 255, 255, 0.04);
-}
-
-/* Logo badge */
-.sp-logo {
-    width: 42px;
-    height: 42px;
-    border-radius: 0.625rem;
-    border: 1px solid;
-    display: flex;
-    align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    width: 168px;
+    height: 88px;
+    padding: 16px;
+    border-radius: 16px;
+    border: 1px solid #e7e0f8;
+    background: #ffffff;
+    box-shadow: 0 8px 24px rgba(20, 11, 66, 0.06);
 }
 
-.sp-sigla {
-    font-size: 0.8rem;
-    font-weight: 800;
-    letter-spacing: 0.04em;
+.sp-wordmark {
+    color: #161022;
+    font-family: var(--font-head);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.25;
+    text-align: center;
 }
 
-.sp-nombre {
-    font-size: 0.825rem;
-    font-weight: 600;
-    color: rgba(255, 255, 255, 0.55);
-    white-space: nowrap;
-    transition: color 0.25s ease;
-}
-
-.sp-item:hover .sp-nombre {
-    color: rgba(255, 255, 255, 0.80);
+.sp-logo-img {
+    display: block;
+    max-width: 100%;
+    max-height: 48px;
+    object-fit: contain;
 }

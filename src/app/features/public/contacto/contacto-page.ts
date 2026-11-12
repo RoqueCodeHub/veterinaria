@@ -1,8 +1,13 @@
-import { Component, signal, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, signal, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../../environments/environment';
+import { Button } from 'primeng/button';
+import { Card } from 'primeng/card';
+import { InputText } from 'primeng/inputtext';
+import { Message } from 'primeng/message';
+import { Textarea } from 'primeng/textarea';
 
 interface ContactForm {
   nombre: string;
@@ -15,9 +20,9 @@ interface ContactForm {
 @Component({
   selector: 'app-contacto-page',
   standalone: true,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, Button, Card, InputText, Message, Textarea],
   templateUrl: './contacto-page.html',
-  styleUrl: './contacto-page.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class ContactoPage {
   private http = inject(HttpClient);

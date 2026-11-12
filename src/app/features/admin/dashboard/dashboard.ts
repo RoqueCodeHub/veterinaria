@@ -1,7 +1,9 @@
 import { Component, OnInit, OnDestroy, signal, computed, inject } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { forkJoin } from 'rxjs';
+import { ChartModule } from 'primeng/chart';
 import { AuthService, User } from '../../../core/auth/auth';
 import { VentasService, Venta } from '../../../core/services/ventas.service';
 import { ProductosService, Producto } from '../../../core/services/productos.service';
@@ -10,7 +12,7 @@ import { ClientesService, Cliente } from '../../../core/services/clientes.servic
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, DatePipe, DecimalPipe, RouterModule],
+  imports: [CommonModule, DatePipe, DecimalPipe, FormsModule, RouterModule, ChartModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -26,6 +28,7 @@ export class Dashboard implements OnInit, OnDestroy {
   private clockInterval: ReturnType<typeof setInterval> | null = null;
 
   loading = signal(true);
+  busqueda = signal('');
 
   ventas = signal<Venta[]>([]);
   productos = signal<Producto[]>([]);
@@ -126,6 +129,75 @@ export class Dashboard implements OnInit, OnDestroy {
     return ((this.totalVentasHoy() - ayer) / ayer) * 100;
   });
 
+  private readonly ejemploIngresos = [120, 180, 150, 260, 210, 320, 280];
+  private readonly ejemploOrdenes = [4, 6, 5, 8, 6, 11, 9];
+
+  readonly chartOptions = {
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+      y: { display: false, beginAtZero: true },
+      y1: { display: false, beginAtZero: true },
+    },
+  };
+
+  readonly donutOptions = {
+    maintainAspectRatio: false,
+    cutout: '72%',
+    plugins: { legend: { display: false } },
+  };
+
+  sinActividad = computed(() => this.semana().every((d) => d.ingresos === 0 && d.ordenes === 0));
+
+  ingresosChart = computed(() => {
+    const dias = this.semana();
+    const ejemplo = this.sinActividad();
+    return {
+      labels: dias.map((d) => d.label),
+      datasets: [
+        {
+          label: 'Ingresos (S/)',
+          data: ejemplo ? this.ejemploIngresos : dias.map((d) => d.ingresos),
+          borderColor: '#0f9f6e',
+          backgroundColor: 'rgba(15, 159, 110, 0.16)',
+          fill: true,
+          tension: 0.35,
+          pointRadius: 3,
+          pointBackgroundColor: '#0f9f6e',
+        },
+        {
+          label: 'Órdenes',
+          yAxisID: 'y1',
+          data: ejemplo ? this.ejemploOrdenes : dias.map((d) => d.ordenes),
+          borderColor: '#f59e0b',
+          backgroundColor: 'transparent',
+          borderDash: [6, 4],
+          fill: false,
+          tension: 0.35,
+          pointRadius: 0,
+        },
+      ],
+    };
+  });
+
+  ordenesDonut = computed(() => {
+    const cobradas = this.cobradasSemana();
+    const pendientes = this.pendientesSemana();
+    const anuladas = this.anuladasSemana();
+    const vacio = cobradas + pendientes + anuladas === 0;
+    return {
+      labels: vacio ? ['Sin órdenes'] : ['Cobradas', 'Pendientes', 'Anuladas'],
+      datasets: [
+        {
+          data: vacio ? [1] : [cobradas, pendientes, anuladas],
+          backgroundColor: vacio ? ['#e8eeea'] : ['#0f9f6e', '#f59e0b', '#ef4444'],
+          borderWidth: 0,
+        },
+      ],
+    };
+  });
+
   ordenesSemana = computed(() => this.semana().reduce((sum, d) => sum + d.todas, 0));
   cobradasSemana = computed(() => this.semana().reduce((sum, d) => sum + d.cobradas, 0));
   pendientesSemana = computed(() => this.semana().reduce((sum, d) => sum + d.pendientes, 0));
@@ -179,6 +251,27 @@ export class Dashboard implements OnInit, OnDestroy {
 
   navegarA(ruta: string): void {
     this.router.navigate([ruta]);
+  }
+
+  buscar(event: Event): void {
+    event.preventDefault();
+    const q = this.busqueda().trim();
+    if (!q) return;
+    const needle = q.toLowerCase();
+    const esCliente = this.clientes().some((cliente) =>
+      `${cliente.nombre_completo} ${cliente.nombres} ${cliente.apellidos} ${cliente.telefono ?? ''} ${cliente.numero_documento ?? ''}`
+        .toLowerCase()
+        .includes(needle)
+    );
+    this.router.navigate([esCliente ? '/admin/clientes' : '/admin/productos'], { queryParams: { q } });
+  }
+
+  comparacionHoy(): string {
+    const ordenes = this.ventasHoy().length;
+    const variacion = this.variacionHoy();
+    if (variacion == null) return `${ordenes} órdenes · igual que ayer`;
+    const signo = variacion >= 0 ? '+' : '';
+    return `${ordenes} órdenes · ${signo}${variacion.toFixed(0)}% frente a ayer`;
   }
 
   barra(ordenes: number): number {

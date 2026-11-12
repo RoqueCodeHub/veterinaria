@@ -1,4 +1,6 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { GalleriaModule } from 'primeng/galleria';
+import { webpSrc } from '../../../shared/utils/webp-src';
 
 export interface GaleriaItem {
   src: string;
@@ -9,11 +11,18 @@ export interface GaleriaItem {
 
 @Component({
   selector: 'app-galeria',
-  imports: [],
+  imports: [GalleriaModule],
   templateUrl: './galeria.html',
-  styleUrl: './galeria.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Galeria {
+  readonly preview = input(false);
+  readonly toWebp = webpSrc;
+  readonly responsive = [
+    { breakpoint: '1024px', numVisible: 4 },
+    { breakpoint: '768px', numVisible: 3 },
+    { breakpoint: '560px', numVisible: 1 },
+  ];
 
   fotos: GaleriaItem[] = [
     {
@@ -54,4 +63,8 @@ export class Galeria {
       label: 'Equinos',
     },
   ];
+
+  get fotosInicio(): GaleriaItem[] {
+    return this.fotos.slice(0, 4);
+  }
 }

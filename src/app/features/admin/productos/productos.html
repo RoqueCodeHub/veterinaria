@@ -1,466 +1,193 @@
-<div class="productos-wrapper">
-  <!-- Cabecera -->
-  <header class="page-header">
+<div class="list-page view-fill">
+  <header class="list-header">
     <div>
-      <h1 class="page-title">Catálogo de Productos y Medicamentos</h1>
-      <p class="page-subtitle">Gestión integral de inventario, fichas farmacológicas y proveedores</p>
+      <h1>Catálogo de Productos y Medicamentos</h1>
+      <p>Gestión integral de inventario, fichas farmacológicas y proveedores</p>
     </div>
-    <button type="button" class="btn-primary" (click)="openCreate()">
-      ➕ Nuevo Producto
+    <button type="button" class="list-primary" (click)="openCreate()">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Nuevo producto
     </button>
   </header>
 
-  @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
-  @if (aviso()) { <div class="alert alert-success">{{ aviso() }}</div> }
+  @if (error() && !showModal()) { <p class="list-error">{{ error() }}</p> }
+  <section class="list-kpis">
+    <article><small>Total en catálogo</small><strong>{{ metricas().total }}</strong></article>
+    <article><small>Productos activos</small><strong>{{ metricas().activos }}</strong></article>
+    <article><small>Stock bajo</small><strong>{{ metricas().stockBajo }}</strong></article>
+    <article><small>Por vencer (30 días)</small><strong>{{ metricas().porVencer }}</strong></article>
+  </section>
 
-  <!-- Tarjetas KPI -->
-  <div class="metrics-grid">
-    <div class="metric-card" (click)="setFiltroEstado('todos')">
-      <span class="metric-label">Total en Catálogo</span>
-      <strong class="metric-value">{{ metricas().total }}</strong>
-    </div>
-    <div class="metric-card" (click)="setFiltroEstado('activos')">
-      <span class="metric-label">Productos Activos</span>
-      <strong class="metric-value text-success">{{ metricas().activos }}</strong>
-    </div>
-    <div class="metric-card" [class.card-alert]="metricas().stockBajo > 0" (click)="setFiltroEstado('stock-bajo')">
-      <span class="metric-label">Stock Bajo</span>
-      <strong class="metric-value text-warning">{{ metricas().stockBajo }}</strong>
-    </div>
-    <div class="metric-card" [class.card-alert]="metricas().porVencer > 0" (click)="setFiltroEstado('por-vencer')">
-      <span class="metric-label">Por Vencer (30 días)</span>
-      <strong class="metric-value text-danger">{{ metricas().porVencer }}</strong>
-    </div>
+  <div class="list-tools">
+    <label class="list-search">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      <input type="search" placeholder="Buscar por nombre, principio activo, código o categoría" [ngModel]="busquedaTexto()" (ngModelChange)="busquedaTexto.set($event)" />
+    </label>
+    <p-select [options]="opcionesCategoria()" optionLabel="label" optionValue="value" [ngModel]="filtroCategoria()" (ngModelChange)="filtroCategoria.set($event)" appendTo="body" />
+    <p-select [options]="estadosProducto" optionLabel="label" optionValue="value" [ngModel]="filtroEstado()" (ngModelChange)="setFiltroEstado($event)" appendTo="body" />
   </div>
 
-  <!-- Panel Principal con Filtros y Tabla -->
-  <section class="card-panel mt-4">
-    <div class="filters-bar">
-      <!-- Buscador general por Nombre, Código o Principio Activo -->
-      <div class="search-field">
-        <input 
-          type="text" 
-          class="input-custom" 
-          placeholder="🔍 Buscar por nombre, principio activo, código o categoría..."
-          [ngModel]="busquedaTexto()"
-          (ngModelChange)="busquedaTexto.set($event)"
-        />
-      </div>
-
-      <!-- Filtro por Categoría -->
-      <div class="filter-group">
-        <select 
-          class="input-custom select-custom" 
-          [ngModel]="filtroCategoria()"
-          (ngModelChange)="filtroCategoria.set($event)"
-        >
-          <option value="todas">Todas las Categorías</option>
-          @for (cat of categorias(); track cat.id) {
-            <option [value]="cat.id">{{ cat.nombre }}</option>
-          }
-        </select>
-      </div>
-
-      <!-- Filtro por Estado / Alerta -->
-      <div class="filter-group">
-        <select 
-          class="input-custom select-custom" 
-          [ngModel]="filtroEstado()"
-          (ngModelChange)="setFiltroEstado($event)"
-        >
-          <option value="todos">Todos los productos</option>
-          <option value="activos">🟢 Solo Activos</option>
-          <option value="stock-bajo">🟡 Con Stock Bajo</option>
-          <option value="por-vencer">🔴 Por Vencer</option>
-        </select>
-      </div>
-    </div>
-
-    <!-- Tabla de Productos -->
-    <div class="table-responsive mt-3">
-      @if (loading()) {
-        <div class="empty-state">⏳ Cargando catálogo de productos y medicamentos...</div>
-      } @else if (productosFiltrados().length === 0) {
-        <div class="empty-state">📦 No se encontraron productos en el catálogo.</div>
-      } @else {
-        <table class="custom-table">
-          <thead>
-            <tr>
-              <th>Código / #</th>
-              <th>Producto / Molécula</th>
-              <th>Categoría</th>
-              <th class="text-end">P. Compra</th>
-              <th class="text-end">P. Venta</th>
-              <th class="text-center">Stock</th>
-              <th>Presentación</th>
-              <th>Vencimiento</th>
-              <th class="text-center">Estado</th>
-              <th class="text-end">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (p of visibleProductos(); track p.id) {
-              @let stockActual = getStockActual(p);
-              @let pMed = $any(p);
-              <tr>
-                <td class="id-cell">{{ p.codigo || ('#' + p.id) }}</td>
-                <td>
-                  <div class="product-main-info">
-                    <strong class="text-white">{{ p.nombre }}</strong>
-                    
-                    <!-- Principio Activo y Concentración -->
-                    @if (pMed.principio_activo) {
-                      <small class="principio-activo-text">
-                        🧪 {{ pMed.principio_activo }} {{ pMed.concentracion ? ('(' + pMed.concentracion + ')') : '' }}
-                      </small>
-                    }
-
-                    <!-- Badges Médicos / Regulatorios -->
-                    <div class="clinical-badges mt-1">
-                      @if (pMed.tipo_receta === 'CONTROLADO') {
-                        <span class="badge-rx-controlado" title="Fármaco Fiscalizado - Requiere Receta Retenida">🔒 Controlado</span>
-                      } @else if (pMed.tipo_receta === 'RECETA_SIMPLE' || p.requiere_receta) {
-                        <span class="rx-badge" title="Requiere Receta Médica">Rx</span>
-                      }
-
-                      @if (pMed.cadena_frio) {
-                        <span class="badge-frio" title="Requiere Refrigeración (2°C a 8°C)">🧊 2°-8°C</span>
-                      }
-
-                      @if (pMed.tiempo_retiro_dias && pMed.tiempo_retiro_dias > 0) {
-                        <span class="badge-retiro" title="Tiempo de Carencia en carne/leche">⏳ Retiro {{ pMed.tiempo_retiro_dias }}d</span>
-                      }
-
-                      @if (pMed.permite_fraccionamiento) {
-                        <span class="badge-fraccion" title="Permite Venta Fraccionada / Dosis">💊 Fraccionable</span>
-                      }
-                    </div>
-                  </div>
-                </td>
-                <td><span class="category-badge">{{ p.categoria || 'General' }}</span></td>
-                <td class="text-end muted">S/ {{ p.precio_compra | number:'1.2-2' }}</td>
-                <td class="text-end bold text-success">
-                  <div>S/ {{ p.precio_venta | number:'1.2-2' }}</div>
-                  @if (pMed.permite_fraccionamiento && pMed.precio_venta_dosis > 0) {
-                    <small class="muted d-block font-size-xs">
-                      S/ {{ pMed.precio_venta_dosis | number:'1.2-2' }}/{{ pMed.unidad_dispensacion || 'dosis' }}
-                    </small>
-                  }
-                </td>
-                <td class="text-center bold text-white">
-                  <span [class.text-danger]="stockActual <= (p.stock_minimo || 5)">
-                    {{ stockActual }} {{ p.unidad_medida || 'u.' }}
-                  </span>
-                </td>
-                <td>
-                  @if (presentacionesDe(p).length) {
-                    @for (item of presentacionesDe(p); track item) {
-                      <span class="category-badge presentation-badge">{{ item }}</span>
-                    }
-                  } @else {
-                    <span class="muted">—</span>
-                  }
-                </td>
-                <td class="muted">
-                  {{ p.fecha_vencimiento ? (p.fecha_vencimiento | date:'dd/MM/yyyy') : '—' }}
-                </td>
-                <td class="text-center">
-                  @if (p.activo) {
-                    <span class="status-badge badge-success">Activo</span>
-                  } @else {
-                    <span class="status-badge badge-danger">Inactivo</span>
-                  }
-                </td>
-                <td class="text-end">
-                  <div class="actions-group">
-                    <button type="button" class="btn-icon btn-edit" (click)="openEdit(p)" title="Editar Producto">
-                      ✏️
-                    </button>
-                    <button type="button" class="btn-icon btn-delete" (click)="confirmDelete(p.id)" title="Eliminar Producto">
-                      🗑️
-                    </button>
-                  </div>
-                </td>
-              </tr>
+  @if (loading()) {
+    <p class="list-note">Cargando catálogo de productos y medicamentos...</p>
+  } @else {
+    <app-admin-table
+      [rows]="productosFiltrados()"
+      [pageSize]="12"
+      [columns]="10"
+      itemLabel="productos"
+      emptyIcon="pi pi-box"
+      emptyTitle="Sin productos"
+      emptyText="No se encontraron productos en el catálogo."
+      [resetKey]="busquedaTexto() + '|' + filtroCategoria() + '|' + filtroEstado()"
+    >
+      <ng-template #head>
+        <tr>
+          <th>Código / #</th>
+          <th>Producto / Molécula</th>
+          <th>Categoría</th>
+          <th class="text-right">P. Compra</th>
+          <th class="text-right">P. Venta</th>
+          <th class="text-center">Stock</th>
+          <th>Presentación</th>
+          <th>Vencimiento</th>
+          <th class="text-center">Estado</th>
+          <th class="text-right">Acciones</th>
+        </tr>
+      </ng-template>
+      <ng-template #row let-p>
+        @let stockActual = getStockActual(p);
+        @let pMed = $any(p);
+        <tr>
+          <td class="list-id">{{ p.codigo || ('#' + p.id) }}</td>
+          <td>
+            <div class="list-name">{{ p.nombre }}</div>
+            @if (pMed.principio_activo) {
+              <div class="list-muted">{{ pMed.principio_activo }} {{ pMed.concentracion ? ('(' + pMed.concentracion + ')') : '' }}</div>
             }
-          </tbody>
-        </table>
-
-        <!-- Paginación -->
-        <div class="pagination-bar mt-3">
-          <span class="page-info">Mostrando {{ rangoPaginacion() }} productos</span>
-          <div class="page-controls">
-            <button 
-              type="button" 
-              class="btn-page" 
-              [disabled]="currentPage() <= 1" 
-              (click)="goToPage(currentPage() - 1)"
-            >
-              Anterior
-            </button>
-            <span class="page-indicator">Página {{ currentPage() }} de {{ totalPages() }}</span>
-            <button 
-              type="button" 
-              class="btn-page" 
-              [disabled]="currentPage() >= totalPages()" 
-              (click)="goToPage(currentPage() + 1)"
-            >
-              Siguiente
-            </button>
-          </div>
-        </div>
-      }
-    </div>
-  </section>
+            <div>
+              @if (pMed.tipo_receta === 'CONTROLADO') {
+                <span class="list-state is-off">Controlado</span>
+              } @else if (pMed.tipo_receta === 'RECETA_SIMPLE' || p.requiere_receta) {
+                <span class="list-state is-warn">Rx</span>
+              }
+              @if (pMed.cadena_frio) { <span class="list-chip">2°-8°C</span> }
+              @if (pMed.tiempo_retiro_dias && pMed.tiempo_retiro_dias > 0) { <span class="list-chip">Retiro {{ pMed.tiempo_retiro_dias }}d</span> }
+              @if (pMed.permite_fraccionamiento) { <span class="list-chip">Fraccionable</span> }
+            </div>
+          </td>
+          <td>{{ p.categoria || 'General' }}</td>
+          <td class="text-right">S/ {{ p.precio_compra | number:'1.2-2' }}</td>
+          <td class="text-right">
+            <div>S/ {{ p.precio_venta | number:'1.2-2' }}</div>
+            @if (pMed.permite_fraccionamiento && pMed.precio_venta_dosis > 0) {
+              <small>S/ {{ pMed.precio_venta_dosis | number:'1.2-2' }}/{{ pMed.unidad_dispensacion || 'dosis' }}</small>
+            }
+          </td>
+          <td class="text-center">{{ stockActual }} {{ p.unidad_medida || 'u.' }}</td>
+          <td>
+            @if (presentacionesDe(p).length) {
+              @for (item of presentacionesDe(p); track item) { <span class="list-chip">{{ item }}</span> }
+            } @else { — }
+          </td>
+          <td>{{ p.fecha_vencimiento ? (p.fecha_vencimiento | date:'dd/MM/yyyy') : '—' }}</td>
+          <td class="text-center">
+            <span class="list-state" [class.is-off]="!p.activo">{{ p.activo ? 'Activo' : 'Inactivo' }}</span>
+          </td>
+          <td class="list-actions">
+            <button type="button" class="list-icon" (click)="openEdit(p)" aria-label="Editar producto"><i class="pi pi-pencil" aria-hidden="true"></i></button>
+            <button type="button" class="list-icon is-danger" (click)="confirmDelete(p.id)" aria-label="Eliminar producto"><i class="pi pi-trash" aria-hidden="true"></i></button>
+          </td>
+        </tr>
+      </ng-template>
+    </app-admin-table>
+  }
 </div>
 
-<!-- ===================================================
-     MODAL CREAR / EDITAR PRODUCTO (CON NAVEGACIÓN EN PESTAÑAS)
-     =================================================== -->
-@if (showModal()) {
-  <div class="modal-overlay-fix">
-    <div class="modal-box-center modal-lg">
-      <div class="modal-header-custom">
-        <h5>{{ editingId() ? '✏️ Editar Producto / Medicamento' : '➕ Nuevo Producto o Medicamento' }}</h5>
-        <button type="button" class="btn-close-icon" (click)="closeModal()">✕</button>
-      </div>
-
-      <!-- Navegación por Pestañas dentro del Modal -->
-      <div class="modal-nav-tabs">
-        <button 
-          type="button" 
-          class="nav-tab-btn" 
-          [class.active]="modalTab() === 'general'" 
-          (click)="setModalTab('general')"
-        >
-          📋 Datos Generales
-        </button>
-        <button 
-          type="button" 
-          class="nav-tab-btn" 
-          [class.active]="modalTab() === 'medico'" 
-          (click)="setModalTab('medico')"
-        >
-          💉 Ficha Médica Veterinario
-        </button>
-        <button 
-          type="button" 
-          class="nav-tab-btn" 
-          [class.active]="modalTab() === 'fraccionamiento'" 
-          (click)="setModalTab('fraccionamiento')"
-        >
-          💊 Fraccionamiento y Dosis
-        </button>
-      </div>
-
-      <form (ngSubmit)="save()">
-        <div class="modal-body-custom">
-          
-          <!-- PESTAÑA 1: DATOS GENERALES Y PRECIOS -->
-          @if (modalTab() === 'general') {
-            <div class="form-grid-2 mb-3">
-              <div class="form-group full-width">
-                <label>Nombre del Producto / Servicio *</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.nombre" name="nombre" required placeholder="Ej. Bravecto 20-40kg, Biomec L.A. o Consulta General" />
-              </div>
-  
-              <div class="form-group">
-                <label>Código / Código de Barras</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.codigo" name="codigo" placeholder="Ej. 77500123456" />
-              </div>
-  
-              <div class="form-group">
-                <label>Categoría</label>
-                <select class="input-custom select-custom" [(ngModel)]="form.categoria_id" name="categoria_id">
-                  <option [ngValue]="undefined">— Sin categoría —</option>
-                  @for (cat of categorias(); track cat.id) {
-                    <option [ngValue]="cat.id">{{ cat.nombre }}</option>
-                  }
-                </select>
-              </div>
-  
-              <div class="form-group">
-                <label>Precio Compra (S/.) *</label>
-                <input type="number" class="input-custom" [(ngModel)]="form.precio_compra" (ngModelChange)="calcularPrecioDosisAuto()" name="precio_compra" required min="0" step="0.01" />
-              </div>
-  
-              <div class="form-group">
-                <label>Precio Venta (S/.) *</label>
-                <input type="number" class="input-custom" [(ngModel)]="form.precio_venta" (ngModelChange)="calcularPrecioDosisAuto()" name="precio_venta" required min="0" step="0.01" />
-              </div>
-  
-              @if (!editingId()) {
-                <div class="form-group">
-                  <label>Stock Inicial</label>
-                  <input type="number" class="input-custom" [(ngModel)]="form.stock_actual" name="stock_actual" min="0" />
-                </div>
-              }
-  
-              <div class="form-group">
-                <label>Stock Mínimo (Alerta)</label>
-                <input type="number" class="input-custom" [(ngModel)]="form.stock_minimo" name="stock_minimo" min="0" />
-              </div>
-
-              <div class="form-group">
-                <label>Código de Lote / Batch</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.codigo_lote" name="codigo_lote" placeholder="Ej. LOT-2025-089A" />
-              </div>
-  
-              <div class="form-group">
-                <label>Fecha de Vencimiento</label>
-                <input type="date" class="input-custom" [(ngModel)]="form.fecha_vencimiento" name="fecha_vencimiento" />
-              </div>
-  
-              <div class="form-group">
-                <label>Unidad de Compra / Empaque</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.unidad_medida" name="unidad_medida" placeholder="unidad, frasco 100ml, caja..." />
-              </div>
-
-              <div class="form-group">
-                <label>Proveedor Habitual</label>
-                <select class="input-custom select-custom" [(ngModel)]="form.proveedor_id" name="proveedor_id">
-                  <option [ngValue]="undefined">— Seleccionar proveedor —</option>
-                  @for (prov of proveedores(); track prov.id) {
-                    <option [ngValue]="prov.id">{{ prov.nombre_completo }}{{ prov.empresa ? ' (' + prov.empresa + ')' : '' }}</option>
-                  }
-                </select>
-              </div>
-  
-              <div class="form-group full-width checkboxes-row">
-                <label class="checkbox-label">
-                  <input type="checkbox" [(ngModel)]="form.activo" name="activo" />
-                  <span>Producto Activo para Venta y Prescripción</span>
-                </label>
-              </div>
-            </div>
-          }
-
-          <!-- PESTAÑA 2: FICHA MÉDICA Y REGULACIÓN -->
-          @if (modalTab() === 'medico') {
-            <div class="form-grid-2 mb-3">
-              <div class="form-group">
-                <label>Principio Activo (Molécula)</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.principio_activo" name="principio_activo" placeholder="Ej. Meloxicam, Enrofloxacina..." />
-              </div>
-
-              <div class="form-group">
-                <label>Concentración</label>
-                <input type="text" class="input-custom" [(ngModel)]="form.concentracion" name="concentracion" placeholder="Ej. 20 mg/mL, 100 mg, 1%" />
-              </div>
-
-              <div class="form-group full-width">
-                <label>Nivel de Receta / Regulación Farmacéutica</label>
-                <select class="input-custom select-custom" [(ngModel)]="form.tipo_receta" name="tipo_receta">
-                  <option value="OTC">🟢 Venta Libre (OTC - Champús, suplementos, accesorios)</option>
-                  <option value="RECETA_SIMPLE">🟡 Requiere Receta Médica Simple (Rx)</option>
-                  <option value="CONTROLADO">🔴 Receta Retenida / Fármacos Controlados (Fiscalizado SENASA/DIGEMID)</option>
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label>Tiempo de Retiro / Carencia (Días)</label>
-                <input type="number" class="input-custom" [(ngModel)]="form.tiempo_retiro_dias" name="tiempo_retiro_dias" min="0" placeholder="0 días (Para animales de producción)" />
-              </div>
-
-              <div class="form-group align-self-end">
-                <label class="checkbox-label checkbox-box">
-                  <input type="checkbox" [(ngModel)]="form.cadena_frio" name="cadena_frio" />
-                  <span>🧊 Requiere Cadena de Frío (2°C a 8°C)</span>
-                </label>
-              </div>
-
-              <!-- Selección de Especies Destino -->
-              <div class="form-group full-width mt-2">
-                <label class="mb-2 d-block">Especies Destino Recomendadas:</label>
-                <div class="species-grid">
-                  @for (esp of listaEspecies; track esp) {
-                    <div 
-                      class="species-chip" 
-                      [class.selected]="hasEspecie(esp)" 
-                      (click)="toggleEspecie(esp)"
-                    >
-                      {{ esp }}
-                    </div>
-                  }
-                </div>
-              </div>
-            </div>
-          }
-
-          <!-- PESTAÑA 3: FRACCIONAMIENTO Y DOSIS -->
-          @if (modalTab() === 'fraccionamiento') {
-            <div class="form-grid-2 mb-3">
-              <div class="form-group full-width">
-                <label class="checkbox-label checkbox-box">
-                  <input type="checkbox" [(ngModel)]="form.permite_fraccionamiento" name="permite_fraccionamiento" />
-                  <span>💊 Permitir Venta Fraccionada / Dispensación por Dosis o Mililitros</span>
-                </label>
-                <small class="muted mt-1 d-block">
-                  Habilite esta opción para productos que se compran por empaque (ej. Frasco 100ml o Caja de 100 tabletas) pero se aplican o venden individualmente.
-                </small>
-              </div>
-
-              @if (form.permite_fraccionamiento) {
-                <div class="form-group">
-                  <label>Unidad de Dispensación / Venta Minima</label>
-                  <input type="text" class="input-custom" [(ngModel)]="form.unidad_dispensacion" name="unidad_dispensacion" placeholder="Ej. mL, tableta, ampolla, dosis..." />
-                </div>
-
-                <div class="form-group">
-                  <label>Factor de Conversión (Contenido total por empaque)</label>
-                  <input 
-                    type="number" 
-                    class="input-custom" 
-                    [(ngModel)]="form.factor_conversion" 
-                    (ngModelChange)="calcularPrecioDosisAuto()" 
-                    name="factor_conversion" 
-                    min="1" 
-                    placeholder="Ej. 100 (si 1 caja trae 100 tabletas)" 
-                  />
-                </div>
-
-                <div class="form-group full-width">
-                  <label>Precio Sugerido por Dosis / Unidad Mínima (S/.)</label>
-                  <input type="number" class="input-custom" [(ngModel)]="form.precio_venta_dosis" name="precio_venta_dosis" min="0" step="0.01" />
-                  <small class="muted mt-1 d-block">Calculado automáticamente dividiendo el precio de venta entre el factor de conversión.</small>
-                </div>
-              }
-            </div>
-          }
-
+<p-dialog [header]="editingId() ? 'Editar producto' : 'Nuevo producto'" [visible]="showModal()" (visibleChange)="$event ? showModal.set(true) : closeModal()" [modal]="true" [draggable]="false" [style]="{ width: '44rem' }">
+  <form class="prod-form" (ngSubmit)="save()">
+    <div class="prod-form-body">
+    <section class="prod-section">
+      <h3>Datos generales</h3>
+      <div class="grid gap-3 md:grid-cols-2">
+        <label class="field flex flex-col gap-1 md:col-span-2" [class.is-invalid]="!!formError()">
+          Nombre *
+          <input pInputText class="w-full" [ngModel]="form.nombre" (ngModelChange)="onNombre($event)" name="nombre" placeholder="Ej. Bravecto 20-40kg" />
+          <span class="field-error">{{ formError() }}</span>
+        </label>
+        <label class="flex flex-col gap-1">Código<input pInputText class="w-full" [(ngModel)]="form.codigo" name="codigo" placeholder="Ej. 77500123456" /></label>
+        <label class="flex flex-col gap-1">Categoría
+          <p-select class="w-full" [options]="categorias()" optionLabel="nombre" optionValue="id" [(ngModel)]="form.categoria_id" name="categoria_id" placeholder="Sin categoría" [showClear]="true" [filter]="true" filterBy="nombre" filterPlaceholder="Buscar categoría" emptyFilterMessage="Sin resultados" appendTo="body" />
+        </label>
+        <label class="flex flex-col gap-1">Precio de compra *<input pInputText class="w-full" type="number" [(ngModel)]="form.precio_compra" (ngModelChange)="calcularPrecioDosisAuto()" name="precio_compra" required min="0" step="0.01" /></label>
+        <label class="flex flex-col gap-1">Precio de venta *<input pInputText class="w-full" type="number" [(ngModel)]="form.precio_venta" (ngModelChange)="calcularPrecioDosisAuto()" name="precio_venta" required min="0" step="0.01" /></label>
+        @if (!editingId()) {
+          <label class="flex flex-col gap-1">Stock inicial<input pInputText class="w-full" type="number" [(ngModel)]="form.stock_actual" name="stock_actual" min="0" /></label>
+        }
+        <label class="flex flex-col gap-1">Stock mínimo<input pInputText class="w-full" type="number" [(ngModel)]="form.stock_minimo" name="stock_minimo" min="0" /></label>
+        <label class="flex flex-col gap-1">Código de lote<input pInputText class="w-full" [(ngModel)]="form.codigo_lote" name="codigo_lote" placeholder="Ej. LOT-2025-089A" /></label>
+        <label class="flex flex-col gap-1">Vencimiento<input pInputText class="w-full" type="date" [(ngModel)]="form.fecha_vencimiento" name="fecha_vencimiento" /></label>
+        <label class="flex flex-col gap-1">Unidad<input pInputText class="w-full" [(ngModel)]="form.unidad_medida" name="unidad_medida" placeholder="unidad, frasco 100ml, caja..." /></label>
+        <label class="flex flex-col gap-1 md:col-span-2">Proveedor
+          <p-select class="w-full" [options]="proveedores()" optionLabel="nombre_completo" optionValue="id" [(ngModel)]="form.proveedor_id" name="proveedor_id" placeholder="Sin proveedor" [showClear]="true" [filter]="true" filterBy="nombre_completo,empresa,nombres" filterPlaceholder="Buscar proveedor" emptyFilterMessage="Sin resultados" appendTo="body" />
+        </label>
+        <div class="flex items-center gap-2 md:col-span-2">
+          <p-checkbox [(ngModel)]="form.activo" name="activo" [binary]="true" inputId="prod-activo" />
+          <label for="prod-activo">Producto activo</label>
         </div>
+      </div>
+    </section>
 
-        <div class="modal-footer-custom">
-          <button type="submit" class="btn-primary-action" [disabled]="savingModal()">
-            {{ savingModal() ? 'Guardando...' : '💾 Guardar Producto' }}
-          </button>
-          <button type="button" class="btn-secondary-action" (click)="closeModal()">
-            Cancelar
-          </button>
+    <section class="prod-section">
+      <h3>Ficha médica</h3>
+      <div class="grid gap-3 md:grid-cols-2">
+        <label class="flex flex-col gap-1">Principio activo<input pInputText class="w-full" [(ngModel)]="form.principio_activo" name="principio_activo" placeholder="Ej. Meloxicam" /></label>
+        <label class="flex flex-col gap-1">Concentración<input pInputText class="w-full" [(ngModel)]="form.concentracion" name="concentracion" placeholder="Ej. 20 mg/mL" /></label>
+        <label class="flex flex-col gap-1">Tipo de receta
+          <p-select class="w-full" [options]="[{label:'Venta libre', value:'OTC'},{label:'Receta simple', value:'RECETA_SIMPLE'},{label:'Controlado', value:'CONTROLADO'}]" optionLabel="label" optionValue="value" [(ngModel)]="form.tipo_receta" name="tipo_receta" appendTo="body" />
+        </label>
+        <label class="flex flex-col gap-1">Tiempo de retiro (días)<input pInputText class="w-full" type="number" [(ngModel)]="form.tiempo_retiro_dias" name="tiempo_retiro_dias" min="0" /></label>
+        <div class="flex items-center gap-2 md:col-span-2">
+          <p-checkbox [(ngModel)]="form.cadena_frio" name="cadena_frio" [binary]="true" inputId="cadena-frio" />
+          <label for="cadena-frio">Requiere cadena de frío</label>
         </div>
-      </form>
-    </div>
-  </div>
-}
+        <div class="md:col-span-2">
+          <p class="especie-title">Especies de destino</p>
+          <div class="especie-list">
+            @for (esp of especies; track esp.id) {
+              <button type="button" class="especie" [class.is-on]="hasEspecie(esp.id)" (click)="toggleEspecie(esp.id)">{{ esp.label }}</button>
+            }
+          </div>
+        </div>
+      </div>
+    </section>
 
-<!-- ===================================================
-     MODAL CONFIRMACIÓN ELIMINAR
-     =================================================== -->
-@if (deleteConfirmId()) {
-  <div class="modal-overlay-fix">
-    <div class="modal-box-center">
-      <div class="modal-header-custom">
-        <h5>⚠️ Confirmar Eliminación</h5>
-        <button type="button" class="btn-close-icon" (click)="cancelDelete()">✕</button>
+    <section class="prod-section">
+      <h3>Fraccionamiento</h3>
+      <div class="flex items-center gap-2">
+        <p-checkbox [(ngModel)]="form.permite_fraccionamiento" name="permite_fraccionamiento" [binary]="true" inputId="fraccion" />
+        <label for="fraccion">Permite fraccionamiento</label>
       </div>
-      <div class="modal-body-custom text-center">
-        <p>¿Estás seguro de eliminar este producto del catálogo?</p>
-        <small class="muted">Esta acción no se puede deshacer.</small>
-      </div>
-      <div class="modal-footer-custom">
-        <button type="button" class="btn-danger-action" (click)="doDelete()">🗑️ Eliminar</button>
-        <button type="button" class="btn-secondary-action" (click)="cancelDelete()">Cancelar</button>
-      </div>
+      @if (form.permite_fraccionamiento) {
+        <div class="mt-3 grid gap-3 md:grid-cols-2">
+          <label class="flex flex-col gap-1">Unidad de dispensación<input pInputText class="w-full" [(ngModel)]="form.unidad_dispensacion" name="unidad_dispensacion" placeholder="Ej. mL, tableta, dosis" /></label>
+          <label class="flex flex-col gap-1">Factor de conversión<input pInputText class="w-full" type="number" [(ngModel)]="form.factor_conversion" (ngModelChange)="calcularPrecioDosisAuto()" name="factor_conversion" min="1" /></label>
+          <label class="flex flex-col gap-1">Precio por dosis<input pInputText class="w-full" type="number" [(ngModel)]="form.precio_venta_dosis" name="precio_venta_dosis" min="0" step="0.01" /></label>
+        </div>
+      }
+    </section>
     </div>
+
+    <div class="prod-form-actions">
+      <p-button type="button" label="Cancelar" [outlined]="true" (onClick)="closeModal()" />
+      <p-button type="submit" [label]="savingModal() ? 'Guardando...' : 'Guardar'" icon="pi pi-save" [disabled]="savingModal()" />
+    </div>
+  </form>
+</p-dialog>
+
+<p-dialog header="Confirmar eliminación" [visible]="deleteConfirmId() !== null" (visibleChange)="!$event && cancelDelete()" [modal]="true" [draggable]="false" [style]="{ width: '28rem' }">
+  <p>¿Estás seguro de eliminar este producto del catálogo?</p>
+  <div class="flex justify-end gap-2">
+    <p-button type="button" label="Cancelar" [outlined]="true" (onClick)="cancelDelete()" />
+    <p-button type="button" label="Eliminar" icon="pi pi-trash" severity="danger" (onClick)="doDelete()" />
   </div>
-}
+</p-dialog>

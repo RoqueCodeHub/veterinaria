@@ -1,7 +1,15 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ActivatedRoute } from '@angular/router';
+import { Button } from 'primeng/button';
+import { Checkbox } from 'primeng/checkbox';
+import { Dialog } from 'primeng/dialog';
+import { InputText } from 'primeng/inputtext';
+import { Select } from 'primeng/select';
 import { ProductosService, Producto, ProductoForm } from '../../../core/services/productos.service';
+import { NotifyService } from '../../../core/ui/notify';
+import { AdminTable } from '../../../shared/components/admin-table/admin-table';
 import { ProveedoresService, Proveedor } from '../../../core/services/proveedores.service';
 import { CategoriasService, Categoria } from '../../../core/services/categorias.service';
 
@@ -27,14 +35,15 @@ export interface ProductoFormExtended extends ProductoForm {
 @Component({
   selector: 'app-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe],
+  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe, Button, Checkbox, Dialog, InputText, Select, AdminTable],
   templateUrl: './productos.html',
-  styleUrl: './productos.css',
 })
 export class Productos implements OnInit {
   private svc = inject(ProductosService);
+  private notify = inject(NotifyService);
   private proveedoresSvc = inject(ProveedoresService);
   private categoriasSvc = inject(CategoriasService);
+  private route = inject(ActivatedRoute);
 
   // Estados de datos (Signals)
   productos = signal<Producto[]>([]);
@@ -44,11 +53,9 @@ export class Productos implements OnInit {
   loading = signal(false);
   savingModal = signal(false);
   error = signal<string | null>(null);
-  aviso = signal<string | null>(null);
+  formError = signal<string | null>(null);
 
-  // Modales y Pestañas
   showModal = signal(false);
-  modalTab = signal<'general' | 'medico' | 'fraccionamiento'>('general');
   editingId = signal<number | null>(null);
   deleteConfirmId = signal<number | null>(null);
 
@@ -56,13 +63,26 @@ export class Productos implements OnInit {
   busquedaTexto = signal('');
   filtroCategoria = signal<number | 'todas'>('todas');
   filtroEstado = signal<'todos' | 'activos' | 'stock-bajo' | 'por-vencer'>('todos');
+  readonly estadosProducto = [
+    { label: 'Todos los productos', value: 'todos' },
+    { label: 'Solo activos', value: 'activos' },
+    { label: 'Con stock bajo', value: 'stock-bajo' },
+    { label: 'Por vencer', value: 'por-vencer' },
+  ];
+  opcionesCategoria = computed(() => [
+    { label: 'Todas las categorías', value: 'todas' as number | 'todas' },
+    ...this.categorias().map((cat) => ({ label: cat.nombre, value: cat.id as number | 'todas' })),
+  ]);
 
-  // Catálogo de Especies Destino
-  readonly listaEspecies: string[] = ['Caninos 🐶', 'Felinos 🐱', 'Bovinos 🐮', 'Equinos 🐴', 'Porcinos 🐷', 'Aves 🐔', 'Exóticos 🐰'];
-
-  // Paginación
-  page = signal(1);
-  readonly pageSize = 10;
+  readonly especies = [
+    { id: 'Caninos', label: 'Caninos' },
+    { id: 'Felinos', label: 'Felinos' },
+    { id: 'Bovinos', label: 'Bovinos' },
+    { id: 'Equinos', label: 'Equinos' },
+    { id: 'Porcinos', label: 'Porcinos' },
+    { id: 'Aves', label: 'Aves' },
+    { id: 'Exóticos', label: 'Exóticos' },
+  ];
 
   // Formulario de edición/creación
   form: ProductoFormExtended = this.emptyForm();
@@ -119,24 +139,9 @@ export class Productos implements OnInit {
     });
   });
 
-  // Cálculo de Paginación
-  totalPages = computed(() => Math.max(1, Math.ceil(this.productosFiltrados().length / this.pageSize)));
-  currentPage = computed(() => Math.min(this.page(), this.totalPages()));
-  
-  visibleProductos = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.productosFiltrados().slice(start, start + this.pageSize);
-  });
-
-  rangoPaginacion = computed(() => {
-    const total = this.productosFiltrados().length;
-    if (!total) return '0 de 0';
-    const start = (this.currentPage() - 1) * this.pageSize + 1;
-    const end = Math.min(this.currentPage() * this.pageSize, total);
-    return `${start}–${end} de ${total}`;
-  });
-
   ngOnInit(): void {
+    const q = this.route.snapshot.queryParamMap.get('q');
+    if (q) this.busquedaTexto.set(q);
     this.loadProveedores();
     this.loadCategorias();
     this.load();
@@ -174,22 +179,12 @@ export class Productos implements OnInit {
 
   setFiltroEstado(estado: 'todos' | 'activos' | 'stock-bajo' | 'por-vencer'): void {
     this.filtroEstado.set(estado);
-    this.page.set(1);
-  }
-
-  setModalTab(tab: 'general' | 'medico' | 'fraccionamiento'): void {
-    this.modalTab.set(tab);
-  }
-
-  goToPage(p: number): void {
-    this.page.set(Math.min(Math.max(1, p), this.totalPages()));
   }
 
   openCreate(): void {
     this.form = this.emptyForm();
-    this.modalTab.set('general');
     this.editingId.set(null);
-    this.error.set(null);
+    this.formError.set(null);
     this.showModal.set(true);
   }
 
@@ -197,12 +192,7 @@ export class Productos implements OnInit {
     const tipoRecetaCalc: 'OTC' | 'RECETA_SIMPLE' | 'CONTROLADO' = 
       p.tipo_receta || (p.requiere_receta ? 'RECETA_SIMPLE' : 'OTC');
 
-    let especiesArray: string[] = [];
-    if (Array.isArray(p.especies_destino)) {
-      especiesArray = p.especies_destino;
-    } else if (typeof p.especies_destino === 'string' && p.especies_destino.trim()) {
-      try { especiesArray = JSON.parse(p.especies_destino); } catch { especiesArray = []; }
-    }
+    const especiesArray = this.leerEspecies(p);
 
     this.form = {
       nombre: p.nombre,
@@ -237,30 +227,48 @@ export class Productos implements OnInit {
       codigo_lote: p.codigo_lote ?? p.lote ?? ''
     };
 
-    this.modalTab.set('general');
     this.editingId.set(p.id);
-    this.error.set(null);
+    this.formError.set(null);
     this.showModal.set(true);
   }
 
   closeModal(): void {
     this.showModal.set(false);
     this.savingModal.set(false);
+    this.formError.set(null);
   }
 
   toggleEspecie(especie: string): void {
     const actuales = [...(this.form.especies_destino || [])];
-    const index = actuales.indexOf(especie);
-    if (index >= 0) {
-      actuales.splice(index, 1);
-    } else {
-      actuales.push(especie);
-    }
+    const index = actuales.findIndex((item) => this.mismaEspecie(item, especie));
+    if (index >= 0) actuales.splice(index, 1);
+    else actuales.push(especie);
     this.form.especies_destino = actuales;
   }
 
   hasEspecie(especie: string): boolean {
-    return (this.form.especies_destino || []).includes(especie);
+    return (this.form.especies_destino || []).some((item) => this.mismaEspecie(item, especie));
+  }
+
+  private mismaEspecie(guardada: string, especie: string): boolean {
+    const limpia = guardada.trim();
+    return limpia.localeCompare(especie, 'es', { sensitivity: 'accent' }) === 0 || limpia.startsWith(`${especie} `);
+  }
+
+  private leerEspecies(producto: { especies_destino?: unknown; especie?: unknown }): string[] {
+    const crudo = producto.especies_destino ?? producto.especie;
+    let lista: unknown[] = [];
+    if (Array.isArray(crudo)) {
+      lista = crudo;
+    } else if (typeof crudo === 'string' && crudo.trim()) {
+      try {
+        const parsed = JSON.parse(crudo) as unknown;
+        lista = Array.isArray(parsed) ? parsed : crudo.split(',');
+      } catch {
+        lista = crudo.split(',');
+      }
+    }
+    return lista.map((item) => String(item).trim()).filter((item) => item.length > 0);
   }
 
   calcularPrecioDosisAuto(): void {
@@ -271,14 +279,19 @@ export class Productos implements OnInit {
     }
   }
 
+  onNombre(valor: string): void {
+    this.form.nombre = valor;
+    if (valor.trim()) this.formError.set(null);
+  }
+
   save(): void {
     if (!this.form.nombre.trim()) {
-      this.error.set('El nombre del producto es obligatorio.');
+      this.formError.set('El nombre del producto es obligatorio.');
       return;
     }
 
     this.savingModal.set(true);
-    this.error.set(null);
+    this.formError.set(null);
 
     // Sincronizar campo heredado requiere_receta con el selector tipo_receta
     const requiereRecetaBool = this.form.tipo_receta === 'RECETA_SIMPLE' || this.form.tipo_receta === 'CONTROLADO';
@@ -324,14 +337,14 @@ export class Productos implements OnInit {
     const obs = id ? this.svc.update(id, payload as any) : this.svc.create(payload as any);
     obs.subscribe({
       next: () => {
-        this.aviso.set(id ? '✅ Producto actualizado correctamente.' : '✅ Producto registrado en el catálogo.');
+        this.notify.success(id ? 'Producto actualizado.' : 'Producto registrado en el catálogo.');
         this.closeModal();
         this.load();
       },
       error: (err) => {
         const apiErrors = err?.error?.errors;
         const detail = apiErrors ? Object.values(apiErrors).flat().join(' ') : err?.error?.message;
-        this.error.set(detail || 'Error al guardar el producto.');
+        this.formError.set(detail || 'Error al guardar el producto.');
         this.savingModal.set(false);
       }
     });
@@ -351,12 +364,12 @@ export class Productos implements OnInit {
 
     this.svc.delete(id).subscribe({
       next: () => {
-        this.aviso.set('✅ Producto eliminado del catálogo.');
+        this.notify.success('Producto eliminado del catálogo.');
         this.deleteConfirmId.set(null);
         this.load();
       },
       error: () => {
-        this.error.set('No se pudo eliminar el producto.');
+        this.notify.error('No se pudo eliminar el producto.');
         this.deleteConfirmId.set(null);
       }
     });

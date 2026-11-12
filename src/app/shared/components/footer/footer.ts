@@ -1,30 +1,17 @@
-import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { ChangeDetectionStrategy, Component } from '@angular/core';
 
 @Component({
   selector: 'app-footer',
   standalone: true,
-  imports: [CommonModule],
   templateUrl: './footer.html',
-  styleUrl: './footer.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Footer {
-
   readonly currentYear = new Date().getFullYear();
 
-  socials = [
-    { nombre: 'Instagram', url: 'https://instagram.com' },
-    { nombre: 'Facebook',  url: 'https://www.facebook.com/profile.php?id=61564744831448' },
-    { nombre: 'TikTok',    url: 'https://tiktok.com' },
-    { nombre: 'YouTube',   url: 'https://youtube.com' },
-    { nombre: 'WhatsApp',  url: 'https://wa.me/51932898744' },
-  ];
-
-  pagos = ['Yape', 'Plin', 'Transferencias'];
-
-  links = [
-    { label: 'Términos',   url: '#' },
+  readonly links = [
+    { label: 'Términos', url: '#' },
     { label: 'Privacidad', url: '#' },
-    { label: 'Soporte',    url: '#' },
+    { label: 'Soporte', url: '#' },
   ];
 }

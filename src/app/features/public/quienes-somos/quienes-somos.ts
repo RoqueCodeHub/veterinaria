@@ -1,11 +1,12 @@
-import { Component } from '@angular/core';
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { Card } from 'primeng/card';
 
 @Component({
   selector: 'app-quienes-somos',
-  imports: [],
+  imports: [Card],
   templateUrl: './quienes-somos.html',
-  styleUrl: './quienes-somos.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class QuienesSomos {
-
+  readonly band = input(false);
 }

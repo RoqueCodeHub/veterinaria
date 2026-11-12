@@ -1,314 +1,193 @@
-<div class="stock-wrapper">
-    <!-- Cabecera -->
-    <header class="page-header">
-      <div>
-        <h1 class="page-title">Gestión de Inventario y Stock</h1>
-        <p class="page-subtitle">Control de existencias, alertas de stock mínimo e historial Kardex</p>
-      </div>
-      <button class="btn-primary" (click)="openCreateForProduct()">
-        ➕ Registrar Movimiento
-      </button>
-    </header>
-  
-    @if (error()) { <div class="alert alert-danger">{{ error() }}</div> }
-    @if (aviso()) { <div class="alert alert-success">{{ aviso() }}</div> }
-  
-    <!-- Métricas KPI -->
-    <div class="metrics-grid">
-      <div class="metric-card">
-        <span class="metric-label">Productos en Catálogo</span>
-        <strong class="metric-value">{{ metricas().totalProductos }}</strong>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Ingresos Registrados</span>
-        <strong class="metric-value text-success">+{{ metricas().totalEntradas }} u.</strong>
-      </div>
-      <div class="metric-card">
-        <span class="metric-label">Salidas / Mermas</span>
-        <strong class="metric-value text-danger">-{{ metricas().totalSalidas }} u.</strong>
-      </div>
-      <div class="metric-card" [class.card-alert]="metricas().conStockBajo > 0 || metricas().agotados > 0">
-        <span class="metric-label">Alertas de Stock</span>
-        <strong class="metric-value" [class.text-warning]="metricas().conStockBajo > 0" [class.text-danger]="metricas().agotados > 0">
-          {{ metricas().conStockBajo }} bajo / {{ metricas().agotados }} agotados
-        </strong>
-      </div>
+<div class="list-page stk view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Gestión de inventario y stock</h1>
+      <p>Control de existencias, alertas de stock mínimo e historial Kardex</p>
     </div>
-  
-    <!-- Pestañas de Navegación -->
-    <div class="tab-container mt-4">
-      <button 
-        type="button" 
-        class="tab-btn" 
-        [class.active]="tabActiva() === 'inventario'"
-        (click)="cambiarTab('inventario')"
-      >
-        📦 Stock Actual de Productos
-      </button>
-      <button 
-        type="button" 
-        class="tab-btn" 
-        [class.active]="tabActiva() === 'kardex'"
-        (click)="cambiarTab('kardex')"
-      >
-        📋 Historial de Movimientos (Kardex)
-      </button>
-    </div>
-  
-    <!-- Panel Principal -->
-    <section class="card-panel">
-      <!-- Barra de Búsqueda y Filtros -->
-      <div class="filters-bar">
-        <div class="search-field">
-          <input 
-            type="text" 
-            class="input-custom" 
-            placeholder="🔍 Buscar por nombre, presentación, categoría o código..."
-            [ngModel]="busquedaTexto()"
-            (ngModelChange)="onBusqueda($event)"
-          />
-        </div>
-  
-        @if (tabActiva() === 'kardex') {
-          <div class="filter-group">
-            <select 
-              class="input-custom select-custom" 
-              [ngModel]="filterProductoId()" 
-              (ngModelChange)="onFiltroProducto($event)"
-            >
-              <option [ngValue]="null">Todos los productos</option>
-              @for (p of productos(); track p.id) {
-                <option [ngValue]="p.id">{{ p.nombre }}</option>
-              }
-            </select>
-          </div>
-  
-          <div class="filter-group">
-            <select 
-              class="input-custom select-custom" 
-              [ngModel]="filterTipo()" 
-              (ngModelChange)="onFiltroTipo($event)"
-            >
-              <option value="todos">Todos los tipos</option>
-              <option value="entrada">🟢 Entradas (Ingresos)</option>
-              <option value="salida">🔴 Salidas (Mermas)</option>
-            </select>
-          </div>
-        }
-      </div>
-  
-      <!-- PESTAÑA 1: TABLA DE INVENTARIO Y STOCK ACTUAL -->
-      @if (tabActiva() === 'inventario') {
-        <div class="table-responsive mt-3">
-          <table class="custom-table">
-            <thead>
-              <tr>
-                <th>Código</th>
-                <th>Producto</th>
-                <th>Presentación</th>
-                <th>Categoría</th>
-                <th class="text-end">P. Venta</th>
-                <th class="text-center">Stock Actual</th>
-                <th class="text-center">Estado</th>
-                <th class="text-end">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (p of productosVisibles(); track p.key) {
-                @let stockActual = p.stock;
-                @let stockMin = p.stock_minimo || 5;
-                <tr>
-                  <td class="id-cell">{{ p.codigo }}</td>
-                  <td><strong class="text-white">{{ p.nombre }}</strong></td>
-                  <td><span class="category-badge">{{ p.presentacion }}</span></td>
-                  <td><span class="category-badge">{{ p.categoria || 'General' }}</span></td>
-                  <td class="text-end bold text-success">S/ {{ p.precio_venta }}</td>
-                  <td class="text-center bold text-white font-size-lg">{{ stockActual }} u.</td>
-                  <td class="text-center">
-                    @if (stockActual <= 0) {
-                      <span class="status-badge badge-danger">🔴 AGOTADO</span>
-                    } @else if (stockActual <= stockMin) {
-                      <span class="status-badge badge-warning">🟡 STOCK BAJO</span>
-                    } @else {
-                      <span class="status-badge badge-success">🟢 DISPONIBLE</span>
-                    }
-                  </td>
-                  <td class="text-end">
-                    <button type="button" class="btn-action-adjust" (click)="openCreateForProduct(p)">
-                      ⚙️ Ajustar Stock
-                    </button>
-                  </td>
-                </tr>
-              } @empty {
-                <tr>
-                  <td colspan="8" class="empty-state">No se encontraron productos en el inventario.</td>
-                </tr>
-              }
-            </tbody>
-          </table>
+    <button type="button" class="list-primary" (click)="openCreateForProduct()">
+      <i class="pi pi-plus" aria-hidden="true"></i>
+      Registrar movimiento
+    </button>
+  </header>
 
-          <div class="pagination-bar mt-3">
-            <span class="page-info">Mostrando {{ rangoPaginacion() }} registros</span>
-            <div class="page-controls">
-              <button type="button" class="btn-page" [disabled]="currentPage() <= 1" (click)="goToPage(currentPage() - 1)">
-                Anterior
-              </button>
-              <span class="page-indicator">Página {{ currentPage() }} de {{ totalPages() }}</span>
-              <button type="button" class="btn-page" [disabled]="currentPage() >= totalPages()" (click)="goToPage(currentPage() + 1)">
-                Siguiente
-              </button>
-            </div>
-          </div>
-        </div>
+  @if (error() && !showModal()) { <p class="list-error">{{ error() }}</p> }
+  <section class="list-kpis">
+    <article>
+      <small>Productos en catálogo</small>
+      <strong>{{ metricas().totalProductos }}</strong>
+    </article>
+    <article>
+      <small>Ingresos registrados</small>
+      <strong class="is-green">+{{ metricas().totalEntradas }} u.</strong>
+    </article>
+    <article>
+      <small>Salidas / mermas</small>
+      <strong class="is-red">−{{ metricas().totalSalidas }} u.</strong>
+    </article>
+    <article>
+      <small>Alertas de stock</small>
+      <strong class="is-compact is-green">{{ metricas().conStockBajo }} bajo · {{ metricas().agotados }} agotados</strong>
+    </article>
+  </section>
+
+  <div class="list-tools">
+    <label class="list-search">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      <input type="search" placeholder="Buscar por nombre, presentación, categoría o código..." [ngModel]="busquedaTexto()" (ngModelChange)="onBusqueda($event)" />
+    </label>
+    @if (tabActiva() === 'inventario') {
+      <div class="list-switch">
+        <button type="button" [class.is-on]="filtroNivel() === 'todos'" (click)="setNivel('todos')">Todos</button>
+        <button type="button" [class.is-on]="filtroNivel() === 'bajo'" (click)="setNivel('bajo')">Bajo</button>
+        <button type="button" [class.is-on]="filtroNivel() === 'agotado'" (click)="setNivel('agotado')">Agotado</button>
+      </div>
+    } @else {
+      <p-select [options]="productos()" optionLabel="nombre" optionValue="id" [ngModel]="filterProductoId()" (ngModelChange)="onFiltroProducto($event)" placeholder="Todos los productos" [showClear]="true" appendTo="body" />
+      <p-select [options]="tiposMovimiento" optionLabel="label" optionValue="value" [ngModel]="filterTipo()" (ngModelChange)="onFiltroTipo($event)" appendTo="body" />
+    }
+    <div class="list-switch">
+      @for (pestana of pestanas; track pestana.value) {
+        <button type="button" [class.is-on]="tabActiva() === pestana.value" (click)="cambiarTab(pestana.value)">
+          {{ pestana.label }}
+        </button>
       }
-  
-      <!-- PESTAÑA 2: TABLA KARDEX (HISTORIAL DE MOVIMIENTOS) -->
-      @if (tabActiva() === 'kardex') {
-        <div class="table-responsive mt-3">
-          @if (loading()) {
-            <div class="empty-state">⏳ Cargando historial de movimientos...</div>
-          } @else if (movimientosFiltrados().length === 0) {
-            <div class="empty-state">📦 No hay movimientos registrados con los filtros seleccionados.</div>
-          } @else {
-            <table class="custom-table">
-              <thead>
-                <tr>
-                  <th>#</th>
-                  <th>Producto</th>
-                  <th>Presentación</th>
-                  <th>Tipo</th>
-                  <th class="text-center">Cant.</th>
-                  <th class="text-end">Stock Ant.</th>
-                  <th class="text-end">Stock Nuevo</th>
-                  <th>Responsable</th>
-                  <th>Motivo / Referencia</th>
-                  <th>Fecha</th>
-                </tr>
-              </thead>
-              <tbody>
-                @for (m of movimientosVisibles(); track m.id) {
-                  <tr>
-                    <td class="id-cell">#{{ m.id }}</td>
-                    <td>
-                      <strong class="text-white">{{ m.producto?.nombre ?? getProductoNombre(m.producto_id) }}</strong>
-                    </td>
-                    <td><span class="category-badge">{{ presentacionDe(m) }}</span></td>
-                    <td>
-                      <span 
-                        class="status-badge" 
-                        [class.badge-success]="$any(m.tipo) === 'entrada'"
-                        [class.badge-danger]="$any(m.tipo) === 'salida'"
-                      >
-                        {{ $any(m.tipo) === 'entrada' ? '↑ Entrada' : '↓ Salida' }}
-                      </span>
-                    </td>
-                    <td class="text-center font-bold">
-                      <span [class.text-success]="$any(m.tipo) === 'entrada'" [class.text-danger]="$any(m.tipo) === 'salida'">
-                        {{ $any(m.tipo) === 'entrada' ? '+' : '-' }}{{ m.cantidad }}
-                      </span>
-                    </td>
-                    <td class="text-end muted">{{ m.stock_anterior }}</td>
-                    <td class="text-end bold text-white">{{ m.stock_nuevo }}</td>
-                    <td class="muted">{{ m.user?.name || 'Administrador' }}</td>
-                    <td class="muted">
-                      {{ m.motivo || 'Ajuste manual' }}
-                      @if (m.referencia) {
-                        <small class="ref-tag">{{ m.referencia }}</small>
-                      }
-                    </td>
-                    <td class="muted">{{ m.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+    </div>
+  </div>
 
-            <div class="pagination-bar mt-3">
-              <span class="page-info">Mostrando {{ rangoPaginacion() }} movimientos</span>
-              <div class="page-controls">
-                <button type="button" class="btn-page" [disabled]="currentPage() <= 1" (click)="goToPage(currentPage() - 1)">
-                  Anterior
-                </button>
-                <span class="page-indicator">Página {{ currentPage() }} de {{ totalPages() }}</span>
-                <button type="button" class="btn-page" [disabled]="currentPage() >= totalPages()" (click)="goToPage(currentPage() + 1)">
-                  Siguiente
-                </button>
-              </div>
-            </div>
-          }
+  @if (tabActiva() === 'inventario') {
+    <section class="stk-card">
+      @if (filasInventario().length === 0) {
+        <div class="empty-state">
+          <span class="empty-state-icon"><i class="pi pi-box" aria-hidden="true"></i></span>
+          <strong>Aún no hay productos en el inventario</strong>
+          <p>Registra tu primer ingreso para empezar a controlar existencias y alertas de stock mínimo.</p>
+          <button type="button" class="list-primary" (click)="openCreateForProduct()">
+            <i class="pi pi-plus" aria-hidden="true"></i>
+            Registrar movimiento
+          </button>
         </div>
+      } @else {
+        <app-admin-table
+          [rows]="productosFiltrados()"
+          [pageSize]="12"
+          [columns]="8"
+          itemLabel="productos"
+          emptyIcon="pi pi-box"
+          emptyTitle="Sin productos"
+          emptyText="Ningún producto coincide con ese filtro."
+          [resetKey]="busquedaTexto() + filtroNivel()"
+        >
+          <ng-template #head>
+            <tr>
+              <th>Código</th>
+              <th>Producto</th>
+              <th>Presentación</th>
+              <th>Categoría</th>
+              <th>P. venta</th>
+              <th>Stock</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </ng-template>
+          <ng-template #row let-p>
+              <tr>
+                <td class="list-id">{{ p.codigo }}</td>
+                <td class="list-name">{{ p.nombre }}</td>
+                <td>{{ p.presentacion }}</td>
+                <td>{{ p.categoria }}</td>
+                <td>S/ {{ p.precio_venta | number:'1.2-2' }}</td>
+                <td>{{ p.stock }}</td>
+                <td>
+                  @if (p.stock <= 0) {
+                    <span class="list-state is-off">Agotado</span>
+                  } @else if (p.stock <= (p.stock_minimo || 5)) {
+                    <span class="list-state is-warn">Stock bajo</span>
+                  } @else {
+                    <span class="list-state">Disponible</span>
+                  }
+                </td>
+                <td class="list-actions">
+                  <button type="button" class="list-link" (click)="openCreateForProduct(p)">Ajustar</button>
+                </td>
+              </tr>
+          </ng-template>
+        </app-admin-table>
       }
     </section>
-  </div>
-  
-  <!-- ===================================================
-       MODAL REGISTRAR MOVIMIENTO
-       =================================================== -->
-  @if (showModal()) {
-    <div class="modal-overlay-fix">
-      <div class="modal-box-center">
-        <div class="modal-header-custom">
-          <h5>📦 Registrar Movimiento de Stock</h5>
-          <button type="button" class="btn-close-icon" (click)="closeModal()">✕</button>
+  } @else if (loading()) {
+    <p class="list-note">Cargando historial de movimientos...</p>
+  } @else {
+    <section class="stk-card">
+      @if (movimientosFiltrados().length === 0) {
+        <div class="empty-state">
+          <span class="empty-state-icon"><i class="pi pi-list" aria-hidden="true"></i></span>
+          <strong>Aún no hay movimientos en el Kardex</strong>
+          <p>Los ingresos y las salidas que registres aparecerán en este historial.</p>
         </div>
-  
-        <form (ngSubmit)="save()">
-          <div class="modal-body-custom">
-            <div class="form-group mb-3">
-              <label>Producto y presentación *</label>
-              <select class="input-custom select-custom" [ngModel]="seleccion" (ngModelChange)="onSeleccion($event)" name="seleccion" required>
-                <option value="" disabled>Selecciona un producto</option>
-                @for (p of filasInventario(); track p.key) {
-                  <option [value]="p.key">
-                    {{ p.nombre }} — {{ p.presentacion }} (Stock: {{ p.stock }})
-                  </option>
-                }
-              </select>
-            </div>
-  
-            <div class="form-grid-2 mb-3">
-              <div class="form-group">
-                <label>Tipo de Movimiento *</label>
-                <select class="input-custom select-custom" [(ngModel)]="form.tipo" name="tipo" required>
-                  <option value="entrada">🟢 Entrada (Ingreso / Compra)</option>
-                  <option value="salida">🔴 Salida (Merma / Ajuste)</option>
-                </select>
-              </div>
-  
-              <div class="form-group">
-                <label>Cantidad *</label>
-                <input 
-                  type="number" 
-                  class="input-custom" 
-                  [(ngModel)]="form.cantidad" 
-                  name="cantidad" 
-                  required 
-                  min="1" 
-                  placeholder="1"
-                />
-              </div>
-            </div>
-  
-            <div class="form-group">
-              <label>Motivo / Observación</label>
-              <input 
-                type="text" 
-                class="input-custom" 
-                [(ngModel)]="form.motivo" 
-                name="motivo" 
-                placeholder="Ej. Compra con Factura F001-204, rotura, vencimiento..."
-              />
-            </div>
-          </div>
-  
-          <div class="modal-footer-custom">
-            <button type="submit" class="btn-primary-action" [disabled]="savingModal() || !form.producto_id">
-              {{ savingModal() ? 'Guardando...' : '💾 Registrar' }}
-            </button>
-            <button type="button" class="btn-secondary-action" (click)="closeModal()">
-              Cancelar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      } @else {
+        <app-admin-table
+          [rows]="movimientosFiltrados()"
+          [pageSize]="12"
+          [columns]="10"
+          itemLabel="movimientos"
+          emptyIcon="pi pi-list"
+          emptyTitle="Sin movimientos"
+          emptyText="Ningún movimiento coincide con ese filtro."
+          [resetKey]="busquedaTexto() + (filterProductoId() ?? '') + filterTipo()"
+        >
+          <ng-template #head>
+            <tr>
+              <th>#</th>
+              <th>Producto</th>
+              <th>Presentación</th>
+              <th>Tipo</th>
+              <th>Cant.</th>
+              <th>Stock ant.</th>
+              <th>Stock nuevo</th>
+              <th>Responsable</th>
+              <th>Motivo</th>
+              <th>Fecha</th>
+            </tr>
+          </ng-template>
+          <ng-template #row let-m>
+              <tr>
+                <td class="list-id">#{{ m.id }}</td>
+                <td class="list-name">{{ m.producto?.nombre ?? getProductoNombre(m.producto_id) }}</td>
+                <td>{{ presentacionDe(m) }}</td>
+                <td>
+                  <span class="list-state" [class.is-off]="m.tipo !== 'entrada'">{{ m.tipo === 'entrada' ? 'Entrada' : 'Salida' }}</span>
+                </td>
+                <td>{{ m.tipo === 'entrada' ? '+' : '-' }}{{ m.cantidad }}</td>
+                <td>{{ m.stock_anterior }}</td>
+                <td>{{ m.stock_nuevo }}</td>
+                <td>{{ m.user?.name || 'Administrador' }}</td>
+                <td>{{ m.motivo || 'Ajuste manual' }}</td>
+                <td>{{ m.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
+              </tr>
+          </ng-template>
+        </app-admin-table>
+      }
+    </section>
   }
+</div>
+
+<p-dialog header="Registrar movimiento de stock" [visible]="showModal()" (visibleChange)="$event ? showModal.set(true) : closeModal()" [modal]="true" [style]="{ width: '36rem' }">
+  <form class="flex flex-col gap-6" (ngSubmit)="save()">
+    <label class="field flex flex-col gap-1" [class.is-invalid]="!!formError()">
+      Producto y presentación *
+      <p-select [options]="filasInventario()" optionLabel="nombre" optionValue="key" [ngModel]="seleccion" (ngModelChange)="onSeleccion($event)" name="seleccion" placeholder="Selecciona un producto" appendTo="body" />
+      <span class="field-error">{{ formError() }}</span>
+    </label>
+    <div class="grid gap-3 md:grid-cols-2">
+      <label class="flex flex-col gap-1">Tipo *
+        <p-select [options]="tiposRegistro" optionLabel="label" optionValue="value" [(ngModel)]="form.tipo" name="tipo" appendTo="body" />
+      </label>
+      <label class="flex flex-col gap-1">Cantidad *<input pInputText class="w-full" type="number" [ngModel]="form.cantidad" (ngModelChange)="onCantidad($event)" name="cantidad" min="1" /></label>
+    </div>
+    <label class="flex flex-col gap-1">Motivo<input pInputText class="w-full" [(ngModel)]="form.motivo" name="motivo" placeholder="Compra, rotura, vencimiento..." /></label>
+    <div class="flex justify-end gap-2">
+      <p-button type="button" label="Cancelar" [outlined]="true" (onClick)="closeModal()" />
+      <p-button type="submit" [label]="savingModal() ? 'Guardando...' : 'Registrar'" [disabled]="savingModal() || !form.producto_id" />
+    </div>
+  </form>
+</p-dialog>

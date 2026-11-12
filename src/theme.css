@@ -1,8 +1,8 @@
 /* Modo claro del landing. El modo oscuro conserva los estilos de cada componente. */
 
 html[data-theme="light"] body {
-    background: #f4f2fb;
-    color: #1c1433;
+    background: #f4f1fc;
+    color: #161022;
 }
 
 html[data-theme="light"] .site-header {
@@ -15,7 +15,7 @@ html[data-theme="light"] .nav-link,
 html[data-theme="light"] .theme-toggle,
 html[data-theme="light"] .menu-toggle,
 html[data-theme="light"] .btn-login {
-    color: #1c1433;
+    color: #161022;
 }
 
 html[data-theme="light"] .nav-link:hover,
@@ -43,12 +43,12 @@ html[data-theme="light"] .rs-section,
 html[data-theme="light"] .sp-section,
 html[data-theme="light"] .countdown-section,
 html[data-theme="light"] .footer {
-    background: #f4f2fb;
-    color: #1c1433;
+    background: #f4f1fc;
+    color: #161022;
 }
 
 html[data-theme="light"] .page-hero {
-    background: linear-gradient(180deg, #ebe6fa 0%, #f4f2fb 100%);
+    background: linear-gradient(180deg, #e7e0f8 0%, #f4f1fc 100%);
 }
 
 html[data-theme="light"] .sec-title,
@@ -71,7 +71,6 @@ html[data-theme="light"] .rs-subtitle,
 html[data-theme="light"] .rs-desc,
 html[data-theme="light"] .qs-p,
 html[data-theme="light"] .qs-check-item,
-html[data-theme="light"] .qs-location,
 html[data-theme="light"] .qs-stat-lbl,
 html[data-theme="light"] .esp-card-text,
 html[data-theme="light"] .esp-list li,
@@ -80,7 +79,6 @@ html[data-theme="light"] .srv-icon,
 html[data-theme="light"] .gal-note,
 html[data-theme="light"] .gal-btn,
 html[data-theme="light"] .sp-nombre,
-html[data-theme="light"] .ct-info-value,
 html[data-theme="light"] .ct-label,
 html[data-theme="light"] .footer-desc,
 html[data-theme="light"] .footer-ruc,
@@ -88,7 +86,7 @@ html[data-theme="light"] .footer-copy,
 html[data-theme="light"] .footer-link,
 html[data-theme="light"] .social-link,
 html[data-theme="light"] .pago-badge {
-    color: #4a4368;
+    color: #3a3262;
 }
 
 html[data-theme="light"] .esp-card,
@@ -104,7 +102,7 @@ html[data-theme="light"] .pago-badge {
 
 html[data-theme="light"] .ct-input {
     background: #ffffff;
-    color: #1c1433;
+    color: #161022;
     border-color: rgba(42, 22, 140, 0.18);
 }
 
@@ -113,11 +111,11 @@ html[data-theme="light"] .ct-input::placeholder {
 }
 
 html[data-theme="light"] .sp-fade--left {
-    background: linear-gradient(to right, #f4f2fb 0%, transparent 100%);
+    background: linear-gradient(to right, #f4f1fc 0%, transparent 100%);
 }
 
 html[data-theme="light"] .sp-fade--right {
-    background: linear-gradient(to left, #f4f2fb 0%, transparent 100%);
+    background: linear-gradient(to left, #f4f1fc 0%, transparent 100%);
 }
 
 html[data-theme="light"] .qs-glow,

@@ -1,32 +1,45 @@
 import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Button } from 'primeng/button';
+import { Dialog } from 'primeng/dialog';
+import { Select } from 'primeng/select';
+import { TableModule } from 'primeng/table';
 import { VentasService, Venta } from '../../../core/services/ventas.service';
+import { NotifyService } from '../../../core/ui/notify';
+import { AdminTable } from '../../../shared/components/admin-table/admin-table';
 import { environment } from '../../../../environments/environment';
 
 @Component({
   selector: 'app-ventas-historial',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe],
+  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, Button, Dialog, Select, TableModule, AdminTable],
   templateUrl: './ventas-historial.html',
-  styleUrl: './ventas-historial.css',
 })
 export class VentasHistorialComponent implements OnInit {
   private ventasService = inject(VentasService);
+  private notify = inject(NotifyService);
 
   // Estados principales
   ventas = signal<Venta[]>([]);
   loading = signal(false);
   error = signal<string | null>(null);
-  aviso = signal<string | null>(null);
-
   // Filtros. Son campos normales para que ngModel vuelva a pintar la tabla.
   busqueda = '';
   filtroRangoFecha: 'hoy' | 'semana' | 'mes' | 'todos' = 'todos';
   filtroEstado: 'todos' | 'completada' | 'anulada' | 'pendiente' = 'todos';
-  readonly pageSize = 10;
-  page = signal(1);
-
+  readonly rangosFecha = [
+    { label: 'Todos', value: 'todos' },
+    { label: 'Hoy', value: 'hoy' },
+    { label: 'Semana', value: 'semana' },
+    { label: 'Mes', value: 'mes' },
+  ];
+  readonly estados = [
+    { label: 'Todos', value: 'todos' },
+    { label: 'Completada', value: 'completada' },
+    { label: 'Pendiente', value: 'pendiente' },
+    { label: 'Anulada', value: 'anulada' },
+  ];
   // Modales
   ventaSeleccionada = signal<Venta | null>(null);
   mostrarModalDetalle = signal(false);
@@ -57,35 +70,6 @@ export class VentasHistorialComponent implements OnInit {
         || (v.cliente?.nombre_completo || '').toLowerCase().includes(query)
         || comprobante.includes(query);
     });
-  }
-
-  totalPages(): number {
-    return Math.max(1, Math.ceil(this.ventasFiltradas().length / this.pageSize));
-  }
-
-  currentPage(): number {
-    return Math.min(this.page(), this.totalPages());
-  }
-
-  ventasVisibles(): Venta[] {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.ventasFiltradas().slice(start, start + this.pageSize);
-  }
-
-  rangoPaginacion(): string {
-    const total = this.ventasFiltradas().length;
-    if (!total) return '0 de 0';
-    const start = (this.currentPage() - 1) * this.pageSize + 1;
-    const end = Math.min(this.currentPage() * this.pageSize, total);
-    return `${start}–${end} de ${total}`;
-  }
-
-  reiniciarPagina(): void {
-    this.page.set(1);
-  }
-
-  goToPage(pagina: number): void {
-    this.page.set(Math.min(Math.max(1, pagina), this.totalPages()));
   }
 
   esCompletada(venta: Venta): boolean {
@@ -205,11 +189,11 @@ export class VentasHistorialComponent implements OnInit {
     if (confirm(`¿Estás seguro de emitir Nota de Crédito para anular la venta #${venta.id}?`)) {
       this.ventasService.anular(venta.id, motivo).subscribe({
         next: (res) => {
-          this.aviso.set(res?.message || `Venta #${venta.id} anulada correctamente.`);
+          this.notify.success(res?.message || `Venta #${venta.id} anulada.`);
           this.cargarHistorial();
         },
         error: (err) => {
-          this.error.set(err?.error?.message || 'Error al intentar anular la venta.');
+          this.notify.error(err?.error?.message || 'No se pudo anular la venta.');
         }
       });
     }

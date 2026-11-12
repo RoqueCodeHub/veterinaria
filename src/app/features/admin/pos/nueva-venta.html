@@ -1,209 +1,177 @@
-<div class="pos-wrapper">
-    <!-- Cabecera -->
-    <header class="pos-header">
-      <div>
-        <h1 class="page-title">Punto de Venta (POS)</h1>
-        <p class="page-subtitle">Selección rápida de productos y envío a cobranza</p>
-      </div>
-      <button type="button" class="btn-ver-carrito" (click)="verCarrito()">
-        Ver carrito
-        <span class="cart-count">{{ cantidadItems() }}</span>
-        <span>S/ {{ totalCart() | number:'1.2-2' }}</span>
-      </button>
+<div class="pos-shell view-fill">
+  <section class="pos-catalog">
+    <header>
+      <h1>Punto de venta</h1>
+      <p>Busca, agrega al carrito y cobra en segundos</p>
     </header>
-  
-    @if (error()) {
-      <div class="alert alert-danger">{{ error() }}</div>
-    }
-  
-    <div class="pos-grid">
-      <section class="pos-catalog">
-        <div class="search-bar">
-          <input 
-            type="text" 
-            class="input-custom search-input" 
-            placeholder="🔍 Buscar por producto, servicio o código de barras..."
-            [(ngModel)]="busqueda"
-            (ngModelChange)="onBusqueda($event)"
-          />
-        </div>
-  
-        <div class="category-chips">
-          <button
-            type="button"
-            class="chip-btn"
-            [class.active]="categoriaSeleccionada === 'todas'"
-            (click)="seleccionarCategoria('todas')"
-          >
-            Todas
-          </button>
-          @for (cat of filtros(); track cat) {
-            <button 
-              type="button" 
-              class="chip-btn" 
-              [class.active]="categoriaSeleccionada.toLowerCase() === cat.toLowerCase()"
-              (click)="seleccionarCategoria(cat)"
-            >
-              {{ cat }}
-            </button>
-          }
-        </div>
-  
-        <div class="product-cards" #catalogo (scroll)="onScroll($event)">
-          @for (prod of productosVisibles(); track prod.id) {
-            <article class="product-card" [class.agotado]="prod.stock <= 0">
-              <span class="card-cat">{{ prod.categoria }}</span>
-              <h3 class="card-name">{{ prod.nombre }}</h3>
-              <p class="card-meta">{{ prod.stock > 0 ? prod.stock + ' u. en stock' : 'Agotado' }}</p>
-              <div class="card-foot">
-                <strong>S/ {{ prod.precio | number:'1.2-2' }}</strong>
-                <button
-                  type="button"
-                  class="btn-add"
-                  [disabled]="prod.stock <= 0"
-                  (click)="agregarAlCarrito(prod)"
-                >
-                  {{ prod.stock <= 0 ? 'Sin stock' : 'Agregar' }}
-                </button>
-              </div>
-            </article>
-          } @empty {
-            <p class="empty-catalog">
-              @if (loadingProductos()) {
-                Cargando productos desde la base de datos...
-              } @else {
-                No se encontraron productos disponibles.
-              }
-            </p>
-          }
-          @if (quedanMas()) {
-            <p class="scroll-hint">Desplázate para ver más productos</p>
-          }
-        </div>
-      </section>
+
+    <div class="pos-stats">
+      <span><i class="pos-dot"></i> En catálogo · <b>{{ productos().length }}</b></span>
+      <span><i class="pos-dot"></i> Disponibles · <b>{{ disponibles() }}</b></span>
+      <span><i class="pos-dot is-bad"></i> Agotados · <b>{{ agotados() }}</b></span>
+      @if (datosDeEjemplo()) { <span class="pos-sample">Datos de ejemplo</span> }
     </div>
-  </div>
 
-  <!-- Resumen oculto hasta pulsar Ver carrito -->
-  @if (carritoAbierto()) {
-    <div class="cart-overlay" (click)="cerrarCarrito()">
-      <section class="card-panel cart-panel cart-drawer" (click)="$event.stopPropagation()">
-        <div class="cart-head">
-          <h2 class="panel-title">Resumen de Venta</h2>
-          <button type="button" class="btn-cerrar-carrito" (click)="cerrarCarrito()">Cerrar</button>
-        </div>
+    <label class="pos-search">
+      <i class="pi pi-search" aria-hidden="true"></i>
+      <input #buscador type="search" placeholder="Buscar por producto, servicio o código de barras..." [ngModel]="busqueda" (ngModelChange)="onBusqueda($event)" />
+      <kbd>F2</kbd>
+    </label>
 
-        @if (error()) {
-          <div class="alert alert-danger">{{ error() }}</div>
+    <div class="pos-chips">
+      <button type="button" class="pos-chip" [class.is-on]="categoriaSeleccionada === 'todas'" (click)="seleccionarCategoria('todas')">Todos</button>
+      @for (cat of categoriasVisibles(); track cat) {
+        <button type="button" class="pos-chip" [class.is-on]="categoriaSeleccionada === cat" (click)="seleccionarCategoria(cat)">{{ cat }}</button>
+      }
+      @if (hayMasCategorias()) {
+        <button type="button" class="pos-chip" (click)="alternarCategorias()">{{ verMasCategorias() ? 'Menos categorías' : '+ Más categorías' }}</button>
+      }
+    </div>
+
+    @if (loadingProductos()) {
+      <p class="list-note">Cargando productos desde la base de datos...</p>
+    } @else if (visibles().length === 0) {
+      <div class="pos-empty">
+        <span class="empty-state-icon"><i class="pi pi-box" aria-hidden="true"></i></span>
+        <strong>Sin productos</strong>
+        <p>No se encontraron productos disponibles.</p>
+      </div>
+    } @else {
+      <div class="pos-grid">
+        @for (prod of visibles(); track prod.id) {
+          <button type="button" class="pos-card" [disabled]="!!prod.ejemplo || prod.stock <= 0" (click)="agregarAlCarrito(prod)">
+            <span class="pos-tile" [ngClass]="tonoDe(prod)"><i [class]="iconoDe(prod)" aria-hidden="true"></i></span>
+            @if (cantidadEn(prod.id) > 0) { <span class="pos-qty">x{{ cantidadEn(prod.id) }}</span> }
+            <strong>{{ prod.nombre }}</strong>
+            <small>{{ grupoDe(prod) }}</small>
+            <span class="pos-card-foot">
+              <span class="pos-price">S/ {{ prod.precio | number:'1.2-2' }}</span>
+              <span class="pos-stock" [ngClass]="claseStock(prod)">{{ textoStock(prod) }}</span>
+            </span>
+          </button>
         }
+      </div>
+      <p class="pos-foot">Mostrando {{ visibles().length }} {{ visibles().length === 1 ? 'producto' : 'productos y servicios' }}</p>
+    }
+  </section>
 
-        <div class="client-selection-box mb-3">
-          <div class="form-group">
-            <label>Cliente (Base de Datos):</label>
-            <select class="input-custom select-custom" [(ngModel)]="clienteSeleccionadoId">
-              <option [ngValue]="null">Selecciona un cliente</option>
-              @for (cli of clientes(); track cli.id) {
-                <option [ngValue]="cli.id">{{ cli.nombre_completo }}</option>
-              }
-            </select>
-          </div>
-  
-          <div class="form-group mt-2">
-            <label>Mascota (Opcional):</label>
-            <input type="text" class="input-custom" [(ngModel)]="mascotaNombre" placeholder="Ej: Firulais" />
-          </div>
-        </div>
-  
-        <!-- Lista del Carrito -->
-        <div class="cart-items-list">
-          @for (item of cart(); track item.producto.id) {
-            <div class="cart-item">
-              <div class="item-info">
-                <strong class="item-title">{{ item.producto.nombre }}</strong>
-                <span class="item-unit-price">S/ {{ item.producto.precio | number:'1.2-2' }} c/u</span>
-              </div>
-  
-              <div class="item-controls">
-                <button type="button" class="btn-qty" (click)="modificarCantidad(item, -1)">-</button>
-                <span class="qty-number">{{ item.cantidad }}</span>
-                <button type="button" class="btn-qty" (click)="modificarCantidad(item, 1)">+</button>
-              </div>
-  
-              <div class="item-subtotal">
-                <strong>S/ {{ item.subtotal | number:'1.2-2' }}</strong>
-                <button type="button" class="btn-delete" (click)="eliminarItem(item)">✕</button>
-              </div>
-            </div>
-          } @empty {
-            <div class="empty-cart">
-              🛒 Haz clic en un producto para agregarlo al carrito.
-            </div>
-          }
-        </div>
-  
-        <!-- Totales y Acciones -->
-        <div class="cart-footer mt-auto">
-          <div class="summary-box">
-            <div class="summary-row grand-total">
-              <span>TOTAL:</span>
-              <span class="total-amount">S/ {{ totalCart() | number:'1.2-2' }}</span>
-            </div>
-          </div>
-  
-          <div class="action-buttons-grid mt-3">
-            <button 
-              type="button" 
-              class="btn-send-caja" 
-              [disabled]="cart().length === 0 || savingVenta()"
-              (click)="enviarACaja()"
-            >
-              📥 Enviar a Caja
-            </button>
-            <button 
-              type="button" 
-              class="btn-pay-now" 
-              [disabled]="cart().length === 0 || savingVenta()"
-              (click)="cobrarDirecto()"
-            >
-              💳 Cobrar Ahora
-            </button>
-          </div>
-  
-          @if (cart().length > 0) {
-            <button type="button" class="btn-clear-cart mt-2" (click)="limpiarCarrito()">
-              🗑️ Vaciar Carrito
-            </button>
-          }
-        </div>
-      </section>
+  <aside class="pos-summary">
+    <div class="pos-summary-body">
+    <div class="pos-summary-head">
+      <h2>Resumen de venta</h2>
+      <span class="pos-count">{{ cantidadItems() }} {{ cantidadItems() === 1 ? 'ítem' : 'ítems' }}</span>
     </div>
-  }
 
-  <!-- ===================================================
-       VENTANA EMERGENTE CORREGIDA (OVERLAY FIX)
-       =================================================== -->
-  @if (mostrarModalExito()) {
-    <div class="modal-overlay-fix">
-      <div class="modal-box-center">
-        <div class="modal-header-custom">
-          <h5>✔ Orden Enviada a Caja</h5>
-          <button type="button" class="btn-close-icon" (click)="cerrarModalYContinuar()">✕</button>
+    <label class="flex flex-col gap-1">Cliente
+      <p-select [options]="clientes()" optionLabel="nombre_completo" optionValue="id" [(ngModel)]="clienteSeleccionadoId" placeholder="Selecciona un cliente" [filter]="true" filterPlaceholder="Buscar cliente" [showClear]="true" appendTo="body" />
+    </label>
+    <button type="button" class="pos-link" (click)="abrirNuevoCliente()">+ Nuevo cliente</button>
+
+    <div>
+      <p class="m-0 mb-1">Mascota</p>
+      <div class="pos-pets">
+        @for (nombre of mascotas(); track nombre) {
+          <button type="button" class="pos-pet" [class.is-on]="mascotaActiva() === nombre" (click)="elegirMascota(nombre)">{{ nombre }}</button>
+        }
+        @if (!agregandoMascota()) {
+          <button type="button" class="pos-link" (click)="agregandoMascota.set(true)">+ Agregar mascota</button>
+        }
+      </div>
+      @if (agregandoMascota()) {
+        <input pInputText class="w-full mt-2" [(ngModel)]="nuevaMascota" placeholder="Nombre de la mascota" (keydown.enter)="confirmarMascota()" />
+      }
+    </div>
+
+    <div>
+      @for (item of cart(); track item.producto.id) {
+        <div class="pos-line">
+          <div>
+            <strong>{{ item.producto.nombre }}</strong>
+            <p>S/ {{ item.producto.precio | number:'1.2-2' }} c/u</p>
+            <span class="pos-qty-box">
+              <button type="button" (click)="modificarCantidad(item, -1)" aria-label="Quitar una unidad"><i class="pi pi-minus"></i></button>
+              <span>{{ item.cantidad }}</span>
+              <button type="button" (click)="modificarCantidad(item, 1)" aria-label="Agregar una unidad"><i class="pi pi-plus"></i></button>
+            </span>
+          </div>
+          <div>
+            <strong>S/ {{ item.subtotal | number:'1.2-2' }}</strong>
+            <button type="button" class="pos-x" (click)="eliminarItem(item)" aria-label="Quitar del carrito"><i class="pi pi-times"></i></button>
+          </div>
         </div>
-  
-        <div class="modal-body-custom">
-          <div class="icon-circle-success">📥</div>
-          <h3>Ticket #{{ ticketGeneradoId() }}</h3>
-          <p>Se ha enviado la orden a la lista de <strong>"Pendientes por cobrar"</strong> en Caja.</p>
-        </div>
-  
-        <div class="modal-footer-custom">
-          <button type="button" class="btn-primary-action" (click)="irACaja()">
-            💳 Ir a Caja y Cobrar
-          </button>
-          <button type="button" class="btn-secondary-action" (click)="cerrarModalYContinuar()">
-            🛒 Nueva Venta
-          </button>
+      } @empty {
+        <p class="list-note">Toca un producto para agregarlo.</p>
+      }
+    </div>
+
+    </div>
+
+    <footer class="pos-summary-foot">
+      <section class="pos-totals">
+        <p class="pos-money"><span>Subtotal</span><span>S/ {{ baseImponible() | number:'1.2-2' }}</span></p>
+        <p class="pos-money"><span>IGV (18%)</span><span>S/ {{ igvCart() | number:'1.2-2' }}</span></p>
+        @if (editandoDescuento() || descuento() > 0) {
+          <label class="pos-money">Descuento
+            <span class="pos-soles">
+              <span>S/</span>
+              <input #descuentoCampo type="text" inputmode="decimal" autocomplete="off" [ngModel]="descuentoTexto()" (ngModelChange)="onDescuentoTexto($event)" (focus)="seleccionarMonto($event)" (blur)="formatearDescuento($event)" (keydown.enter)="$any($event.target).blur()" />
+            </span>
+          </label>
+        } @else {
+          <button type="button" class="pos-link" (click)="abrirDescuento()">+ Agregar descuento</button>
+        }
+        <p class="pos-money pos-total"><span>Total</span><strong>S/ {{ totalCart() | number:'1.2-2' }}</strong></p>
+      </section>
+      <div>
+        <p class="m-0 mb-2">Método de pago</p>
+        <div class="pos-pays">
+          @for (metodo of metodosPago; track metodo.id) {
+            <button type="button" class="pos-pay" [class.is-on]="metodoPago() === metodo.id" (click)="metodoPago.set(metodo.id)">
+              <i [class]="metodo.icon" aria-hidden="true"></i>
+              {{ metodo.label }}
+            </button>
+          }
         </div>
       </div>
+      @if (metodoPago() === 'efectivo') {
+        <div class="pos-cash">
+          <label>Recibido
+            <span class="pos-soles">
+              <span>S/</span>
+              <input type="text" inputmode="decimal" autocomplete="off" [ngModel]="recibidoTexto()" (ngModelChange)="onRecibidoTexto($event)" (focus)="seleccionarMonto($event)" (blur)="formatearRecibido($event)" (keydown.enter)="$any($event.target).blur()" />
+            </span>
+          </label>
+          <span [class.is-ok]="vuelto() > 0">Vuelto S/ {{ vuelto() | number:'1.2-2' }}</span>
+        </div>
+      }
+      @if (error()) { <p class="pos-form-error">{{ error() }}</p> }
+      <button type="button" class="pos-charge" [disabled]="cart().length === 0 || savingVenta()" (click)="cobrarDirecto()">
+        <i class="pi pi-wallet" aria-hidden="true"></i>
+        Cobrar ahora · S/ {{ totalCart() | number:'1.2-2' }}
+      </button>
+      <button type="button" class="pos-hold" [disabled]="cart().length === 0 || savingVenta()" (click)="enviarACaja()">Enviar a caja</button>
+      <button type="button" class="pos-clear" [disabled]="cart().length === 0" (click)="limpiarCarrito()">Vaciar carrito</button>
+    </footer>
+  </aside>
+</div>
+
+<p-dialog header="Nuevo cliente" [visible]="showNuevoCliente()" (visibleChange)="!$event && showNuevoCliente.set(false)" [modal]="true" [style]="{ width: '28rem' }">
+  <form class="grid gap-4" (ngSubmit)="crearCliente()">
+    @if (clienteError()) { <p class="list-error">{{ clienteError() }}</p> }
+    <label class="flex flex-col gap-1">Nombres *
+      <input pInputText [(ngModel)]="nuevoCliente.nombres" name="nombres" />
+    </label>
+    <label class="flex flex-col gap-1">Apellidos *
+      <input pInputText [(ngModel)]="nuevoCliente.apellidos" name="apellidos" />
+    </label>
+    <div class="flex justify-end gap-2">
+      <p-button type="button" label="Cancelar" [outlined]="true" (onClick)="showNuevoCliente.set(false)" />
+      <p-button type="submit" label="Guardar" [disabled]="guardandoCliente()" />
     </div>
-  }
+  </form>
+</p-dialog>
+
+<app-ticket-viewer [visible]="visorTicket()" (visibleChange)="visorTicket.set($event)" [ventaId]="ticketGeneradoId()">
+  <p-button label="Nueva venta" icon="pi pi-shopping-cart" [outlined]="true" (onClick)="cerrarVisor()" />
+  <p-button label="Ir a caja" icon="pi pi-wallet" (onClick)="irACaja()" />
+</app-ticket-viewer>

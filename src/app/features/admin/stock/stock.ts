@@ -1,8 +1,14 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Button } from 'primeng/button';
+import { Dialog } from 'primeng/dialog';
+import { InputText } from 'primeng/inputtext';
+import { Select } from 'primeng/select';
 import { StockService, MovimientoStock, MovimientoForm } from '../../../core/services/stock.service';
 import { ProductosService, Producto } from '../../../core/services/productos.service';
+import { NotifyService } from '../../../core/ui/notify';
+import { AdminTable } from '../../../shared/components/admin-table/admin-table';
 
 interface FilaInventario {
   key: string;
@@ -20,12 +26,13 @@ interface FilaInventario {
 @Component({
   selector: 'app-stock',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe],
+  imports: [CommonModule, FormsModule, DatePipe, Button, Dialog, InputText, Select, AdminTable],
   templateUrl: './stock.html',
   styleUrl: './stock.css',
 })
 export class Stock implements OnInit {
   private stockSvc = inject(StockService);
+  private notify = inject(NotifyService);
   private productosSvc = inject(ProductosService);
 
   // Control de Pestañas (Se cambia pestañaActiva por tabActiva)
@@ -37,15 +44,26 @@ export class Stock implements OnInit {
   loading = signal(false);
   savingModal = signal(false);
   error = signal<string | null>(null);
-  aviso = signal<string | null>(null);
+  formError = signal<string | null>(null);
 
   // Filtros en Signals
   busquedaTexto = signal('');
   filterProductoId = signal<number | null>(null);
   filterTipo = signal<'todos' | 'entrada' | 'salida' | 'ajuste'>('todos');
-  readonly pageSize = 10;
-  page = signal(1);
-
+  filtroNivel = signal<'todos' | 'bajo' | 'agotado'>('todos');
+  readonly pestanas: { label: string; value: 'inventario' | 'kardex' }[] = [
+    { label: 'Stock actual', value: 'inventario' },
+    { label: 'Kardex', value: 'kardex' },
+  ];
+  readonly tiposMovimiento = [
+    { label: 'Todos los tipos', value: 'todos' },
+    { label: 'Entradas', value: 'entrada' },
+    { label: 'Salidas', value: 'salida' },
+  ];
+  readonly tiposRegistro = [
+    { label: 'Entrada', value: 'entrada' },
+    { label: 'Salida', value: 'salida' },
+  ];
   // Modal
   showModal = signal(false);
   form: MovimientoForm = this.emptyForm();
@@ -78,14 +96,19 @@ export class Stock implements OnInit {
   // 1. Filtrado para Pestaña 1: una fila por presentación
   productosFiltrados = computed(() => {
     const q = this.busquedaTexto().toLowerCase().trim();
-    if (!q) return this.filasInventario();
-
-    return this.filasInventario().filter(f =>
-      f.nombre.toLowerCase().includes(q) ||
-      f.codigo.toLowerCase().includes(q) ||
-      f.presentacion.toLowerCase().includes(q) ||
-      f.categoria.toLowerCase().includes(q)
-    );
+    const nivel = this.filtroNivel();
+    return this.filasInventario().filter((fila) => {
+      const coincideTexto = !q ||
+        fila.nombre.toLowerCase().includes(q) ||
+        fila.codigo.toLowerCase().includes(q) ||
+        fila.presentacion.toLowerCase().includes(q) ||
+        fila.categoria.toLowerCase().includes(q);
+      const minimo = fila.stock_minimo || 5;
+      const bajo = fila.stock > 0 && fila.stock <= minimo;
+      const agotado = fila.stock <= 0;
+      const coincideNivel = nivel === 'todos' || (nivel === 'bajo' && bajo) || (nivel === 'agotado' && agotado);
+      return coincideTexto && coincideNivel;
+    });
   });
 
   // 2. Filtrado para Pestaña 2: Kardex / Historial
@@ -107,31 +130,6 @@ export class Stock implements OnInit {
 
       return coincideProd && coincideTipo && coincideTexto;
     });
-  });
-
-  private listaActiva = computed(() =>
-    this.tabActiva() === 'inventario' ? this.productosFiltrados() : this.movimientosFiltrados()
-  );
-
-  totalPages = computed(() => Math.max(1, Math.ceil(this.listaActiva().length / this.pageSize)));
-  currentPage = computed(() => Math.min(this.page(), this.totalPages()));
-
-  productosVisibles = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.productosFiltrados().slice(start, start + this.pageSize);
-  });
-
-  movimientosVisibles = computed(() => {
-    const start = (this.currentPage() - 1) * this.pageSize;
-    return this.movimientosFiltrados().slice(start, start + this.pageSize);
-  });
-
-  rangoPaginacion = computed(() => {
-    const total = this.listaActiva().length;
-    if (!total) return '0 de 0';
-    const start = (this.currentPage() - 1) * this.pageSize + 1;
-    const end = Math.min(this.currentPage() * this.pageSize, total);
-    return `${start}–${end} de ${total}`;
   });
 
   ngOnInit(): void {
@@ -170,7 +168,7 @@ export class Stock implements OnInit {
       this.form.variante_id = elegida.variante_id;
       this.seleccion = elegida.key;
     }
-    this.error.set(null);
+    this.formError.set(null);
     this.showModal.set(true);
   }
 
@@ -179,36 +177,43 @@ export class Stock implements OnInit {
     const fila = this.filasInventario().find(f => f.key === key);
     this.form.producto_id = fila?.producto_id ?? 0;
     this.form.variante_id = fila?.variante_id ?? null;
+    if (this.form.producto_id) this.formError.set(null);
+  }
+
+  onCantidad(valor: number): void {
+    this.form.cantidad = Number(valor);
+    if (this.form.cantidad > 0) this.formError.set(null);
   }
 
   closeModal(): void {
     this.showModal.set(false);
     this.savingModal.set(false);
+    this.formError.set(null);
   }
 
   save(): void {
     if (!this.form.producto_id || this.form.producto_id === 0) {
-      this.error.set('Selecciona un producto válido.');
+      this.formError.set('Selecciona un producto válido.');
       return;
     }
 
     if (this.form.cantidad <= 0) {
-      this.error.set('La cantidad debe ser mayor a 0.');
+      this.formError.set('La cantidad debe ser mayor a 0.');
       return;
     }
 
     this.savingModal.set(true);
-    this.error.set(null);
+    this.formError.set(null);
 
     this.stockSvc.create(this.form).subscribe({
       next: () => {
-        this.aviso.set('✅ Stock actualizado correctamente.');
+        this.notify.success('Stock actualizado.');
         this.closeModal();
         this.loadMovimientos();
         this.loadProductos();
       },
       error: (err) => {
-        this.error.set(err?.error?.message || 'Error al registrar el movimiento.');
+        this.formError.set(err?.error?.message || 'Error al registrar el movimiento.');
         this.savingModal.set(false);
       }
     });
@@ -216,26 +221,22 @@ export class Stock implements OnInit {
 
   cambiarTab(tab: 'inventario' | 'kardex'): void {
     this.tabActiva.set(tab);
-    this.page.set(1);
   }
 
   onBusqueda(valor: string): void {
     this.busquedaTexto.set(valor);
-    this.page.set(1);
   }
 
   onFiltroProducto(id: number | null): void {
     this.filterProductoId.set(id);
-    this.page.set(1);
   }
 
   onFiltroTipo(tipo: 'todos' | 'entrada' | 'salida' | 'ajuste'): void {
     this.filterTipo.set(tipo);
-    this.page.set(1);
   }
 
-  goToPage(pagina: number): void {
-    this.page.set(Math.min(Math.max(1, pagina), this.totalPages()));
+  setNivel(nivel: 'todos' | 'bajo' | 'agotado'): void {
+    this.filtroNivel.set(nivel);
   }
 
   getProductoNombre(id: number): string {

@@ -1,248 +1,169 @@
-<!-- Login Page -->
-<div class="login-page h-screen flex" style="background-color: #030109;">
+<div class="login-shell">
+  <section class="login-pane">
+    <header class="login-top">
+      <a routerLink="/" class="login-brand">
+        <span class="login-brand-mark" aria-hidden="true">A</span>
+        <span>
+          <strong>Ali-Vet</strong>
+          <small>Panel de gestión</small>
+        </span>
+      </a>
+      <a routerLink="/" class="alivet-link">Volver al sitio</a>
+    </header>
 
-    <!-- ===== LEFT PANEL: LOGIN FORM ===== -->
-    <div class="w-full lg:w-1/2 flex items-center justify-center px-6 py-12 relative overflow-hidden">
+    <div class="login-body">
+      @if (mode() === 'login') {
+        <h1>Bienvenido de nuevo</h1>
+        <p class="login-lead">Inicia sesión para gestionar tu veterinaria.</p>
+      } @else if (mode() === 'forgot') {
+        <h1>Recuperar contraseña</h1>
+        <p class="login-lead">Escribe tu correo y te enviaremos un enlace para elegir una nueva.</p>
+      } @else {
+        <h1>Nueva contraseña</h1>
+        <p class="login-lead">Elige una contraseña de al menos 6 caracteres.</p>
+      }
 
-        <!-- Animated background blobs -->
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
+      @if (errorMessage()) {
+        <p-message severity="error" [text]="errorMessage()!" styleClass="login-message" />
+      }
+      @if (noticeMessage()) {
+        <p-message severity="success" [text]="noticeMessage()!" styleClass="login-message" />
+      }
 
-        <div class="w-full max-w-md relative z-10">
-
-            <!-- Logo / Brand -->
-            <div class="mb-10 text-center">
-                <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-lg"
-                    style="background: linear-gradient(135deg, #2A168C, #4122DD); box-shadow: 0 8px 24px rgba(42, 22, 140,0.4);">
-                    <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                </div>
-                <h1 class="text-3xl font-bold tracking-tight" style="color: #ede9ff;">Bienvenido</h1>
-                <p class="mt-1 text-sm" style="color: #7a6aaa;">Inicia sesión en tu cuenta</p>
+      @if (mode() === 'login') {
+        <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
+          <div class="login-field">
+            <label for="email">Correo electrónico</label>
+            <div class="login-control">
+              <i class="pi pi-envelope" aria-hidden="true"></i>
+              <input pInputText id="email" type="email" formControlName="email" placeholder="tu@correo.com" autocomplete="email" />
             </div>
+            @if (emailControl?.invalid && emailControl?.touched) {
+              <small>Ingresa un correo válido.</small>
+            }
+          </div>
 
-            <!-- Card Form -->
-            <div class="glass-card rounded-2xl p-8 shadow-2xl">
-
-                <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" novalidate>
-
-                    <!-- Email Field -->
-                    <div class="mb-5">
-                        <label class="block text-sm font-medium mb-1.5" style="color: #4122DD;">Correo
-                            electrónico</label>
-                        <div class="input-wrapper" [class.input-error]="emailControl?.invalid && emailControl?.touched">
-                            <span class="input-icon">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                </svg>
-                            </span>
-                            <input id="email" type="email" formControlName="email" placeholder="correo@ejemplo.com"
-                                class="form-input" autocomplete="email" />
-                        </div>
-                        @if (emailControl?.invalid && emailControl?.touched) {
-                        <p class="mt-1.5 text-xs flex items-center gap-1" style="color: #f87171;">
-                            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            @if (emailControl?.errors?.['required']) { Ingresa tu correo electrónico }
-                            @else if (emailControl?.errors?.['email']) { Formato de correo inválido }
-                        </p>
-                        }
-                    </div>
-
-                    <!-- Password Field -->
-                    <div class="mb-5">
-                        <label class="block text-sm font-medium mb-1.5" style="color: #4122DD;">Contraseña</label>
-                        <div class="input-wrapper"
-                            [class.input-error]="passwordControl?.invalid && passwordControl?.touched">
-                            <span class="input-icon">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                            </span>
-                            <input id="password" [type]="showPassword() ? 'text' : 'password'"
-                                formControlName="password" placeholder="••••••••" class="form-input pr-12"
-                                autocomplete="current-password" />
-                            <button type="button" (click)="togglePassword()" class="pwd-toggle-btn" tabindex="-1">
-                                @if (showPassword()) {
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                                </svg>
-                                } @else {
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                }
-                            </button>
-                        </div>
-                        @if (passwordControl?.invalid && passwordControl?.touched) {
-                        <p class="mt-1.5 text-xs flex items-center gap-1" style="color: #f87171;">
-                            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            @if (passwordControl?.errors?.['required']) { Ingresa tu contraseña }
-                            @else if (passwordControl?.errors?.['minlength']) { Mínimo 6 caracteres }
-                        </p>
-                        }
-                    </div>
-
-                    <!-- Remember & Forgot -->
-                    <div class="flex items-center justify-between mb-7">
-                        <label class="flex items-center gap-2 cursor-pointer select-none group">
-                            <input type="checkbox" formControlName="remember" class="checkbox-custom" />
-                            <span class="text-sm transition-colors" style="color: #7a6aaa;">Recordarme</span>
-                        </label>
-                        <a href="#" class="text-sm font-medium transition-colors" style="color: #4122DD;">
-                            ¿Olvidaste tu contraseña?
-                        </a>
-                    </div>
-
-                    <!-- API Error Message -->
-                    @if (errorMessage()) {
-                    <div class="mb-5 flex items-start gap-3 px-4 py-3 rounded-xl"
-                        style="background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.3);">
-                        <svg class="w-4 h-4 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20"
-                            style="color: #f87171;">
-                            <path fill-rule="evenodd"
-                                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                                clip-rule="evenodd" />
-                        </svg>
-                        <p class="text-sm leading-snug" style="color: #f87171;">{{ errorMessage() }}</p>
-                    </div>
-                    }
-
-                    <!-- Submit Button -->
-                    <button type="submit" [disabled]="isLoading()" class="submit-btn w-full">
-
-                        @if (isLoading()) {
-                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                            </circle>
-                            <path class="opacity-75" fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                            </path>
-                        </svg>
-                        Iniciando sesión...
-                        } @else {
-                        Iniciar Sesión
-                        <svg class="w-4 h-4 ml-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                        </svg>
-                        }
-                    </button>
-
-                </form>
-
-                <!-- Divider -->
-                <div class="relative my-6">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t" style="border-color: rgba(42, 22, 140,0.3);"></div>
-                    </div>
-                    <div class="relative flex justify-center text-xs">
-                        <span class="px-3 text-xs" style="background: rgba(6, 3, 18,0.78); color: #5a4a9a;">o continúa
-                            con</span>
-                    </div>
-                </div>
-
-                <!-- Social Buttons -->
-                <div class="grid grid-cols-2 gap-3">
-                    <button class="social-btn">
-                        <svg class="w-4 h-4" viewBox="0 0 24 24">
-                            <path fill="#4285F4"
-                                d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                            <path fill="#34A853"
-                                d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                            <path fill="#FBBC05"
-                                d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                            <path fill="#EA4335"
-                                d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                        </svg>
-                        Google
-                    </button>
-                    <button class="social-btn">
-                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                            <path
-                                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-                        </svg>
-                        GitHub
-                    </button>
-                </div>
-
+          <div class="login-field">
+            <label for="password">Contraseña</label>
+            <div class="login-control">
+              <i class="pi pi-lock" aria-hidden="true"></i>
+              <input
+                pInputText
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                placeholder="Ingresa tu contraseña"
+                autocomplete="current-password"
+              />
+              <button type="button" class="login-toggle" (click)="showPassword.set(!showPassword())" [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="showPassword()">
+                <i class="pi" [class.pi-eye]="!showPassword()" [class.pi-eye-slash]="showPassword()" aria-hidden="true"></i>
+              </button>
             </div>
+            @if (passwordControl?.invalid && passwordControl?.touched) {
+              <small>La contraseña debe tener al menos 6 caracteres.</small>
+            }
+          </div>
 
-            <!-- Sign up link -->
-            <p class="mt-6 text-center text-sm" style="color: #5a4a9a;">
-                ¿No tienes cuenta?
-                <a href="#" class="font-semibold ml-1 transition-colors" style="color: #4122DD;">Regístrate gratis</a>
-            </p>
+          <div class="login-row">
+            <div class="login-remember">
+              <p-checkbox inputId="remember" formControlName="remember" [binary]="true" />
+              <label for="remember">Recordarme</label>
+            </div>
+            <button type="button" class="alivet-link" (click)="openForgot()">¿Olvidaste tu contraseña?</button>
+          </div>
 
-        </div>
+          <p-button type="submit" label="Iniciar sesión" icon="pi pi-arrow-right" iconPos="right" [loading]="isLoading()" styleClass="login-submit" />
+        </form>
+      } @else if (mode() === 'forgot') {
+        <form class="login-form" [formGroup]="forgotForm" (ngSubmit)="sendResetLink()" novalidate>
+          <div class="login-field">
+            <label for="recovery-email">Correo electrónico</label>
+            <div class="login-control">
+              <i class="pi pi-envelope" aria-hidden="true"></i>
+              <input pInputText id="recovery-email" type="email" formControlName="email" placeholder="tu@correo.com" autocomplete="email" />
+            </div>
+            @if (forgotForm.controls.email.invalid && forgotForm.controls.email.touched) {
+              <small>Ingresa un correo válido.</small>
+            }
+          </div>
+          <p-button type="submit" label="Enviar enlace" icon="pi pi-send" iconPos="right" [loading]="isLoading()" styleClass="login-submit" />
+          <button type="button" class="alivet-link login-back" (click)="backToLogin()">Volver a iniciar sesión</button>
+        </form>
+      } @else {
+        <form class="login-form" [formGroup]="resetForm" (ngSubmit)="saveNewPassword()" novalidate>
+          <div class="login-field">
+            <label for="new-password">Nueva contraseña</label>
+            <div class="login-control">
+              <i class="pi pi-lock" aria-hidden="true"></i>
+              <input
+                pInputText
+                id="new-password"
+                [type]="showResetPassword() ? 'text' : 'password'"
+                formControlName="password"
+                placeholder="Nueva contraseña"
+                autocomplete="new-password"
+              />
+              <button type="button" class="login-toggle" (click)="showResetPassword.set(!showResetPassword())" [attr.aria-label]="showResetPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'" [attr.aria-pressed]="showResetPassword()">
+                <i class="pi" [class.pi-eye]="!showResetPassword()" [class.pi-eye-slash]="showResetPassword()" aria-hidden="true"></i>
+              </button>
+            </div>
+            @if (resetForm.controls.password.invalid && resetForm.controls.password.touched) {
+              <small>La contraseña debe tener al menos 6 caracteres.</small>
+            }
+          </div>
+          <div class="login-field">
+            <label for="confirm-password">Confirmar contraseña</label>
+            <div class="login-control">
+              <i class="pi pi-lock" aria-hidden="true"></i>
+              <input pInputText id="confirm-password" [type]="showResetPassword() ? 'text' : 'password'" formControlName="confirmation" placeholder="Repite la contraseña" autocomplete="new-password" />
+            </div>
+          </div>
+          <p-button type="submit" label="Guardar contraseña" icon="pi pi-check" iconPos="right" [loading]="isLoading()" [disabled]="!!noticeMessage()" styleClass="login-submit" />
+          <button type="button" class="alivet-link login-back" (click)="backToLogin()">Volver a iniciar sesión</button>
+        </form>
+      }
+
+      <p class="login-help">
+        ¿Problemas para ingresar?
+        <a class="alivet-link" href="mailto:admin@alivet.com">Contacta al administrador</a>
+      </p>
     </div>
 
-    <!-- ===== RIGHT PANEL: IMAGE SLIDER (only lg+) ===== -->
-    <div class="hidden lg:flex lg:w-1/2 relative overflow-hidden">
+    <p class="login-copy">© {{ year }} Veterinaria Alivet · RUC 20611213175 · E.I.R.L.</p>
+  </section>
 
-        <!-- Slides -->
-        @for (slide of slides; track slide.title; let i = $index) {
-        <div class="slide-item" [class.active]="currentSlide() === i">
-            <img [src]="slide.image" [alt]="slide.title" class="slide-bg-img" />
-            <div class="slide-overlay"></div>
-        </div>
+  <aside class="login-visual" aria-label="Ali-Vet">
+    @for (slide of slides; track slide.image; let i = $index) {
+      <img
+        class="login-visual-photo"
+        [class.is-active]="currentSlide() === i"
+        [src]="slide.image"
+        [alt]="slide.alt"
+        width="1200"
+        height="1600"
+      />
+    }
+    <div class="login-visual-copy">
+      <h2>Gestión inteligente para tu veterinaria</h2>
+      <p>Ventas, stock, clientes y reportes en un solo lugar, para que dediques más tiempo a tus pacientes.</p>
+      <ul>
+        <li>Ventas y caja</li>
+        <li>Control de stock</li>
+        <li>Clientes</li>
+        <li>Reportes</li>
+      </ul>
+      <div class="login-dots" role="tablist" aria-label="Fotos de la clínica">
+        @for (slide of slides; track slide.image; let i = $index) {
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="currentSlide() === i"
+            [class.is-active]="currentSlide() === i"
+            [attr.aria-label]="'Foto ' + (i + 1)"
+            (click)="goToSlide(i)"
+          ></button>
         }
-
-        <!-- Branding overlay -->
-        <div class="absolute inset-0 flex flex-col justify-between p-10 z-20">
-
-            <!-- Top badge -->
-            <div class="flex items-center gap-3">
-                <div class="flex items-center justify-center w-10 h-10 rounded-xl border"
-                    style="background: rgba(42, 22, 140,0.3); backdrop-filter: blur(8px); border-color: rgba(65, 34, 221,0.3);">
-                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                </div>
-            </div>
-
-            <!-- Slide Text Content -->
-            <div class="pb-8">
-                @for (slide of slides; track slide.title; let i = $index) {
-                <div class="slide-text" [class.active]="currentSlide() === i">
-                    <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full mb-4 border"
-                        style="background: rgba(42, 22, 140,0.3); backdrop-filter: blur(8px); border-color: rgba(65, 34, 221,0.35);">
-                        <span class="w-1.5 h-1.5 rounded-full animate-pulse" style="background: #4122DD;"></span>
-                        <span class="text-xs font-medium uppercase tracking-widest"
-                            style="color: #4122DD;">Descubre</span>
-                    </div>
-                    <h2 class="text-4xl font-bold text-white leading-tight mb-3">{{ slide.title }}</h2>
-                    <p class="text-base leading-relaxed max-w-sm" style="color: #c5baff; opacity: 0.9;">{{
-                        slide.subtitle }}</p>
-                </div>
-                }
-
-                <!-- Dots / Indicators -->
-                <div class="flex items-center gap-2 mt-8">
-                    @for (slide of slides; track slide.title; let i = $index) {
-                    <button (click)="goToSlide(i)" class="slider-dot" [class.active]="currentSlide() === i"
-                        [attr.aria-label]="'Slide ' + (i + 1)"></button>
-                    }
-                </div>
-            </div>
-
-        </div>
+      </div>
     </div>
-
+  </aside>
 </div>

@@ -1,18 +1,28 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { forkJoin } from 'rxjs';
+import { Button } from 'primeng/button';
+import { Dialog } from 'primeng/dialog';
+import { InputText } from 'primeng/inputtext';
+import { Message } from 'primeng/message';
+import { SelectButton } from 'primeng/selectbutton';
+import { TableModule } from 'primeng/table';
+import { Textarea } from 'primeng/textarea';
+import { AdminTable } from '../../../shared/components/admin-table/admin-table';
 import { VentasService, Venta } from '../../../core/services/ventas.service';
-import { environment } from '../../../../environments/environment';
+import { NotifyService } from '../../../core/ui/notify';
+import { TicketViewer } from '../../../shared/components/ticket-viewer/ticket-viewer';
 
 @Component({
   selector: 'app-caja',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe],
+  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, Button, Dialog, InputText, Message, SelectButton, TableModule, Textarea, AdminTable, TicketViewer],
   templateUrl: './caja.html',
-  styleUrl: './caja.css',
 })
 export class Caja implements OnInit {
   private svc = inject(VentasService);
+  private notify = inject(NotifyService);
 
   // Estados de Vista
   pendientes = signal<Venta[]>([]);
@@ -22,11 +32,9 @@ export class Caja implements OnInit {
   saving = signal(false);
   cancelando = signal(false);
   error = signal<string | null>(null);
-  aviso = signal<string | null>(null);
 
-  // Modal de Ticket de Venta
-  mostrarModalTicket = signal(false);
-  ticketData = signal<any | null>(null);
+  visorTicket = signal(false);
+  ticketGeneradoId = signal<number | null>(null);
 
   // Modal de Cierre / Arqueo de Caja
   mostrarModalCierre = signal(false);
@@ -36,17 +44,29 @@ export class Caja implements OnInit {
   fechaCierre: Date = new Date();
 
   // Formulario de Cobranza
-  busquedaPending = '';
+  busquedaPending = signal('');
   tipoComprobante: 'boleta' | 'factura' = 'boleta';
   metodoPago = 'efectivo';
   montoRecibido: number | null = null;
   numeroOperacion = '';
   fondoInicial = 100.00;
+  readonly comprobantes = [
+    { label: 'Boleta', value: 'boleta' },
+    { label: 'Factura', value: 'factura' },
+  ];
+  readonly metodos = [
+    { label: 'Efectivo', value: 'efectivo' },
+    { label: 'Yape', value: 'yape' },
+    { label: 'Plin', value: 'plin' },
+    { label: 'Tarjeta', value: 'tarjeta' },
+    { label: 'Transferencia', value: 'transferencia' },
+  ];
 
   ventaSeleccionada = computed(() => this.pendientes().find(v => v.id === this.seleccionId()) ?? null);
+  porCobrar = computed(() => this.pendientes().reduce((sum, v) => sum + (parseFloat(String(v.total ?? 0)) || 0), 0));
 
   ventasFiltradas = computed(() => {
-    const q = this.busquedaPending.toLowerCase().trim();
+    const q = this.busquedaPending().toLowerCase().trim();
     const list = this.pendientes();
     if (!q) return list;
     return list.filter(v =>
@@ -98,11 +118,15 @@ export class Caja implements OnInit {
   load(): void {
     this.loading.set(true);
     this.error.set(null);
-    this.svc.getAll('pendiente').subscribe({
-      next: (data) => {
-        this.pendientes.set(data);
-        if (!data.some(v => v.id === this.seleccionId())) {
-          const primera = data[0];
+    forkJoin({
+      pendientes: this.svc.getAll('pendiente'),
+      completadas: this.svc.getAll('completada'),
+    }).subscribe({
+      next: ({ pendientes, completadas }) => {
+        this.pendientes.set(pendientes);
+        this.completadasTurno.set(completadas.filter(venta => this.esDeHoy(venta)));
+        if (!pendientes.some(v => v.id === this.seleccionId())) {
+          const primera = pendientes[0];
           this.seleccionId.set(primera?.id ?? null);
           this.montoRecibido = primera ? parseFloat(String(primera.total)) : null;
         }
@@ -119,7 +143,6 @@ export class Caja implements OnInit {
     this.seleccionId.set(v.id);
     this.montoRecibido = parseFloat(String(v.total ?? 0)) || 0;
     this.numeroOperacion = '';
-    this.aviso.set(null);
     this.error.set(null);
   }
 
@@ -169,7 +192,6 @@ export class Caja implements OnInit {
     const total = this.totalDe(venta);
     this.saving.set(true);
     this.error.set(null);
-    this.aviso.set(null);
 
     const payload = {
       invoice_type: this.tipoComprobante,
@@ -183,35 +205,10 @@ export class Caja implements OnInit {
     };
 
     this.svc.cobrar(venta.id, payload).subscribe({
-      next: (res: any) => {
-        const resData = res?.data || res;
-        const invoiceId = resData.invoices?.[0]?.id || resData.id || venta.id;
-        
-        const ticketInfo = {
-          id: venta.id,
-          invoiceId: invoiceId,
-          document: resData.series ? `${resData.series}-${String(resData.number).padStart(6, '0')}` : `#${venta.id}`,
-          documentType: this.tipoComprobante === 'factura' ? 'Factura' : 'Boleta',
-          fecha: new Date(),
-          cajero: resData.user?.name || 'Administrador',
-          cliente: venta.cliente?.nombre_completo || 'CLIENTE VARIOS',
-          mascota: resData.pet?.nombre || null,
-          items: venta.items,
-          total: total,
-          discount: parseFloat(String(venta.discount || 0)),
-          metodo_pago: this.metodoPago,
-          numero_operacion: this.numeroOperacion.trim(),
-          change_amount: this.vuelto,
-          invoice: resData.invoices?.[0] || null
-        };
-
-        // Guardar venta completada en el historial en memoria del turno actual
-        this.completadasTurno.update(list => [...list, ticketInfo]);
-
-        this.ticketData.set(ticketInfo);
-        this.mostrarModalTicket.set(true);
-
-        this.aviso.set(`Venta #${venta.id} cobrada exitosamente.`);
+      next: () => {
+        this.notify.success(`Ticket #${venta.id}. El cobro quedó registrado y el stock se actualizó.`);
+        this.ticketGeneradoId.set(venta.id);
+        this.visorTicket.set(true);
         this.saving.set(false);
         this.montoRecibido = null;
         this.numeroOperacion = '';
@@ -220,52 +217,20 @@ export class Caja implements OnInit {
       },
       error: (err) => {
         const msg = err?.error?.message || 'No se pudo procesar el cobro.';
-        this.error.set(msg);
+        this.notify.error(msg);
         this.saving.set(false);
       },
     });
   }
 
-  imprimirTicket(): void {
-    window.print();
-  }
-
-  enviarWhatsApp(): void {
-    const t = this.ticketData();
-    if (!t) return;
-
-    const telefonoInput = prompt('Ingresa el número de WhatsApp del cliente (9 dígitos):', '987654321');
-    if (!telefonoInput) return;
-
-    const numLimpio = telefonoInput.replace(/\D/g, '');
-    const phoneWithCode = numLimpio.length === 9 ? `51${numLimpio}` : numLimpio;
-    const pdfUrl = `${environment.apiUrl}/v1/invoices/${t.invoiceId}/pdf`;
-
-    const mensaje = `Hola *${t.cliente}* 👋, gracias por tu preferencia en *Veterinaria Ali-Vet* 🐾.\n\n` +
-      `Adjuntamos el resumen de tu *${t.documentType} Electrónica ${t.document}* por un total de *S/ ${t.total.toFixed(2)}*.\n` +
-      `Forma de pago: ${t.metodo_pago.toUpperCase()}.\n\n` +
-      `📄 Puedes ver/descargar tu comprobante PDF aquí:\n${pdfUrl}\n\n` +
-      `¡Que tengas un excelente día! 😊`;
-
-    const url = `https://api.whatsapp.com/send?phone=${phoneWithCode}&text=${encodeURIComponent(mensaje)}`;
-    window.open(url, '_blank');
-    this.aviso.set(`✅ ${t.documentType} N° ${t.document} enviada con éxito por WhatsApp.`);
-  }
-
-  enviarCorreo(): void {
-    const t = this.ticketData();
-    if (!t) return;
-
-    const correoInput = prompt('Ingresa el correo electrónico del cliente:', 'cliente@email.com');
-    if (!correoInput) return;
-
-    this.aviso.set(`📩 ${t.documentType} N° ${t.document} enviada con éxito al correo ${correoInput}.`);
-    alert(`Comprobante enviado exitosamente a ${correoInput}`);
-  }
-
-  cerrarModalTicket(): void {
-    this.mostrarModalTicket.set(false);
-    this.ticketData.set(null);
+  private esDeHoy(venta: Venta): boolean {
+    const raw = venta.created_at || venta.fecha || '';
+    if (!raw) return false;
+    const instante = new Date(raw.includes('T') ? raw : raw.replace(' ', 'T'));
+    if (Number.isNaN(instante.getTime())) return false;
+    const inicio = new Date();
+    inicio.setHours(0, 0, 0, 0);
+    return instante >= inicio;
   }
 
   // --- MÉTODOS DE ARQUEO Y CIERRE DE CAJA ---
@@ -284,7 +249,7 @@ export class Caja implements OnInit {
   confirmarCierreTurno(): void {
     this.fechaCierre = new Date();
     this.cajaCerradaExito.set(true);
-    this.aviso.set('🔒 Turno de caja cerrado exitosamente.');
+    this.notify.success('Turno de caja cerrado.');
   }
 
   imprimirReporteZ(): void {
@@ -303,11 +268,10 @@ export class Caja implements OnInit {
 
     this.cancelando.set(true);
     this.error.set(null);
-    this.aviso.set(null);
 
     this.svc.anular(id, motivo).subscribe({
       next: (res) => {
-        this.aviso.set(res?.message || `Venta #${id} anulada.`);
+        this.notify.success(res?.message || `Venta #${id} anulada.`);
         this.cancelando.set(false);
         this.montoRecibido = null;
         this.numeroOperacion = '';
@@ -316,7 +280,7 @@ export class Caja implements OnInit {
       },
       error: (err) => {
         const msg = err?.error?.message || 'No se pudo anular la venta.';
-        this.error.set(msg);
+        this.notify.error(msg);
         this.cancelando.set(false);
       },
     });

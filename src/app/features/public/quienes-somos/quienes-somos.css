@@ -14,7 +14,7 @@
    ============================================ */
 .qs-section {
   position: relative;
-  padding: 5.5rem 1.5rem;
+  padding: 32px 16px 40px;
   background: var(--qs-bg);
   color: var(--qs-text);
   overflow: hidden;
@@ -44,8 +44,9 @@
 
 /* ── Encabezado (acotado a esta sección para no afectar otras) ── */
 .qs-section .sec-head {
-  text-align: center;
-  margin-bottom: 4rem;
+  text-align: left;
+  max-width: 40rem;
+  margin-bottom: 24px;
 }
 
 .qs-section .sec-tag {
@@ -88,22 +89,22 @@
 .qs-section .sec-sub {
   font-size: 1.1rem;
   color: var(--qs-muted);
-  max-width: 36rem;
-  margin: 0 auto;
-  line-height: 1.65;
+  max-width: 65ch;
+  margin: 0;
+  line-height: 1.7;
 }
 
 /* ── Grid ── */
 .qs-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 3.5rem;
+  gap: 24px;
 }
 
 @media (min-width: 1024px) {
   .qs-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 5rem;
+    gap: 32px;
     align-items: center;
   }
 }
@@ -193,15 +194,20 @@
   margin-bottom: 10px;
 }
 
+.qs-img-card picture {
+  display: block;
+}
+
 .qs-img {
   width: 100%;
-  height: 360px;
+  height: 280px;
+  aspect-ratio: 4 / 3;
   object-fit: cover;
   display: block;
 }
 
 @media (min-width: 1024px) {
-  .qs-img { height: 430px; }
+  .qs-img { height: 320px; }
 }
 
 .qs-img-badge {

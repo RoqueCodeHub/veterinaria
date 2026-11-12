@@ -1,10 +1,22 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Button } from 'primeng/button';
+import { Card } from 'primeng/card';
+import { Dialog } from 'primeng/dialog';
+import { IconField } from 'primeng/iconfield';
+import { InputIcon } from 'primeng/inputicon';
+import { InputText } from 'primeng/inputtext';
+import { Message } from 'primeng/message';
+import { Select } from 'primeng/select';
+import { SelectButton } from 'primeng/selectbutton';
+import { TableModule } from 'primeng/table';
+import { Tag } from 'primeng/tag';
 import { VentasService, Venta, VentaForm } from '../../../core/services/ventas.service';
 import { ProductosService, Producto } from '../../../core/services/productos.service';
 import { ClientesService, Cliente } from '../../../core/services/clientes.service';
 import { CategoriasService, Categoria } from '../../../core/services/categorias.service';
+import { NotifyService } from '../../../core/ui/notify';
 
 interface ItemTemp {
     producto_id: number;
@@ -17,15 +29,15 @@ interface ItemTemp {
 @Component({
     selector: 'app-ventas',
     standalone: true,
-    imports: [CommonModule, FormsModule, CurrencyPipe, DatePipe],
+    imports: [CommonModule, FormsModule, CurrencyPipe, DatePipe, Button, Card, Dialog, IconField, InputIcon, InputText, Message, Select, SelectButton, TableModule, Tag],
     templateUrl: './ventas.html',
-    styleUrl: './ventas.css',
 })
 export class Ventas implements OnInit {
     private svc = inject(VentasService);
     private productosSvc = inject(ProductosService);
     private clientesSvc = inject(ClientesService);
     private categoriasSvc = inject(CategoriasService);
+    private notify = inject(NotifyService);
 
     ventas = signal<Venta[]>([]);
     productos = signal<Producto[]>([]);
@@ -34,7 +46,6 @@ export class Ventas implements OnInit {
     loading = signal(false);
     error = signal<string | null>(null);
     cajaError = signal<string | null>(null);
-    aviso = signal<string | null>(null);
     saving = signal(false);
     anularConfirmId = signal<number | null>(null);
     detalleVenta = signal<Venta | null>(null);
@@ -65,6 +76,10 @@ export class Ventas implements OnInit {
             .map(c => c.nombre)
             .sort((a, b) => a.localeCompare(b, 'es'))
     );
+    opcionesCategoria = computed(() => [
+        { label: 'Todas', value: 'todas' },
+        ...this.filtros().map((nombre) => ({ label: nombre, value: nombre })),
+    ]);
 
     productosVisibles = computed(() => {
         const q = this.busqueda().trim().toLowerCase();
@@ -228,7 +243,6 @@ export class Ventas implements OnInit {
 
     registrar(): void {
         this.cajaError.set(null);
-        this.aviso.set(null);
         if (!this.selectedClienteId()) {
             this.cajaError.set('Selecciona un cliente para identificar la venta en caja.');
             return;
@@ -253,7 +267,7 @@ export class Ventas implements OnInit {
         this.svc.create(form).subscribe({
             next: (venta) => {
                 const nombre = venta?.cliente?.nombre_completo || this.clienteActual()?.nombre_completo || 'cliente';
-                this.aviso.set(`Venta #${venta?.id ?? ''} registrada a nombre de ${nombre}. Quedó pendiente en Caja.`);
+                this.notify.success(`Venta #${venta?.id ?? ''} registrada a nombre de ${nombre}. Quedó pendiente en Caja.`);
                 this.items.set([]);
                 this.descuento = 0;
                 this.montoRecibido = null;
@@ -293,7 +307,7 @@ export class Ventas implements OnInit {
                 this.loadVentas();
                 this.loadProductos();
             },
-            error: () => { this.error.set('Error al anular la venta'); this.anularConfirmId.set(null); },
+            error: () => { this.notify.error('No se pudo anular la venta.'); this.anularConfirmId.set(null); },
         });
     }
 

@@ -50,6 +50,11 @@ export const routes: Routes = [
         loadComponent: () => import('./features/auth/login/login').then(m => m.Login),
         title: 'Iniciar Sesión'
     },
+    {
+        path: 'recuperar-contrasena',
+        loadComponent: () => import('./features/auth/login/login').then(m => m.Login),
+        title: 'Recuperar contraseña'
+    },
 
     // Área de administración (protegida con sidebar compartido)
     {

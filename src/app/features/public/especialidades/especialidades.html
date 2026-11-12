@@ -1,59 +1,66 @@
-<!-- ===== ESPECIALIDADES ===== -->
-<section class="esp-section" aria-labelledby="esp-title">
-
-  <div class="esp-glow esp-glow-l" aria-hidden="true"></div>
-  <div class="esp-glow esp-glow-r" aria-hidden="true"></div>
-
-  <div class="esp-wrap">
-
-    <!-- ── Encabezado ── -->
-    <div class="sec-head">
-      <div class="sec-tag">
-        <span class="sec-tag-dot" aria-hidden="true"></span>
-        Nuestras especialidades
-      </div>
-      <h2 class="sec-title" id="esp-title">Animales que atendemos</h2>
-      <p class="sec-sub">
-        Experiencia y conocimiento en el manejo de todas las especies de la región amazónica y ganadera
-      </p>
+@if (compact()) {
+  <section id="especies" class="scroll-mt-24 py-16" aria-labelledby="esp-title">
+    <div class="max-w-6xl mx-auto px-4">
+      <p class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Especies</p>
+      <h2 class="text-3xl md:text-4xl mt-2 mb-6" id="esp-title">Animales que atendemos</h2>
+      <ul class="list-none p-0 m-0 flex flex-wrap gap-3">
+        @for (esp of especialidades; track esp.id) {
+          <li>
+            <a
+              pButton
+              class="alivet-pill min-h-11"
+              [rounded]="true"
+              [label]="esp.pastilla"
+              [routerLink]="['/especialidades']"
+              [fragment]="esp.id"
+            ></a>
+          </li>
+        }
+      </ul>
     </div>
+  </section>
+} @else {
+  <section class="max-w-6xl mx-auto px-4 py-12" aria-labelledby="esp-title">
+    <p class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Especies</p>
+    <h1 class="text-3xl md:text-4xl mt-2 mb-3" id="esp-title">Animales que atendemos</h1>
+    <p class="m-0 text-muted max-w-2xl">
+      Experiencia y conocimiento en el manejo de todas las especies de la región amazónica y ganadera
+    </p>
 
-    <!-- ── Tarjetas (en móvil se desliza horizontalmente) ── -->
-    <div class="esp-grid" role="region" aria-label="Especies que atendemos" tabindex="0">
-
+    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3 mt-8" role="region" aria-label="Especies que atendemos">
       @for (esp of especialidades; track esp.id) {
-        <article class="esp-card" [class.esp-card--featured]="esp.destacado">
-
-          <div class="esp-media">
-            <img
-              class="esp-img"
-              [src]="esp.imagen"
-              [alt]="esp.alt"
-              width="800"
-              height="1000"
-              loading="lazy"
-              (error)="ocultarImagen($event)"
-            />
-            @if (esp.destacado) {
-              <span class="esp-badge">Más solicitado</span>
-            }
-            <h3 class="esp-card-title">{{ esp.nombre }}</h3>
-          </div>
-
-          <div class="esp-body">
-            <p class="esp-card-text">{{ esp.descripcion }}</p>
-
-            <ul class="esp-list">
+        <article [id]="esp.id" class="scroll-mt-24">
+          <p-card styleClass="alivet-card h-full overflow-hidden">
+            <ng-template #header>
+              <picture>
+                <source [srcset]="toWebp(esp.imagen)" type="image/webp" />
+                <img
+                  class="block w-full h-64 object-cover"
+                  [src]="esp.imagen"
+                  [alt]="esp.alt"
+                  width="800"
+                  height="1000"
+                  loading="lazy"
+                  decoding="async"
+                  (error)="ocultarImagen($event)"
+                />
+              </picture>
+            </ng-template>
+            <div class="flex items-center gap-2 mb-2">
+              <h2 class="m-0 text-xl">{{ esp.nombre }}</h2>
+              @if (esp.destacado) {
+                <p-tag value="Más solicitado" />
+              }
+            </div>
+            <p class="text-muted">{{ esp.descripcion }}</p>
+            <ul class="list-none p-0 m-0 flex flex-col gap-2">
               @for (servicio of esp.servicios; track servicio) {
-                <li>{{ servicio }}</li>
+                <li><i class="pi pi-check mr-2" aria-hidden="true"></i>{{ servicio }}</li>
               }
             </ul>
-          </div>
-
+          </p-card>
         </article>
       }
-
     </div>
-
-  </div>
-</section>
+  </section>
+}

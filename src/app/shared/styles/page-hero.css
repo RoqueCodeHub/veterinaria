@@ -1,106 +1,73 @@
-/* ============================================
-   PAGE HERO — banner reutilizable en páginas públicas
-   Import en el CSS de cada página con: @import '../../../shared/styles/page-hero.css';
-   ============================================ */
-
 .page-hero {
-    background: linear-gradient(180deg, #030109 0%, #060312 100%);
-    padding: 6rem 1.5rem 4rem;
-    text-align: center;
+    background: var(--bg);
+    padding: 48px 16px 32px;
+    text-align: left;
     position: relative;
-    overflow: hidden;
-    font-family: 'Inter', system-ui, sans-serif;
-}
-
-/* Glow radial central */
-.page-hero::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: radial-gradient(ellipse 70% 60% at 50% 60%, rgba(42, 22, 140, 0.18) 0%, transparent 70%);
-    pointer-events: none;
-}
-
-/* Línea inferior */
-.page-hero::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 10%; right: 10%;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, rgba(65, 34, 221, 0.20), transparent);
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-body);
 }
 
 .page-hero-inner {
     position: relative;
-    max-width: 700px;
-    margin: 0 auto;
+    max-width: 40rem;
+    margin: 0;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 1.1rem;
+    align-items: flex-start;
+    gap: 16px;
 }
 
-/* Breadcrumb */
 .page-breadcrumb {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-size: 0.72rem;
-    color: rgba(65, 34, 221, 0.50);
+    gap: 8px;
+    font-size: 14px;
+    color: var(--muted);
     font-weight: 500;
 }
 
 .page-breadcrumb a {
-    color: rgba(65, 34, 221, 0.50);
+    color: var(--accent);
     text-decoration: none;
-    transition: color 0.2s;
 }
 
-.page-breadcrumb a:hover { color: #4122DD; }
+.page-breadcrumb a:hover { color: var(--violet-500); }
 
-.page-breadcrumb-sep {
-    opacity: 0.4;
-}
+.page-breadcrumb-sep { opacity: 0.6; }
 
-.page-breadcrumb-current {
-    color: rgba(65, 34, 221, 0.80);
-}
+.page-breadcrumb-current { color: var(--text); }
 
-/* Badge */
 .page-tag {
     display: inline-flex;
     align-items: center;
-    gap: 0.45rem;
-    padding: 0.32rem 0.9rem;
-    border-radius: 9999px;
-    background: rgba(42, 22, 140, 0.18);
-    border: 1px solid rgba(65, 34, 221, 0.28);
-    color: #4122DD;
-    font-size: 0.7rem;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 999px;
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-line);
+    color: var(--accent);
+    font-size: 12px;
     font-weight: 700;
-    letter-spacing: 0.12em;
+    letter-spacing: 0.08em;
     text-transform: uppercase;
 }
 
-/* Título */
 .page-title {
-    font-size: clamp(2.2rem, 5.5vw, 3.75rem);
-    font-weight: 900;
-    color: #fff;
-    letter-spacing: -0.025em;
-    line-height: 1.05;
+    font-family: var(--font-head);
+    font-size: clamp(30px, 4vw, 36px);
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.02em;
+    line-height: 1.15;
     margin: 0;
 }
 
-.page-title-accent {
-    color: #4122DD;
-}
+.page-title-accent { color: var(--violet-500); }
 
-/* Subtítulo */
 .page-subtitle {
-    font-size: 1rem;
-    color: rgba(255, 255, 255, 0.45);
-    line-height: 1.65;
-    max-width: 520px;
+    font-size: 16px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 65ch;
     margin: 0;
 }

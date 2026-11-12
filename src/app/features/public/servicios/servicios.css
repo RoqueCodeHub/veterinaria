@@ -6,7 +6,8 @@
 
 .srv-section {
   position: relative;
-  padding: 5.5rem 1.5rem;
+  padding: 64px 16px;
+  scroll-margin-top: 80px;
   background: var(--qs-bg);
   color: var(--qs-text);
   overflow: hidden;
@@ -35,8 +36,9 @@
 
 /* ── Encabezado (acotado a esta sección) ── */
 .srv-section .sec-head {
-  text-align: center;
-  margin-bottom: 3rem;
+  text-align: left;
+  max-width: 40rem;
+  margin-bottom: 32px;
 }
 
 .srv-section .sec-tag {
@@ -79,17 +81,17 @@
 .srv-section .sec-sub {
   font-size: 1.125rem;
   color: var(--qs-muted);
-  max-width: 38rem;
-  margin: 0 auto;
-  line-height: 1.65;
+  max-width: 65ch;
+  margin: 0;
+  line-height: 1.7;
 }
 
 /* ── Leyenda ── */
 .srv-legend {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 0.6rem 1.75rem;
+  justify-content: flex-start;
+  gap: 8px 24px;
   margin: 0 0 2.25rem;
   padding: 0;
   list-style: none;
@@ -119,8 +121,25 @@
   gap: 1.75rem;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .srv-grid { grid-template-columns: repeat(2, 1fr); }
+
+  .srv-card:first-child {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+  }
+
+  .srv-card:first-child .srv-media {
+    aspect-ratio: auto;
+    min-height: 280px;
+    border-bottom: 0;
+    border-right: 1px solid var(--qs-border);
+  }
+
+  .srv-card:first-child .srv-title {
+    font-size: 24px;
+  }
 }
 
 @media (min-width: 1024px) {
@@ -166,6 +185,12 @@
   overflow: hidden;
   background: linear-gradient(135deg, var(--grp-soft), var(--qs-surface-soft));
   border-bottom: 1px solid var(--qs-border);
+}
+
+.srv-media picture {
+  position: absolute;
+  inset: 0;
+  display: block;
 }
 
 .srv-img {
@@ -277,7 +302,8 @@
   display: inline-flex;
   align-items: center;
   gap: 0.55rem;
-  padding: 0.85rem 1.85rem;
+  min-height: 44px;
+  padding: 8px 16px;
   border-radius: 0.9rem;
   background: #ffffff;
   color: #2a168c;
@@ -313,4 +339,10 @@
   .srv-img { transition: none; }
   .srv-card:hover .srv-img { transform: none; }
   .srv-section .sec-tag-dot { animation: none; }
+}
+
+@media (min-width: 768px) {
+  .srv-section .srv-card:first-child {
+    display: grid;
+  }
 }

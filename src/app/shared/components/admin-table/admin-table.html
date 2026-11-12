@@ -1,0 +1,38 @@
+<div class="admin-table">
+  <div class="admin-table-scroll">
+    <table>
+      <thead>
+        <ng-container *ngTemplateOutlet="headTemplate()" />
+      </thead>
+      <tbody>
+        @for (item of visible(); track $index) {
+          <ng-container *ngTemplateOutlet="rowTemplate(); context: { $implicit: item, index: $index }" />
+        } @empty {
+          <tr>
+            <td class="admin-table-empty" [attr.colspan]="columns()">
+              <div class="empty-state">
+                <span class="empty-state-icon"><i [class]="emptyIcon()" aria-hidden="true"></i></span>
+                <strong>{{ emptyTitle() }}</strong>
+                <p>{{ emptyText() }}</p>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <footer class="admin-table-pager">
+    <span>{{ summary() }}</span>
+    <div class="admin-table-pages">
+      <button type="button" (click)="goTo(currentPage() - 1)" [disabled]="currentPage() <= 1" aria-label="Página anterior">
+        <i class="pi pi-angle-left" aria-hidden="true"></i>
+      </button>
+      @for (numero of pages(); track numero) {
+        <button type="button" [class.is-on]="numero === currentPage()" (click)="goTo(numero)">{{ numero }}</button>
+      }
+      <button type="button" (click)="goTo(currentPage() + 1)" [disabled]="currentPage() >= totalPages()" aria-label="Página siguiente">
+        <i class="pi pi-angle-right" aria-hidden="true"></i>
+      </button>
+    </div>
+  </footer>
+</div>

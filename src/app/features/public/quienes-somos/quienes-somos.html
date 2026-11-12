@@ -1,121 +1,74 @@
-<!-- ===== QUIÉNES SOMOS ===== -->
-<section class="qs-section" aria-labelledby="qs-title">
-
-  <!-- Glows decorativos -->
-  <div class="qs-glow qs-glow-l" aria-hidden="true"></div>
-  <div class="qs-glow qs-glow-r" aria-hidden="true"></div>
-
-  <div class="qs-wrap">
-
-    <!-- ── Encabezado ── -->
-    <div class="sec-head">
-      <div class="sec-tag">
-        <span class="sec-tag-dot" aria-hidden="true"></span>
-        Sobre nosotros
+@if (band()) {
+  <section id="nosotros" class="scroll-mt-24 bg-primary text-white" aria-labelledby="qs-title">
+    <div class="max-w-6xl mx-auto px-4 py-16 grid gap-10 md:grid-cols-2 md:items-center">
+      <div class="flex flex-col gap-4">
+        <p class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-sage">Sobre nosotros</p>
+        <h2 id="qs-title" class="text-3xl md:text-4xl m-0 text-white">Una veterinaria de confianza en la selva</h2>
+        <p class="m-0 text-white/90">
+          Somos Veterinaria Alivet, en Iberia, provincia de Tahuamanu. Nacimos para brindar atención integral a los
+          animales de la región, apoyando a ganaderos, agricultores y familias.
+        </p>
+        <p class="m-0 text-white/90">
+          Nuestro equipo te acompaña con asesoría técnica, trabajo en campo y los mejores productos veterinarios.
+        </p>
       </div>
-      <h2 class="sec-title" id="qs-title">¿Quiénes somos?</h2>
-      <p class="sec-sub">Veterinaria de confianza en el corazón de la selva amazónica peruana</p>
+      <div class="overflow-hidden rounded-[var(--radius-photo)] aspect-[4/3] bg-primary-hover">
+        <picture>
+          <source srcset="assets/img/nosotros.webp" type="image/webp" />
+          <img
+            class="h-full w-full object-cover"
+            src="assets/img/nosotros.png"
+            alt="Veterinaria Alivet en Iberia, Madre de Dios"
+            width="960"
+            height="720"
+            loading="lazy"
+            decoding="async"
+          />
+        </picture>
+      </div>
     </div>
+  </section>
+} @else {
+  <section class="max-w-6xl mx-auto px-4 py-12" aria-labelledby="qs-title">
+    <p class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Sobre nosotros</p>
+    <h1 id="qs-title" class="text-3xl md:text-4xl mt-2 mb-3">Una veterinaria de confianza en la selva</h1>
+    <p class="m-0 text-muted"><i class="pi pi-map-marker mr-2" aria-hidden="true"></i>Iberia, Tahuamanu – Madre de Dios, Perú</p>
 
-    <!-- ── Grid principal ── -->
-    <div class="qs-grid">
-
-      <!-- Columna texto -->
-      <div class="qs-text-col">
-
-        <div class="qs-location">
-          <svg class="qs-loc-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-              d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-          </svg>
-          <span>Iberia, Tahuamanu – Madre de Dios, Perú</span>
-        </div>
-
-        <p class="qs-p">
+    <div class="grid gap-8 md:grid-cols-2 mt-8">
+      <div class="flex flex-col gap-4">
+        <p class="m-0">
           Somos <strong>Veterinaria Alivet</strong>, tu aliado de confianza ubicado en Iberia, provincia
           de Tahuamanu, en la exuberante selva amazónica peruana. Nacimos con el compromiso de brindar
           atención integral a los animales de nuestra región, apoyando a ganaderos, agricultores y
           familias que cuidan de sus mascotas.
         </p>
-        <p class="qs-p">
+        <p class="m-0">
           Contamos con un equipo de profesionales especializados listos para brindarte asesoría técnica,
           realizar trabajos en campo y proveerte los mejores productos veterinarios: alimentos
           especializados, vacunas, antibióticos y fármacos para todo tipo de animales.
         </p>
-
-        <ul class="qs-checks">
-          <li class="qs-check-item">
-            <span class="qs-check-icon">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-              </svg>
-            </span>
-            Atención profesional y personalizada
-          </li>
-          <li class="qs-check-item">
-            <span class="qs-check-icon">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-              </svg>
-            </span>
-            Productos veterinarios de alta calidad garantizados
-          </li>
-          <li class="qs-check-item">
-            <span class="qs-check-icon">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-              </svg>
-            </span>
-            Asesoría técnica a ganaderos y agricultores
-          </li>
-          <li class="qs-check-item">
-            <span class="qs-check-icon">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
-              </svg>
-            </span>
-            Trabajos en campo y visitas a finca
-          </li>
+        <ul class="list-none p-0 m-0 flex flex-col gap-2">
+          <li><i class="pi pi-check mr-2" aria-hidden="true"></i>Atención profesional y personalizada</li>
+          <li><i class="pi pi-check mr-2" aria-hidden="true"></i>Productos veterinarios de alta calidad garantizados</li>
+          <li><i class="pi pi-check mr-2" aria-hidden="true"></i>Asesoría técnica a ganaderos y agricultores</li>
+          <li><i class="pi pi-check mr-2" aria-hidden="true"></i>Trabajos en campo y visitas a finca</li>
         </ul>
-
       </div>
 
-      <!-- Columna visual -->
-      <div class="qs-visual-col">
-
-        <div class="qs-img-card">
-          <img src="assets/img/nosotros.png" alt="Veterinaria Alivet – Iberia, Perú" class="qs-img" />
-          <div class="qs-img-badge">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-            </svg>
-            <span>Alivet · Veterinaria de confianza</span>
-          </div>
+      <div class="flex flex-col gap-4">
+        <p-card styleClass="alivet-card overflow-hidden">
+          <picture>
+            <source srcset="assets/img/nosotros.webp" type="image/webp" />
+            <img class="w-full rounded-[var(--radius-photo)]" src="assets/img/nosotros.png" alt="Veterinaria Alivet – Iberia, Perú" width="960" height="720" loading="lazy" decoding="async" />
+          </picture>
+          <p class="mt-3 mb-0"><i class="pi pi-shield mr-2" aria-hidden="true"></i>Alivet · Veterinaria de confianza</p>
+        </p-card>
+        <div class="grid grid-cols-3 gap-3 text-center">
+          <div><strong class="block text-2xl font-heading">+500</strong><span class="text-sm text-muted">Clientes atendidos</span></div>
+          <div><strong class="block text-2xl font-heading">+10</strong><span class="text-sm text-muted">Años de experiencia</span></div>
+          <div><strong class="block text-2xl font-heading">100%</strong><span class="text-sm text-muted">Confianza garantizada</span></div>
         </div>
-
-        <!-- Estadísticas -->
-        <div class="qs-stats">
-          <div class="qs-stat">
-            <span class="qs-stat-val">+500</span>
-            <span class="qs-stat-lbl">Clientes atendidos</span>
-          </div>
-          <div class="qs-stat-div"></div>
-          <div class="qs-stat">
-            <span class="qs-stat-val">+10</span>
-            <span class="qs-stat-lbl">Años de experiencia</span>
-          </div>
-          <div class="qs-stat-div"></div>
-          <div class="qs-stat">
-            <span class="qs-stat-val">100%</span>
-            <span class="qs-stat-lbl">Confianza garantizada</span>
-          </div>
-        </div>
-
       </div>
     </div>
-
-  </div>
-</section>
+  </section>
+}
