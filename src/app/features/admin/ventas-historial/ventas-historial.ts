@@ -3,17 +3,18 @@ import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
+import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
-import { TableModule } from 'primeng/table';
+import { Textarea } from 'primeng/textarea';
 import { VentasService, Venta } from '../../../core/services/ventas.service';
 import { NotifyService } from '../../../core/ui/notify';
 import { AdminTable } from '../../../shared/components/admin-table/admin-table';
-import { environment } from '../../../../environments/environment';
+import { TicketViewer } from '../../../shared/components/ticket-viewer/ticket-viewer';
 
 @Component({
   selector: 'app-ventas-historial',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, Button, Dialog, Select, TableModule, AdminTable],
+  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, Button, Dialog, InputText, Select, Textarea, AdminTable, TicketViewer],
   templateUrl: './ventas-historial.html',
 })
 export class VentasHistorialComponent implements OnInit {
@@ -43,7 +44,15 @@ export class VentasHistorialComponent implements OnInit {
   // Modales
   ventaSeleccionada = signal<Venta | null>(null);
   mostrarModalDetalle = signal(false);
-  mostrarModalTicket = signal(false);
+  visorTicket = signal(false);
+  ticketId = signal<number | null>(null);
+  mostrarWhatsapp = signal(false);
+  telefonoWhatsapp = '';
+  errorWhatsapp = signal<string | null>(null);
+  mostrarAnulacion = signal(false);
+  motivoAnulacion = '';
+  errorAnulacion = signal<string | null>(null);
+  anulando = signal(false);
 
   metricas(): { cantidad: number; totalSoles: number; promedio: number; anuladas: number } {
     const list = this.ventasFiltradas();
@@ -134,36 +143,63 @@ export class VentasHistorialComponent implements OnInit {
     this.mostrarModalDetalle.set(false);
   }
 
-  abrirTicketReimpresion(venta: Venta): void {
+  abrirTicket(venta: Venta): void {
+    this.ticketId.set(venta.id);
+    this.visorTicket.set(true);
+  }
+
+  abrirWhatsapp(venta: Venta): void {
     this.ventaSeleccionada.set(venta);
-    this.mostrarModalTicket.set(true);
+    this.telefonoWhatsapp = '';
+    this.errorWhatsapp.set(null);
+    this.mostrarWhatsapp.set(true);
   }
 
-  cerrarModalTicket(): void {
-    this.mostrarModalTicket.set(false);
+  confirmarWhatsapp(): void {
+    const venta = this.ventaSeleccionada();
+    const digitos = this.telefonoWhatsapp.replace(/\D/g, '');
+    if (!/^9\d{8}$/.test(digitos)) {
+      this.errorWhatsapp.set('Ingresa un celular de 9 dígitos que empiece con 9.');
+      return;
+    }
+    if (!venta) return;
+    const total = this.totalDe(venta).toFixed(2);
+    const cliente = venta.cliente?.nombre_completo || 'cliente';
+    const mensaje = `Hola ${cliente}, tu comprobante en Veterinaria Ali-Vet.\nTicket #${venta.id}\nTotal: S/ ${total}\nGracias por tu preferencia.`;
+    window.open(`https://api.whatsapp.com/send?phone=51${digitos}&text=${encodeURIComponent(mensaje)}`, '_blank', 'noopener');
+    this.mostrarWhatsapp.set(false);
+    this.notify.success(`Resumen del ticket #${venta.id} listo para WhatsApp.`);
   }
 
-  imprimirComprobante(): void {
-    window.print();
+  abrirAnulacion(venta: Venta): void {
+    this.ventaSeleccionada.set(venta);
+    this.motivoAnulacion = '';
+    this.errorAnulacion.set(null);
+    this.mostrarAnulacion.set(true);
   }
 
-  enviarWhatsApp(venta: Venta): void {
-    const clienteNombre = venta.cliente?.nombre_completo || 'Cliente';
-    const numeroTel = prompt('Ingresa el número de WhatsApp (9 dígitos):', '987654321');
-    if (!numeroTel) return;
-
-    const numLimpio = numeroTel.replace(/\D/g, '');
-    const phone = numLimpio.length === 9 ? `51${numLimpio}` : numLimpio;
-    const total = (parseFloat(String(venta.total)) || 0).toFixed(2);
-    const urlPdf = `${environment.apiUrl}/v1/invoices/${venta.id}/pdf`;
-
-    const mensaje = `Hola *${clienteNombre}* 👋, adjuntamos tu comprobante de compra en *Veterinaria Ali-Vet* 🐾.\n\n` +
-      `📄 Comprobante: *#${venta.id}*\n` +
-      `💰 Total: *S/ ${total}*\n\n` +
-      `Puedes descargarlo aquí: ${urlPdf}\n\n` +
-      `¡Gracias por tu preferencia!`;
-
-    window.open(`https://api.whatsapp.com/send?phone=${phone}&text=${encodeURIComponent(mensaje)}`, '_blank');
+  confirmarAnulacion(): void {
+    const venta = this.ventaSeleccionada();
+    const motivo = this.motivoAnulacion.trim();
+    if (!venta) return;
+    if (motivo.length < 3) {
+      this.errorAnulacion.set('Indica el motivo de la anulación.');
+      return;
+    }
+    this.anulando.set(true);
+    this.ventasService.anular(venta.id, motivo).subscribe({
+      next: (res) => {
+        this.anulando.set(false);
+        this.mostrarAnulacion.set(false);
+        this.mostrarModalDetalle.set(false);
+        this.notify.success(res?.message || `Venta #${venta.id} anulada.`);
+        this.cargarHistorial();
+      },
+      error: (err) => {
+        this.anulando.set(false);
+        this.notify.error(err?.error?.message || 'No se pudo anular la venta.');
+      },
+    });
   }
 
   private estadoDe(venta: Venta): string {
@@ -182,20 +218,4 @@ export class VentasHistorialComponent implements OnInit {
     return date >= inicio;
   }
 
-  anularComprobante(venta: Venta): void {
-    const motivo = prompt(`Ingresa el motivo de anulación para la venta #${venta.id}:`);
-    if (!motivo) return;
-
-    if (confirm(`¿Estás seguro de emitir Nota de Crédito para anular la venta #${venta.id}?`)) {
-      this.ventasService.anular(venta.id, motivo).subscribe({
-        next: (res) => {
-          this.notify.success(res?.message || `Venta #${venta.id} anulada.`);
-          this.cargarHistorial();
-        },
-        error: (err) => {
-          this.notify.error(err?.error?.message || 'No se pudo anular la venta.');
-        }
-      });
-    }
-  }
 }

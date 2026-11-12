@@ -6,8 +6,6 @@ import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
 import { Message } from 'primeng/message';
-import { SelectButton } from 'primeng/selectbutton';
-import { TableModule } from 'primeng/table';
 import { Textarea } from 'primeng/textarea';
 import { AdminTable } from '../../../shared/components/admin-table/admin-table';
 import { VentasService, Venta } from '../../../core/services/ventas.service';
@@ -17,7 +15,7 @@ import { TicketViewer } from '../../../shared/components/ticket-viewer/ticket-vi
 @Component({
   selector: 'app-caja',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, Button, Dialog, InputText, Message, SelectButton, TableModule, Textarea, AdminTable, TicketViewer],
+  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, Button, Dialog, InputText, Message, Textarea, AdminTable, TicketViewer],
   templateUrl: './caja.html',
 })
 export class Caja implements OnInit {
@@ -50,17 +48,21 @@ export class Caja implements OnInit {
   montoRecibido: number | null = null;
   numeroOperacion = '';
   fondoInicial = 100.00;
-  readonly comprobantes = [
+  readonly comprobantes: { label: string; value: 'boleta' | 'factura' }[] = [
     { label: 'Boleta', value: 'boleta' },
     { label: 'Factura', value: 'factura' },
   ];
   readonly metodos = [
-    { label: 'Efectivo', value: 'efectivo' },
-    { label: 'Yape', value: 'yape' },
-    { label: 'Plin', value: 'plin' },
-    { label: 'Tarjeta', value: 'tarjeta' },
-    { label: 'Transferencia', value: 'transferencia' },
+    { label: 'Efectivo', value: 'efectivo', icon: 'pi pi-wallet' },
+    { label: 'Yape', value: 'yape', icon: 'pi pi-mobile' },
+    { label: 'Plin', value: 'plin', icon: 'pi pi-mobile' },
+    { label: 'Tarjeta', value: 'tarjeta', icon: 'pi pi-credit-card' },
+    { label: 'Transferencia', value: 'transferencia', icon: 'pi pi-building' },
   ];
+  recibidoTexto = '0.00';
+  mostrarAnulacion = signal(false);
+  motivoAnulacion = '';
+  errorAnulacion = signal<string | null>(null);
 
   ventaSeleccionada = computed(() => this.pendientes().find(v => v.id === this.seleccionId()) ?? null);
   porCobrar = computed(() => this.pendientes().reduce((sum, v) => sum + (parseFloat(String(v.total ?? 0)) || 0), 0));
@@ -128,7 +130,7 @@ export class Caja implements OnInit {
         if (!pendientes.some(v => v.id === this.seleccionId())) {
           const primera = pendientes[0];
           this.seleccionId.set(primera?.id ?? null);
-          this.montoRecibido = primera ? parseFloat(String(primera.total)) : null;
+          this.fijarRecibido(primera ? parseFloat(String(primera.total)) : 0);
         }
         this.loading.set(false);
       },
@@ -141,9 +143,24 @@ export class Caja implements OnInit {
 
   seleccionarVenta(v: Venta): void {
     this.seleccionId.set(v.id);
-    this.montoRecibido = parseFloat(String(v.total ?? 0)) || 0;
+    this.fijarRecibido(parseFloat(String(v.total ?? 0)) || 0);
     this.numeroOperacion = '';
     this.error.set(null);
+  }
+
+  fijarRecibido(monto: number): void {
+    this.montoRecibido = monto;
+    this.recibidoTexto = monto.toFixed(2);
+  }
+
+  onRecibidoTexto(valor: string): void {
+    this.recibidoTexto = valor;
+    this.montoRecibido = this.leerMonto(valor);
+  }
+
+  formatearRecibido(event: FocusEvent): void {
+    const monto = this.leerMonto((event.target as HTMLInputElement).value);
+    this.fijarRecibido(monto);
   }
 
   cambiarMetodo(metodo: string): void {
@@ -223,6 +240,12 @@ export class Caja implements OnInit {
     });
   }
 
+  private leerMonto(valor: string): number {
+    const limpio = valor.replace(',', '.').replace(/[^\d.]/g, '');
+    const monto = Number(limpio);
+    return Number.isFinite(monto) ? Math.round(monto * 100) / 100 : 0;
+  }
+
   private esDeHoy(venta: Venta): boolean {
     const raw = venta.created_at || venta.fecha || '';
     if (!raw) return false;
@@ -262,16 +285,25 @@ export class Caja implements OnInit {
     this.load();
   }
 
-  anularVenta(id: number): void {
-    const motivo = prompt('Ingresa el motivo de la anulación:');
-    if (!motivo) return;
+  abrirAnulacion(): void {
+    this.motivoAnulacion = '';
+    this.errorAnulacion.set(null);
+    this.mostrarAnulacion.set(true);
+  }
 
+  confirmarAnulacion(): void {
+    const venta = this.ventaSeleccionada();
+    const motivo = this.motivoAnulacion.trim();
+    if (!venta) return;
+    if (motivo.length < 3) {
+      this.errorAnulacion.set('Indica el motivo de la anulación.');
+      return;
+    }
     this.cancelando.set(true);
-    this.error.set(null);
-
-    this.svc.anular(id, motivo).subscribe({
+    this.svc.anular(venta.id, motivo).subscribe({
       next: (res) => {
-        this.notify.success(res?.message || `Venta #${id} anulada.`);
+        this.notify.success(res?.message || `Venta #${venta.id} anulada.`);
+        this.mostrarAnulacion.set(false);
         this.cancelando.set(false);
         this.montoRecibido = null;
         this.numeroOperacion = '';

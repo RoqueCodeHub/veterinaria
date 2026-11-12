@@ -639,6 +639,89 @@ html:has(app-login) {
 
 tr.is-selected td { background: #f4fbf7; }
 
+.caja-name {
+  display: block;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.caja-panel { display: flex; flex-direction: column; gap: 0.7rem; }
+.caja-panel h2 { margin: 0; color: #1e293b; font-size: 1.05rem; }
+.caja-head, .caja-line, .caja-money, .caja-total {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.caja-head > div, .caja-line > div { min-width: 0; }
+.caja-client { margin: 0.15rem 0 0; color: #64748b; }
+.caja-panel .caja-client { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.caja-line strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.caja-lines { display: flex; flex-direction: column; }
+.caja-line { padding: 0.55rem 0; border-top: 1px solid #f1f5f9; }
+.caja-line strong { color: #1e293b; }
+.caja-line p, .caja-label { margin: 0; color: #94a3b8; font-size: 0.78rem; }
+.caja-label { margin-top: 0.2rem; }
+.caja-total { align-items: center; color: #1e293b; }
+.caja-total strong { font-size: 1.35rem; }
+.caja-pays { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.caja-pay, .caja-bills button {
+  border: 1px solid #e6eeea;
+  border-radius: 0.7rem;
+  background: #fff;
+  color: #334155;
+  cursor: pointer;
+}
+.caja-pay {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.5rem 0.35rem;
+}
+.caja-pay.is-on { border-color: #b7e4d2; background: #e8f8f1; color: #047857; font-weight: 700; }
+.caja-soles {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.28rem 0.55rem;
+  border: 1px solid #e6eeea;
+  border-radius: 0.55rem;
+  background: #fff;
+}
+.caja-soles span { color: #64748b; font-weight: 700; }
+.caja-soles input { width: 5.4rem; border: 0; outline: none; background: transparent; color: #1e293b; }
+.caja-bills { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.caja-bills button { padding: 0.28rem 0.6rem; font-size: 0.78rem; font-weight: 600; }
+.caja-vuelto { margin: 0; color: #b45309; font-weight: 700; }
+.caja-vuelto.is-ok { color: #0f9f6e; }
+.caja-charge, .caja-void {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.caja-charge { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: 0; background: #0f9f6e; color: #fff; }
+.caja-charge:disabled, .caja-void:disabled { cursor: default; opacity: 0.55; }
+.caja-void { border: 0; background: transparent; color: #ef4444; }
+.caja-empty {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  min-height: 16rem;
+  text-align: center;
+}
+.caja-empty strong { color: #1e293b; }
+.caja-empty p { margin: 0; color: #64748b; }
+.caja-empty .empty-state-icon { width: 4.5rem; height: 4.5rem; margin-bottom: 0.2rem; }
+.caja-empty .empty-state-icon .pi { font-size: 2rem; }
+
 @media (max-width: 900px) {
   .list-kpis,
   .list-split { grid-template-columns: 1fr; }

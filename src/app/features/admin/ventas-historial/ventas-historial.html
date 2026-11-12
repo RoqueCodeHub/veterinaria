@@ -49,16 +49,16 @@
         <tr>
           <td class="list-id">{{ v.series ? v.series + '-' + v.number : '#' + v.id }}</td>
           <td>{{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</td>
-          <td class="list-name">{{ v.cliente?.nombre_completo || 'Cliente varios' }}</td>
+          <td class="list-name"><span class="caja-name" [title]="v.cliente?.nombre_completo || 'Cliente varios'">{{ v.cliente?.nombre_completo || 'Cliente varios' }}</span></td>
           <td>{{ metodoDe(v) }}</td>
           <td><span class="list-state" [class.is-off]="esAnulada(v)" [class.is-warn]="esPendiente(v)">{{ etiquetaEstado(v) }}</span></td>
           <td class="text-right">S/ {{ totalDe(v) | number:'1.2-2' }}</td>
           <td class="list-actions">
             <button type="button" class="list-icon" (click)="verDetalle(v)" aria-label="Ver detalle"><i class="pi pi-eye" aria-hidden="true"></i></button>
-            <button type="button" class="list-icon" (click)="abrirTicketReimpresion(v)" aria-label="Reimprimir"><i class="pi pi-print" aria-hidden="true"></i></button>
-            <button type="button" class="list-icon" (click)="enviarWhatsApp(v)" aria-label="WhatsApp"><i class="pi pi-whatsapp" aria-hidden="true"></i></button>
+            <button type="button" class="list-icon" (click)="abrirTicket(v)" aria-label="Ver ticket"><i class="pi pi-print" aria-hidden="true"></i></button>
+            <button type="button" class="list-icon" (click)="abrirWhatsapp(v)" aria-label="WhatsApp"><i class="pi pi-whatsapp" aria-hidden="true"></i></button>
             @if (!esAnulada(v)) {
-              <button type="button" class="list-icon is-danger" (click)="anularComprobante(v)" aria-label="Anular"><i class="pi pi-ban" aria-hidden="true"></i></button>
+              <button type="button" class="list-icon is-danger" (click)="abrirAnulacion(v)" aria-label="Anular"><i class="pi pi-ban" aria-hidden="true"></i></button>
             }
           </td>
         </tr>
@@ -67,42 +67,62 @@
   }
 </div>
 
-<p-dialog header="Detalle de venta" [visible]="mostrarModalDetalle()" (visibleChange)="!$event && cerrarModalDetalle()" [modal]="true" [style]="{ width: '36rem' }">
+<p-dialog header="Detalle de venta" [visible]="mostrarModalDetalle()" (visibleChange)="!$event && cerrarModalDetalle()" [modal]="true" [style]="{ width: '32rem' }">
   @if (ventaSeleccionada(); as v) {
-    <p>{{ v.cliente?.nombre_completo || 'Cliente varios' }} · {{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</p>
-    <p-table [value]="v.items" styleClass="p-datatable-sm">
-      <ng-template #header><tr><th>Producto</th><th class="text-center">Cant.</th><th class="text-right">P. Unit</th><th class="text-right">Subtotal</th></tr></ng-template>
-      <ng-template #body let-item>
-        <tr>
-          <td>{{ item.producto?.nombre || item.description }}</td>
-          <td class="text-center">{{ item.cantidad || item.quantity }}</td>
-          <td class="text-right">S/ {{ (item.precio_unitario || item.unit_price) | number:'1.2-2' }}</td>
-          <td class="text-right">S/ {{ (item.subtotal || item.line_total) | number:'1.2-2' }}</td>
-        </tr>
-      </ng-template>
-    </p-table>
-    <p class="text-right"><strong>Total cobrado: S/ {{ v.total | number:'1.2-2' }}</strong></p>
-    <div class="flex justify-end"><p-button label="Cerrar" (onClick)="cerrarModalDetalle()" /></div>
+    <header class="caja-head">
+      <div>
+        <h2>Ticket #{{ v.id }}</h2>
+        <p class="caja-client">{{ v.cliente?.nombre_completo || 'Cliente varios' }} · {{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</p>
+      </div>
+      <span class="list-state" [class.is-off]="esAnulada(v)" [class.is-warn]="esPendiente(v)">{{ etiquetaEstado(v) }}</span>
+    </header>
+    <div class="caja-lines">
+      @for (item of v.items; track $index) {
+        <div class="caja-line">
+          <div>
+            <strong>{{ item.producto?.nombre || item.description }}</strong>
+            <p>{{ item.cantidad || item.quantity }} × S/ {{ (item.precio_unitario || item.unit_price) | number:'1.2-2' }}</p>
+          </div>
+          <strong>S/ {{ (item.subtotal || item.line_total) | number:'1.2-2' }}</strong>
+        </div>
+      }
+    </div>
+    <p class="caja-total"><span>Total</span><strong>S/ {{ v.total | number:'1.2-2' }}</strong></p>
+    <div class="flex justify-end gap-2">
+      <p-button label="Cerrar" [outlined]="true" (onClick)="cerrarModalDetalle()" />
+      <p-button label="Ver ticket" icon="pi pi-file-pdf" (onClick)="abrirTicket(v)" />
+    </div>
   }
 </p-dialog>
 
-<p-dialog header="Reimpresión de comprobante" [visible]="mostrarModalTicket()" (visibleChange)="!$event && cerrarModalTicket()" [modal]="true" [style]="{ width: '32rem' }">
+<app-ticket-viewer [visible]="visorTicket()" (visibleChange)="visorTicket.set($event)" [ventaId]="ticketId()">
+  <p-button label="Cerrar" [outlined]="true" (onClick)="visorTicket.set(false)" />
+</app-ticket-viewer>
+
+<p-dialog header="Enviar por WhatsApp" [visible]="mostrarWhatsapp()" (visibleChange)="mostrarWhatsapp.set($event)" [modal]="true" [style]="{ width: '26rem' }">
   @if (ventaSeleccionada(); as v) {
-    <div id="seccionTicketImprimir">
-      <h2 class="text-center">VETERINARIA ALIVET</h2>
-      <p class="text-center">RUC: 20611213175</p>
-      <h3 class="text-center">COMPROBANTE ELECTRÓNICO</h3>
-      <p class="text-center"><strong>#{{ v.id }}</strong></p>
-      <p><strong>Fecha:</strong> {{ v.fecha | date:'dd/MM/yyyy HH:mm' }}</p>
-      <p><strong>Cliente:</strong> {{ v.cliente?.nombre_completo || 'CLIENTE VARIOS' }}</p>
-      @for (item of v.items; track $index) {
-        <p>{{ item.cantidad || item.quantity }} x S/ {{ (item.precio_unitario || item.unit_price) | number:'1.2-2' }} — {{ item.producto?.nombre || item.description }} — S/ {{ (item.subtotal || item.line_total) | number:'1.2-2' }}</p>
-      }
-      <p><strong>Total: S/ {{ v.total | number:'1.2-2' }}</strong></p>
-    </div>
+    <p class="caja-client">Ticket #{{ v.id }} · S/ {{ totalDe(v) | number:'1.2-2' }}</p>
+    <label class="flex flex-col gap-1">Celular
+      <input pInputText class="w-full" inputmode="numeric" maxlength="9" [(ngModel)]="telefonoWhatsapp" placeholder="987654321" (ngModelChange)="errorWhatsapp.set(null)" />
+    </label>
+    @if (errorWhatsapp()) { <p class="list-error">{{ errorWhatsapp() }}</p> }
     <div class="flex justify-end gap-2 mt-3">
-      <p-button label="Imprimir" icon="pi pi-print" (onClick)="imprimirComprobante()" />
-      <p-button label="Cerrar" [outlined]="true" (onClick)="cerrarModalTicket()" />
+      <p-button label="Cancelar" [outlined]="true" (onClick)="mostrarWhatsapp.set(false)" />
+      <p-button label="Abrir WhatsApp" icon="pi pi-whatsapp" (onClick)="confirmarWhatsapp()" />
+    </div>
+  }
+</p-dialog>
+
+<p-dialog header="Anular venta" [visible]="mostrarAnulacion()" (visibleChange)="mostrarAnulacion.set($event)" [modal]="true" [style]="{ width: '26rem' }">
+  @if (ventaSeleccionada(); as v) {
+    <p class="caja-client">Ticket #{{ v.id }} · {{ v.cliente?.nombre_completo || 'Cliente varios' }}</p>
+    <label class="flex flex-col gap-1">Motivo
+      <textarea pTextarea class="w-full" rows="3" [(ngModel)]="motivoAnulacion" (ngModelChange)="errorAnulacion.set(null)"></textarea>
+    </label>
+    @if (errorAnulacion()) { <p class="list-error">{{ errorAnulacion() }}</p> }
+    <div class="flex justify-end gap-2 mt-3">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="mostrarAnulacion.set(false)" />
+      <p-button label="Anular" icon="pi pi-ban" severity="danger" [loading]="anulando()" (onClick)="confirmarAnulacion()" />
     </div>
   }
 </p-dialog>
