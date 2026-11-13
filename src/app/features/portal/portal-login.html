@@ -1,0 +1,9 @@
+<section class="list-page">
+  <header class="list-header"><div><h1>Portal del tutor</h1><p>Entra con el acceso que te habilitó la veterinaria</p></div></header>
+  @if (error()) { <p class="list-error">{{ error() }}</p> }
+  <form class="grid gap-3" [formGroup]="form" (ngSubmit)="submit()">
+    <label class="flex flex-col gap-1">Correo <input pInputText formControlName="email" /></label>
+    <label class="flex flex-col gap-1">Contraseña <input pInputText type="password" formControlName="password" /></label>
+    <p-button type="submit" label="Entrar" />
+  </form>
+</section>

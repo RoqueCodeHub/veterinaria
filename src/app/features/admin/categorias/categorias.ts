@@ -1,300 +1,169 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Checkbox } from 'primeng/checkbox';
 import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
-import { Textarea } from 'primeng/textarea';
-import { CategoriasService, Categoria, CategoriaForm } from '../../../core/services/categorias.service';
+import { forkJoin, of } from 'rxjs';
+import { map, switchMap } from 'rxjs/operators';
+import { apiMessage } from '../../../core/api/api-message';
+import { PagedList } from '../../../core/api/paged-list';
+import { Category, CategoryForm } from '../../../core/api/models';
+import { AuthService } from '../../../core/auth/auth';
+import { CategoriesService } from '../../../core/services/catalog.service';
+import { clearError } from '../../../core/ui/format';
 import { NotifyService } from '../../../core/ui/notify';
 import { AdminTable } from '../../../shared/components/admin-table/admin-table';
-
-interface CategoriaNodo {
-  categoria: Categoria;
-  hijas: CategoriaNodo[];
-}
-
-interface FilaCategoria {
-  categoria: Categoria;
-  depth: number;
-  childCount: number;
-}
+import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm-dialog';
 
 @Component({
   selector: 'app-categorias',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, Button, Checkbox, Dialog, InputText, Select, Textarea, AdminTable],
+  imports: [FormsModule, Button, Checkbox, Dialog, InputText, Select, AdminTable, ConfirmDialog],
   templateUrl: './categorias.html',
   styleUrl: './categorias.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Categorias implements OnInit {
-  private svc = inject(CategoriasService);
-  private notify = inject(NotifyService);
-
-  // Estados de datos (Signals)
-  categorias = signal<Categoria[]>([]);
-  expanded = signal<Set<number>>(new Set());
-  loading = signal(false);
-  savingModal = signal(false);
-  error = signal<string | null>(null);
-  formError = signal<string | null>(null);
-
-  // Filtros reactivos con Signals
-  busquedaTexto = signal('');
-  filtroEstado = signal<'todos' | 'activas' | 'inactivas'>('todos');
-  vista = signal<'arbol' | 'lista'>('arbol');
-  readonly estadosFiltro = [
-    { label: 'Todas', value: 'todos' },
-    { label: 'Solo activas', value: 'activas' },
-    { label: 'Inactivas', value: 'inactivas' },
-  ];
-
-  // Modales
-  showModal = signal(false);
-  editingId = signal<number | null>(null);
-  deleteConfirmId = signal<number | null>(null);
-
-  // Formulario
-  form: CategoriaForm & { parent_id?: number | null } = this.emptyForm();
-
-  // Métricas KPI
-  metricas = computed(() => {
-    const list = this.categorias();
-    const total = list.length;
-    const principales = list.filter(c => !c.parent_id || c.parent_id === 0).length;
-    const subcategorias = total - principales;
-    const activas = list.filter(c => c.activo !== false).length;
-
-    return { total, principales, subcategorias, activas };
-  });
-
-  // Árbol de categorías
-  private arbol = computed(() => this.buildTree(this.categorias()));
-
-  // Filas planas para renderizar la tabla jerárquica
-  filas = computed(() => {
-    const q = this.busquedaTexto().toLowerCase().trim();
-    const est = this.filtroEstado();
-    const open = this.expanded();
-
-    // Si hay búsqueda, filtro por estado o vista de lista, mostramos lista plana
-    if (q || est !== 'todos' || this.vista() === 'lista') {
-      return this.categorias()
-        .filter(c => {
-          const coincideTexto = !q || c.nombre.toLowerCase().includes(q) || (c.descripcion || '').toLowerCase().includes(q);
-          let coincideEstado = true;
-          if (est === 'activas') coincideEstado = c.activo !== false;
-          if (est === 'inactivas') coincideEstado = c.activo === false;
-          return coincideTexto && coincideEstado;
-        })
-        .map(c => ({
-          categoria: c,
-          depth: 0,
-          childCount: 0,
-        }));
-    }
-
-    // Modo jerárquico normal (Árbol desplegable)
-    const rows: FilaCategoria[] = [];
-    const walk = (nodes: CategoriaNodo[], depth: number) => {
-      for (const node of nodes) {
-        rows.push({
-          categoria: node.categoria,
-          depth,
-          childCount: node.hijas.length,
-        });
-        if (node.hijas.length && open.has(node.categoria.id)) {
-          walk(node.hijas, depth + 1);
-        }
-      }
-    };
-    walk(this.arbol(), 0);
-    return rows;
-  });
-
-  // Categorías disponibles para ser Padres en el Modal (excluye la categoría en edición)
-  categoriasPadreDisponibles = computed(() => {
-    const actualId = this.editingId();
-    return this.categorias().filter(c => (!actualId || c.id !== actualId) && (!c.parent_id || c.parent_id === 0));
+  private readonly svc = inject(CategoriesService);
+  private readonly notify = inject(NotifyService);
+  readonly auth = inject(AuthService);
+  readonly list = new PagedList<Category>(
+    (query) => this.svc.list(query),
+    (error) => this.notify.error(apiMessage(error as HttpErrorResponse, 'No se pudieron cargar las categorías.')),
+  );
+  readonly modo = signal<'arbol' | 'lista'>('arbol');
+  readonly todas = signal<Category[]>([]);
+  readonly abiertos = signal<ReadonlySet<number>>(new Set());
+  readonly modal = signal(false);
+  readonly saving = signal(false);
+  readonly editing = signal<Category | null>(null);
+  readonly quitar = signal<Category | null>(null);
+  readonly errors = signal<Record<string, string>>({});
+  form: CategoryForm = { nombre: '', parent_id: null, activo: true };
+  readonly arbol = computed(() => this.ordenar(this.todas(), this.abiertos()));
+  readonly padres = computed(() => {
+    const id = this.editing()?.id;
+    return [{ label: 'Sin padre', value: null as number | null }, ...this.todas().filter((row) => row.id !== id).map((row) => ({ label: row.nombre, value: row.id }))];
   });
 
   ngOnInit(): void {
-    this.load();
+    this.list.load(1);
+    this.cargarArbol();
   }
 
-  load(): void {
-    this.loading.set(true);
-    this.error.set(null);
-
-    this.svc.getAll().subscribe({
-      next: (data) => {
-        const tree = this.buildTree(data);
-        this.categorias.set(data);
-        this.expanded.set(this.idsWithChildren(tree));
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('Error al cargar la lista de categorías.');
-        this.loading.set(false);
-      }
-    });
+  buscar(event: Event): void {
+    const value = (event.target as HTMLInputElement).value;
+    this.list.search(value);
   }
 
-  setFiltroEstado(estado: 'todos' | 'activas' | 'inactivas'): void {
-    this.filtroEstado.set(estado);
-  }
-
-  setVista(vista: 'arbol' | 'lista'): void {
-    this.vista.set(vista);
-  }
-
-  buscar(texto: string): void {
-    this.busquedaTexto.set(texto);
-  }
-
-  openCreate(): void {
-    this.form = this.emptyForm();
-    this.editingId.set(null);
-    this.formError.set(null);
-    this.showModal.set(true);
-  }
-
-  openEdit(c: Categoria): void {
+  abrir(row?: Category): void {
+    this.errors.set({});
+    this.editing.set(row ?? null);
     this.form = {
-      nombre: c.nombre,
-      descripcion: c.descripcion ?? '',
-      parent_id: c.parent_id ?? null,
-      activo: !!c.activo,
+      nombre: row?.nombre ?? '',
+      descripcion: row?.descripcion ?? '',
+      parent_id: row?.parent_id ?? null,
+      activo: row?.activo ?? true,
     };
-    this.editingId.set(c.id);
-    this.formError.set(null);
-    this.showModal.set(true);
+    this.modal.set(true);
   }
 
-  closeModal(): void {
-    this.showModal.set(false);
-    this.savingModal.set(false);
-    this.formError.set(null);
-  }
-
-  onNombre(valor: string): void {
-    this.form.nombre = valor;
-    if (valor.trim()) this.formError.set(null);
-  }
-
-  save(): void {
+  guardar(): void {
     if (!this.form.nombre.trim()) {
-      this.formError.set('El nombre de la categoría es obligatorio.');
+      this.errors.set({ nombre: 'Escribe el nombre de la categoría.' });
       return;
     }
-
-    this.savingModal.set(true);
-    this.formError.set(null);
-
-    const payload: any = {
-      ...this.form,
-      nombre: this.form.nombre.trim(),
-      descripcion: this.form.descripcion?.trim() || undefined,
-      parent_id: this.form.parent_id || undefined,
-    };
-
-    const id = this.editingId();
-    const obs = id ? this.svc.update(id, payload) : this.svc.create(payload);
-
-    obs.subscribe({
+    this.saving.set(true);
+    const id = this.editing()?.id;
+    const request = id ? this.svc.update(id, this.form) : this.svc.create(this.form);
+    request.subscribe({
       next: () => {
+        this.saving.set(false);
+        this.modal.set(false);
         this.notify.success(id ? 'Categoría actualizada.' : 'Categoría creada.');
-        this.closeModal();
-        this.load();
+        this.list.load();
+        this.cargarArbol();
       },
-      error: (err) => {
-        const apiErrors = err?.error?.errors;
-        const detail = apiErrors ? Object.values(apiErrors).flat().join(' ') : err?.error?.message;
-        this.formError.set(detail || 'Error al guardar la categoría.');
-        this.savingModal.set(false);
-      }
+      error: (error: HttpErrorResponse) => {
+        this.saving.set(false);
+        this.notify.error(apiMessage(error, 'No se pudo guardar la categoría.'));
+      },
     });
   }
 
-  confirmDelete(id: number): void {
-    this.deleteConfirmId.set(id);
-  }
-
-  cancelDelete(): void {
-    this.deleteConfirmId.set(null);
-  }
-
-  doDelete(): void {
-    const id = this.deleteConfirmId();
-    if (!id) return;
-
-    this.svc.delete(id).subscribe({
+  confirmarQuitar(): void {
+    const row = this.quitar();
+    if (!row) return;
+    this.svc.remove(row.id).subscribe({
       next: () => {
         this.notify.success('Categoría eliminada.');
-        this.deleteConfirmId.set(null);
-        this.load();
+        this.quitar.set(null);
+        this.list.load();
+        this.cargarArbol();
       },
-      error: () => {
-        this.notify.error('No se pudo eliminar la categoría. Asegúrate de que no tenga productos asociados.');
-        this.deleteConfirmId.set(null);
-      }
+      error: (error: HttpErrorResponse) => this.notify.error(apiMessage(error, 'No se pudo eliminar la categoría.')),
     });
   }
 
+  limpiar(): void { this.errors.update((current) => clearError(current, 'nombre')); }
+
   toggle(id: number): void {
-    const next = new Set(this.expanded());
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
-    this.expanded.set(next);
+    const next = new Set(this.abiertos());
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    this.abiertos.set(next);
   }
 
-  isExpanded(id: number): boolean {
-    return this.expanded().has(id);
+  tieneHijos(id: number): boolean {
+    return this.todas().some((row) => row.parent_id === id);
   }
 
-  private emptyForm() {
-    return { nombre: '', descripcion: '', parent_id: null, activo: true };
+  profundidad(row: Category): number {
+    const byId = new Map(this.todas().map((item) => [item.id, item]));
+    let depth = 0;
+    let parent = row.parent_id;
+    while (parent) {
+      depth += 1;
+      parent = byId.get(parent)?.parent_id ?? null;
+      if (depth > 8) break;
+    }
+    return depth;
   }
 
-  private buildTree(items: Categoria[]): CategoriaNodo[] {
-    const nodes = new Map<number, CategoriaNodo>();
-    for (const categoria of items) {
-      nodes.set(categoria.id, { categoria, hijas: [] });
-    }
+  private cargarArbol(): void {
+    this.svc.list({ page: 1, perPage: 50 }).pipe(
+      switchMap((first) => {
+        if (first.meta.last_page <= 1) return of(first.items);
+        const rest = Array.from({ length: first.meta.last_page - 1 }, (_, index) => this.svc.list({ page: index + 2, perPage: 50 }));
+        return forkJoin(rest).pipe(map((pages) => [first.items, ...pages.map((page) => page.items)].flat()));
+      }),
+    ).subscribe({
+      next: (rows) => {
+        this.todas.set(rows);
+        if (this.abiertos().size === 0) {
+          this.abiertos.set(new Set(rows.filter((row) => row.parent_id == null).map((row) => row.id)));
+        }
+      },
+    });
+  }
 
-    const roots: CategoriaNodo[] = [];
-    for (const categoria of items) {
-      const node = nodes.get(categoria.id)!;
-      const parentId = categoria.parent_id;
-      if (parentId != null && parentId !== 0 && nodes.has(parentId)) {
-        nodes.get(parentId)!.hijas.push(node);
-      } else {
-        roots.push(node);
-      }
+  private ordenar(rows: Category[], open: ReadonlySet<number>): Category[] {
+    const byParent = new Map<number | null, Category[]>();
+    for (const row of rows) {
+      const key = row.parent_id;
+      byParent.set(key, [...(byParent.get(key) ?? []), row]);
     }
-
-    const sortNodes = (list: CategoriaNodo[]) => {
-      list.sort((a, b) => a.categoria.id - b.categoria.id);
-      for (const node of list) {
-        sortNodes(node.hijas);
+    const out: Category[] = [];
+    const walk = (parent: number | null): void => {
+      for (const row of byParent.get(parent) ?? []) {
+        out.push(row);
+        if (open.has(row.id)) walk(row.id);
       }
     };
-    sortNodes(roots);
-    return roots;
-  }
-
-  private idsWithChildren(nodes: CategoriaNodo[], into = new Set<number>()): Set<number> {
-    for (const node of nodes) {
-      if (node.hijas.length) {
-        into.add(node.categoria.id);
-        this.idsWithChildren(node.hijas, into);
-      }
-    }
-    return into;
+    walk(null);
+    return out;
   }
 }

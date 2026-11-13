@@ -1,0 +1,47 @@
+<div class="list-page view-fill">
+  <header class="list-header"><div><h1>{{ profile()?.customer?.name || 'Mi portal' }}</h1><p>{{ profile()?.user?.email }}</p></div></header>
+  <div class="list-switch">
+    <button type="button" [class.is-on]="tab() === 'perfil'" (click)="tab.set('perfil')">Perfil</button>
+    <button type="button" [class.is-on]="tab() === 'mascotas'" (click)="tab.set('mascotas')">Mascotas</button>
+    <button type="button" [class.is-on]="tab() === 'citas'" (click)="tab.set('citas')">Citas</button>
+    <button type="button" [class.is-on]="tab() === 'compras'" (click)="tab.set('compras')">Compras</button>
+    <button type="button" [class.is-on]="tab() === 'servicios'" (click)="tab.set('servicios')">Servicios</button>
+  </div>
+  @if (tab() === 'perfil' && profile(); as perfil) {
+    <p>Documento {{ perfil.customer.document_type }} {{ perfil.customer.document_number }}</p>
+    <p>Teléfono {{ perfil.customer.phone || '—' }}</p>
+  }
+  @if (tab() === 'mascotas') {
+    <app-admin-table [rows]="pets()" paging="server" [totalItems]="petTotal()" [serverPage]="petPage()" [pageSize]="10" [columns]="3" itemLabel="mascotas" emptyTitle="Sin mascotas" emptyText="Todavía no hay mascotas asociadas." (pageChange)="petPage.set($event); cargarMascotas()">
+      <ng-template #head><tr><th>Nombre</th><th>Especie</th><th></th></tr></ng-template>
+      <ng-template #row let-row><tr><td>{{ row.nombre }}</td><td>{{ row.especie || '—' }}</td><td><button type="button" class="list-link" (click)="verCarnet(row)">Carné</button></td></tr></ng-template>
+    </app-admin-table>
+    @if (carnet(); as card) {
+      <h2>Carné de {{ card.pet.nombre }}</h2>
+      @for (item of card.vaccinations; track item.id) { <p>Vacuna {{ item.vaccine_name }} · {{ item.applied_at }}</p> }
+      @for (item of card.dewormings; track item.id) { <p>Desparasitación {{ item.product_name }} · {{ item.applied_at }}</p> }
+    }
+  }
+  @if (tab() === 'citas') {
+    <h2>Próximas</h2>
+    @for (item of upcoming(); track item.id) { <p>{{ item.scheduled_at }} · {{ item.mascota }} · {{ item.servicio }} · {{ item.status }}</p> }
+    <h2>Historial</h2>
+    @for (item of appointments(); track item.id) { <p>{{ item.scheduled_at }} · {{ item.status }}</p> }
+    <form class="grid gap-2" (ngSubmit)="pedirCita()">
+      <label>Mascota <select [(ngModel)]="solicitud.pet_id" name="pet"><option [ngValue]="null">Selecciona</option>@for (item of pets(); track item.id) { <option [ngValue]="item.id">{{ item.nombre }}</option> }</select></label>
+      <label>Servicio <select [(ngModel)]="solicitud.clinic_service_id" name="service"><option [ngValue]="null">Selecciona</option>@for (item of services(); track item.id) { <option [ngValue]="item.id">{{ item.name }}</option> }</select></label>
+      <label>Cuándo <input type="datetime-local" [(ngModel)]="solicitud.scheduled_at" name="when" /></label>
+      <label>Notas <input [(ngModel)]="solicitud.notes" name="notes" /></label>
+      <button type="submit" class="list-primary">Solicitar cita</button>
+    </form>
+  }
+  @if (tab() === 'compras') {
+    <app-admin-table [rows]="purchases()" paging="server" [totalItems]="purchaseTotal()" [serverPage]="purchasePage()" [pageSize]="10" [columns]="3" itemLabel="compras" emptyTitle="Sin compras" emptyText="Aún no hay compras." (pageChange)="purchasePage.set($event); cargarCompras()">
+      <ng-template #head><tr><th>Documento</th><th>Fecha</th><th>Total</th></tr></ng-template>
+      <ng-template #row let-row><tr><td>{{ row.document }}</td><td>{{ row.created_at }}</td><td>S/ {{ row.total | number:'1.2-2' }}</td></tr></ng-template>
+    </app-admin-table>
+  }
+  @if (tab() === 'servicios') {
+    @for (item of services(); track item.id) { <p>{{ item.name }} · {{ item.duration_minutes || '—' }} min · S/ {{ item.sale_price | number:'1.2-2' }}</p> }
+  }
+</div>

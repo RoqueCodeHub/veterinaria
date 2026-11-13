@@ -1,0 +1,56 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Facturas</h1>
+      <p>Boletas, facturas y el estado del envío al PSE.</p>
+    </div>
+    @if (auth.can('invoicing.emit')) {
+      <button type="button" class="list-primary" (click)="modal.set(true)"><i class="pi pi-plus"></i> Emitir</button>
+    }
+  </header>
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Aceptados</small><strong>{{ list.count('aceptados') }}</strong></article>
+    <article><small>En cola</small><strong>{{ list.count('en_cola') }}</strong></article>
+    <article><small>Rechazados</small><strong>{{ list.count('rechazados') }}</strong></article>
+  </div>
+  <div class="grid gap-3 md:grid-cols-2">
+    <article class="rounded-2xl bg-white p-4">
+      <h2 class="m-0 text-base">Series</h2>
+      @for (serie of series(); track serie.id) {
+        <p class="m-0">{{ serie.series }} · {{ serie.document_type }} · siguiente {{ serie.next_number }}</p>
+      }
+    </article>
+    <article class="rounded-2xl bg-white p-4">
+      <h2 class="m-0 text-base">Requisitos</h2>
+      <p class="m-0">RUC emisor {{ requisitos()['issuer_ruc_configured'] ? 'listo' : 'pendiente' }}</p>
+      <p class="m-0">PSE {{ requisitos()['pse_url_configured'] ? 'configurado' : 'simulado' }} · IGV {{ requisitos()['igv'] }}%</p>
+    </article>
+  </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="5" itemLabel="comprobantes" emptyIcon="pi pi-file" emptyTitle="Sin comprobantes" emptyText="Todavía no se emitió ninguno.">
+    <ng-template #head><tr><th>Documento</th><th>Cliente</th><th>Fecha</th><th>Estado</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.document }}</span><span class="list-muted">{{ row.document_type }}</span></td>
+        <td>{{ row.customer_name || '—' }}</td>
+        <td>{{ fecha(row.created_at) }}</td>
+        <td><span class="list-state" [class.is-off]="row.status === 'rejected'" [class.is-warn]="row.status === 'queued' || row.status === 'sent'">{{ row.status }}</span></td>
+        <td class="list-actions">
+          @if (row.status === 'rejected' && auth.can('invoicing.emit')) {
+            <button type="button" class="list-icon" aria-label="Reintentar" (click)="reintentar(row)"><i class="pi pi-refresh"></i></button>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+  <p-dialog header="Emitir comprobante" [visible]="modal()" (visibleChange)="modal.set($event)" [modal]="true" [style]="{ width: '32rem' }">
+    <label class="field">Venta <app-remote-select [search]="buscarVentas" [(value)]="emit.sale_id" placeholder="Buscar venta" /></label>
+    <label class="field">Tipo <p-select [options]="tipos" optionLabel="label" optionValue="value" [(ngModel)]="emit.type" appendTo="body" /></label>
+    <label class="field">Nombre del cliente <input pInputText [(ngModel)]="emit.customer_name" /></label>
+    <label class="field">Documento <input pInputText [(ngModel)]="emit.customer_doc_number" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(false)" />
+      <p-button label="Emitir" icon="pi pi-check" [loading]="saving()" (onClick)="emitir()" />
+    </div>
+  </p-dialog>
+</section>

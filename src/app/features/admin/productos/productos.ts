@@ -1,5 +1,5 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule, DecimalPipe, DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute } from '@angular/router';
 import { Button } from 'primeng/button';
@@ -7,416 +7,172 @@ import { Checkbox } from 'primeng/checkbox';
 import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
-import { ProductosService, Producto, ProductoForm } from '../../../core/services/productos.service';
+import { map } from 'rxjs';
+import { apiMessage } from '../../../core/api/api-message';
+import { PagedList } from '../../../core/api/paged-list';
+import { Product, ProductForm, VariantForm } from '../../../core/api/models';
+import { BrandsService, CategoriesService, ProductsService } from '../../../core/services/catalog.service';
+import { SuppliersService } from '../../../core/services/parties.service';
+import { AuthService } from '../../../core/auth/auth';
+import { clearError, soles } from '../../../core/ui/format';
 import { NotifyService } from '../../../core/ui/notify';
 import { AdminTable } from '../../../shared/components/admin-table/admin-table';
-import { ProveedoresService, Proveedor } from '../../../core/services/proveedores.service';
-import { CategoriasService, Categoria } from '../../../core/services/categorias.service';
-
-export interface ProductoFormExtended extends ProductoForm {
-  // Ficha Médica y Regulación
-  principio_activo?: string;
-  concentracion?: string;
-  tipo_receta?: 'OTC' | 'RECETA_SIMPLE' | 'CONTROLADO';
-  especies_destino?: string[];
-  cadena_frio?: boolean;
-  tiempo_retiro_dias?: number;
-  
-  // Fraccionamiento y Dosis
-  permite_fraccionamiento?: boolean;
-  unidad_dispensacion?: string;
-  factor_conversion?: number;
-  precio_venta_dosis?: number;
-  
-  // Trazabilidad de Lotes
-  codigo_lote?: string;
-}
+import { ConfirmDialog } from '../../../shared/components/confirm-dialog/confirm-dialog';
+import { RemoteOption, RemoteSelect } from '../../../shared/components/remote-select/remote-select';
 
 @Component({
   selector: 'app-productos',
   standalone: true,
-  imports: [CommonModule, FormsModule, DecimalPipe, DatePipe, Button, Checkbox, Dialog, InputText, Select, AdminTable],
+  imports: [FormsModule, Button, Checkbox, Dialog, InputText, Select, AdminTable, ConfirmDialog, RemoteSelect],
   templateUrl: './productos.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Productos implements OnInit {
-  private svc = inject(ProductosService);
-  private notify = inject(NotifyService);
-  private proveedoresSvc = inject(ProveedoresService);
-  private categoriasSvc = inject(CategoriasService);
-  private route = inject(ActivatedRoute);
-
-  // Estados de datos (Signals)
-  productos = signal<Producto[]>([]);
-  proveedores = signal<Proveedor[]>([]);
-  categorias = signal<Categoria[]>([]);
-  
-  loading = signal(false);
-  savingModal = signal(false);
-  error = signal<string | null>(null);
-  formError = signal<string | null>(null);
-
-  showModal = signal(false);
-  editingId = signal<number | null>(null);
-  deleteConfirmId = signal<number | null>(null);
-
-  // Filtros reactivos con Signals
-  busquedaTexto = signal('');
-  filtroCategoria = signal<number | 'todas'>('todas');
-  filtroEstado = signal<'todos' | 'activos' | 'stock-bajo' | 'por-vencer'>('todos');
-  readonly estadosProducto = [
-    { label: 'Todos los productos', value: 'todos' },
-    { label: 'Solo activos', value: 'activos' },
-    { label: 'Con stock bajo', value: 'stock-bajo' },
-    { label: 'Por vencer', value: 'por-vencer' },
+  private readonly svc = inject(ProductsService);
+  private readonly categories = inject(CategoriesService);
+  private readonly brands = inject(BrandsService);
+  private readonly suppliers = inject(SuppliersService);
+  private readonly notify = inject(NotifyService);
+  private readonly route = inject(ActivatedRoute);
+  readonly auth = inject(AuthService);
+  readonly list = new PagedList<Product>(
+    (query) => this.svc.list(query),
+    (error) => this.notify.error(apiMessage(error as HttpErrorResponse, 'No se pudieron cargar los productos.')),
+  );
+  readonly modal = signal(false);
+  readonly saving = signal(false);
+  readonly editing = signal<Product | null>(null);
+  readonly quitar = signal<Product | null>(null);
+  readonly errors = signal<Record<string, string>>({});
+  readonly estados = [
+    { label: 'Todos los estados', value: '' },
+    { label: 'Activos', value: '1' },
+    { label: 'Inactivos', value: '0' },
   ];
-  opcionesCategoria = computed(() => [
-    { label: 'Todas las categorías', value: 'todas' as number | 'todas' },
-    ...this.categorias().map((cat) => ({ label: cat.nombre, value: cat.id as number | 'todas' })),
-  ]);
+  categoria: number | null = null;
+  marca: number | null = null;
+  estado = '';
+  form: ProductForm = this.vacio();
+  variante: VariantForm = { presentation: '', sale_price: null, sku: '' };
 
-  readonly especies = [
-    { id: 'Caninos', label: 'Caninos' },
-    { id: 'Felinos', label: 'Felinos' },
-    { id: 'Bovinos', label: 'Bovinos' },
-    { id: 'Equinos', label: 'Equinos' },
-    { id: 'Porcinos', label: 'Porcinos' },
-    { id: 'Aves', label: 'Aves' },
-    { id: 'Exóticos', label: 'Exóticos' },
-  ];
-
-  // Formulario de edición/creación
-  form: ProductoFormExtended = this.emptyForm();
-
-  // Métricas KPI
-  metricas = computed(() => {
-    const list = this.productos();
-    const total = list.length;
-    const activos = list.filter(p => p.activo !== false).length;
-    const stockBajo = list.filter(p => p.stock_bajo || (Number(p.stock_disponible ?? p.stock_actual) <= Number(p.stock_minimo))).length;
-    const porVencer = list.filter(p => {
-      if (!p.fecha_vencimiento) return false;
-      const fVenc = new Date(p.fecha_vencimiento).getTime();
-      const hoy = new Date().getTime();
-      const dias = (fVenc - hoy) / (1000 * 3600 * 24);
-      return dias > 0 && dias <= 30;
-    }).length;
-
-    return { total, activos, stockBajo, porVencer };
-  });
-
-  // Lista Filtrada Reactiva (incluye búsqueda por Principio Activo)
-  productosFiltrados = computed(() => {
-    const q = this.busquedaTexto().toLowerCase().trim();
-    const catId = this.filtroCategoria();
-    const est = this.filtroEstado();
-
-    return this.productos().filter((p: any) => {
-      // Filtro texto (Nombre, código, categoría o principio activo)
-      const coincideTexto = !q || 
-        p.nombre.toLowerCase().includes(q) || 
-        (p.codigo || '').toLowerCase().includes(q) ||
-        (p.categoria || '').toLowerCase().includes(q) ||
-        (p.principio_activo || '').toLowerCase().includes(q) ||
-        this.presentacionesDe(p).some(item => item.toLowerCase().includes(q));
-
-      // Filtro categoría
-      const coincideCat = catId === 'todas' || p.categoria_id === catId;
-
-      // Filtro por Estado / Alerta
-      let coincideEstado = true;
-      if (est === 'activos') coincideEstado = p.activo !== false;
-      if (est === 'stock-bajo') coincideEstado = p.stock_bajo || (Number(p.stock_disponible ?? p.stock_actual) <= Number(p.stock_minimo));
-      if (est === 'por-vencer') {
-        if (!p.fecha_vencimiento) {
-          coincideEstado = false;
-        } else {
-          const dias = (new Date(p.fecha_vencimiento).getTime() - new Date().getTime()) / (1000 * 3600 * 24);
-          coincideEstado = dias > 0 && dias <= 30;
-        }
-      }
-
-      return coincideTexto && coincideCat && coincideEstado;
-    });
-  });
+  readonly buscarCategorias = (term: string) => this.categories.list({ page: 1, perPage: 20, q: term }).pipe(
+    map((page) => page.items.map((row): RemoteOption => ({ id: row.id, label: row.nombre }))),
+  );
+  readonly buscarMarcas = (term: string) => this.brands.list({ page: 1, perPage: 20, q: term }).pipe(
+    map((page) => page.items.map((row): RemoteOption => ({ id: row.id, label: row.nombre }))),
+  );
+  readonly buscarProveedores = (term: string) => this.suppliers.list({ page: 1, perPage: 20, q: term }).pipe(
+    map((page) => page.items.map((row): RemoteOption => ({ id: row.id, label: row.name }))),
+  );
 
   ngOnInit(): void {
     const q = this.route.snapshot.queryParamMap.get('q');
-    if (q) this.busquedaTexto.set(q);
-    this.loadProveedores();
-    this.loadCategorias();
-    this.load();
+    if (q) this.list.q.set(q);
+    this.list.load(1);
   }
 
-  loadProveedores(): void {
-    this.proveedoresSvc.getAll().subscribe({
-      next: (data) => this.proveedores.set(data),
-      error: () => {}
-    });
+  buscar(event: Event): void {
+    this.list.search((event.target as HTMLInputElement).value);
   }
 
-  loadCategorias(): void {
-    this.categoriasSvc.getAll().subscribe({
-      next: (data) => this.categorias.set(data.filter(c => !!c.activo)),
-      error: () => {}
-    });
-  }
-
-  load(): void {
-    this.loading.set(true);
-    this.error.set(null);
-
-    this.svc.getAll().subscribe({
-      next: (data) => {
-        this.productos.set(data);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('Error al cargar la lista de productos.');
-        this.loading.set(false);
-      }
-    });
-  }
-
-  setFiltroEstado(estado: 'todos' | 'activos' | 'stock-bajo' | 'por-vencer'): void {
-    this.filtroEstado.set(estado);
-  }
-
-  openCreate(): void {
-    this.form = this.emptyForm();
-    this.editingId.set(null);
-    this.formError.set(null);
-    this.showModal.set(true);
-  }
-
-  openEdit(p: any): void {
-    const tipoRecetaCalc: 'OTC' | 'RECETA_SIMPLE' | 'CONTROLADO' = 
-      p.tipo_receta || (p.requiere_receta ? 'RECETA_SIMPLE' : 'OTC');
-
-    const especiesArray = this.leerEspecies(p);
-
-    this.form = {
-      nombre: p.nombre,
-      descripcion: p.descripcion ?? '',
-      codigo: p.codigo ?? '',
-      categoria_id: p.categoria_id ?? this.categorias().find(c => c.nombre === p.categoria)?.id,
-      proveedor_id: p.proveedor?.id ?? p.proveedor_id,
-      precio_compra: Number(p.precio_compra) || 0,
-      precio_venta: Number(p.precio_venta) || 0,
-      stock_actual: Number(p.stock_disponible ?? p.stock_actual) || 0,
-      stock_minimo: Number(p.stock_minimo) || 0,
-      unidad_medida: p.unidad_medida ?? 'unidad',
-      fecha_vencimiento: p.fecha_vencimiento ? p.fecha_vencimiento.split('T')[0] : '',
-      requiere_receta: p.requiere_receta ?? (tipoRecetaCalc !== 'OTC'),
-      activo: p.activo ?? true,
-      
-      // Ficha clínica
-      principio_activo: p.principio_activo ?? '',
-      concentracion: p.concentracion ?? '',
-      tipo_receta: tipoRecetaCalc,
-      especies_destino: especiesArray,
-      cadena_frio: p.cadena_frio ?? false,
-      tiempo_retiro_dias: p.tiempo_retiro_dias ? Number(p.tiempo_retiro_dias) : undefined,
-      
-      // Fraccionamiento
-      permite_fraccionamiento: p.permite_fraccionamiento ?? false,
-      unidad_dispensacion: p.unidad_dispensacion ?? '',
-      factor_conversion: Number(p.factor_conversion) || 1,
-      precio_venta_dosis: Number(p.precio_venta_dosis) || 0,
-
-      // Lote
-      codigo_lote: p.codigo_lote ?? p.lote ?? ''
+  filtrar(): void {
+    this.list.extra = {
+      category_id: this.categoria || undefined,
+      marca_id: this.marca || undefined,
+      activo: this.estado || undefined,
     };
-
-    this.editingId.set(p.id);
-    this.formError.set(null);
-    this.showModal.set(true);
+    this.list.load(1);
   }
 
-  closeModal(): void {
-    this.showModal.set(false);
-    this.savingModal.set(false);
-    this.formError.set(null);
+  abrir(row?: Product): void {
+    this.errors.set({});
+    this.variante = { presentation: '', sale_price: null, sku: '' };
+    this.editing.set(row ?? null);
+    this.form = row ? {
+      nombre: row.nombre,
+      descripcion: row.descripcion,
+      codigo: row.codigo,
+      categoria_id: row.categoria_id,
+      marca_id: row.marca_id,
+      proveedor_id: row.proveedor_id,
+      presentacion: row.presentacion,
+      precio_compra: row.precio_compra == null ? null : Number(row.precio_compra),
+      precio_venta: row.precio_venta == null ? null : Number(row.precio_venta),
+      stock_minimo: row.stock_minimo == null ? null : Number(row.stock_minimo),
+      unidad_medida: row.unidad_medida,
+      fecha_vencimiento: row.fecha_vencimiento?.slice(0, 10) ?? null,
+      requiere_receta: row.requiere_receta,
+      requires_batch: row.requires_batch,
+      activo: row.activo,
+    } : this.vacio();
+    this.modal.set(true);
   }
 
-  toggleEspecie(especie: string): void {
-    const actuales = [...(this.form.especies_destino || [])];
-    const index = actuales.findIndex((item) => this.mismaEspecie(item, especie));
-    if (index >= 0) actuales.splice(index, 1);
-    else actuales.push(especie);
-    this.form.especies_destino = actuales;
+  limpiar(key: string): void {
+    this.errors.update((current) => clearError(current, key));
   }
 
-  hasEspecie(especie: string): boolean {
-    return (this.form.especies_destino || []).some((item) => this.mismaEspecie(item, especie));
-  }
-
-  private mismaEspecie(guardada: string, especie: string): boolean {
-    const limpia = guardada.trim();
-    return limpia.localeCompare(especie, 'es', { sensitivity: 'accent' }) === 0 || limpia.startsWith(`${especie} `);
-  }
-
-  private leerEspecies(producto: { especies_destino?: unknown; especie?: unknown }): string[] {
-    const crudo = producto.especies_destino ?? producto.especie;
-    let lista: unknown[] = [];
-    if (Array.isArray(crudo)) {
-      lista = crudo;
-    } else if (typeof crudo === 'string' && crudo.trim()) {
-      try {
-        const parsed = JSON.parse(crudo) as unknown;
-        lista = Array.isArray(parsed) ? parsed : crudo.split(',');
-      } catch {
-        lista = crudo.split(',');
-      }
-    }
-    return lista.map((item) => String(item).trim()).filter((item) => item.length > 0);
-  }
-
-  calcularPrecioDosisAuto(): void {
-    const factor = Number(this.form.factor_conversion) || 1;
-    const pVenta = Number(this.form.precio_venta) || 0;
-    if (factor > 0 && pVenta > 0) {
-      this.form.precio_venta_dosis = Number((pVenta / factor).toFixed(2));
-    }
-  }
-
-  onNombre(valor: string): void {
-    this.form.nombre = valor;
-    if (valor.trim()) this.formError.set(null);
-  }
-
-  save(): void {
-    if (!this.form.nombre.trim()) {
-      this.formError.set('El nombre del producto es obligatorio.');
-      return;
-    }
-
-    this.savingModal.set(true);
-    this.formError.set(null);
-
-    // Sincronizar campo heredado requiere_receta con el selector tipo_receta
-    const requiereRecetaBool = this.form.tipo_receta === 'RECETA_SIMPLE' || this.form.tipo_receta === 'CONTROLADO';
-
-    const payload: ProductoFormExtended = {
-      ...this.form,
-      precio_compra: Number(this.form.precio_compra) || 0,
-      precio_venta: Number(this.form.precio_venta) || 0,
-      stock_minimo: Number(this.form.stock_minimo) || 0,
-      codigo: this.form.codigo?.trim() || undefined,
-      descripcion: this.form.descripcion?.trim() || undefined,
-      unidad_medida: this.form.unidad_medida?.trim() || undefined,
-      fecha_vencimiento: this.form.fecha_vencimiento || undefined,
-      categoria_id: this.form.categoria_id || undefined,
-      proveedor_id: this.form.proveedor_id || undefined,
-      requiere_receta: requiereRecetaBool,
-
-      // Atributos Médico-Veterinarios
-      principio_activo: this.form.principio_activo?.trim() || undefined,
-      concentracion: this.form.concentracion?.trim() || undefined,
-      tipo_receta: this.form.tipo_receta || 'OTC',
-      especies_destino: this.form.especies_destino || [],
-      cadena_frio: !!this.form.cadena_frio,
-      tiempo_retiro_dias: this.form.tiempo_retiro_dias ? Number(this.form.tiempo_retiro_dias) : undefined,
-
-      // Atributos de Fraccionamiento
-      permite_fraccionamiento: !!this.form.permite_fraccionamiento,
-      unidad_dispensacion: this.form.unidad_dispensacion?.trim() || undefined,
-      factor_conversion: Number(this.form.factor_conversion) || 1,
-      precio_venta_dosis: Number(this.form.precio_venta_dosis) || 0,
-
-      // Lote
-      codigo_lote: this.form.codigo_lote?.trim() || undefined
-    };
-
-    const id = this.editingId();
-    if (id) {
-      delete payload.stock_actual;
-    } else {
-      payload.stock_actual = Number(this.form.stock_actual) || 0;
-    }
-
-    const obs = id ? this.svc.update(id, payload as any) : this.svc.create(payload as any);
-    obs.subscribe({
-      next: () => {
-        this.notify.success(id ? 'Producto actualizado.' : 'Producto registrado en el catálogo.');
-        this.closeModal();
-        this.load();
+  guardar(): void {
+    const errors: Record<string, string> = {};
+    if (!this.form.nombre.trim()) errors['nombre'] = 'Escribe el nombre del producto.';
+    this.errors.set(errors);
+    if (Object.keys(errors).length) return;
+    this.saving.set(true);
+    const id = this.editing()?.id;
+    const request = id ? this.svc.update(id, this.form) : this.svc.create(this.form);
+    request.subscribe({
+      next: (product) => {
+        const sku = this.variante.sku?.trim();
+        if (!sku) {
+          this.cerrarGuardado(id ? 'Producto actualizado.' : 'Producto creado.');
+          return;
+        }
+        this.svc.addVariant(product.id, { ...this.variante, sale_price: this.variante.sale_price ?? Number(this.form.precio_venta ?? 0) }).subscribe({
+          next: () => this.cerrarGuardado('Producto y variante guardados.'),
+          error: (error: HttpErrorResponse) => {
+            this.saving.set(false);
+            this.notify.error(apiMessage(error, 'El producto se guardó, pero la variante no.'));
+          },
+        });
       },
-      error: (err) => {
-        const apiErrors = err?.error?.errors;
-        const detail = apiErrors ? Object.values(apiErrors).flat().join(' ') : err?.error?.message;
-        this.formError.set(detail || 'Error al guardar el producto.');
-        this.savingModal.set(false);
-      }
+      error: (error: HttpErrorResponse) => {
+        this.saving.set(false);
+        this.notify.error(apiMessage(error, 'No se pudo guardar el producto.'));
+      },
     });
   }
 
-  confirmDelete(id: number): void {
-    this.deleteConfirmId.set(id);
-  }
-
-  cancelDelete(): void {
-    this.deleteConfirmId.set(null);
-  }
-
-  doDelete(): void {
-    const id = this.deleteConfirmId();
-    if (!id) return;
-
-    this.svc.delete(id).subscribe({
+  confirmarQuitar(): void {
+    const row = this.quitar();
+    if (!row) return;
+    this.svc.remove(row.id).subscribe({
       next: () => {
-        this.notify.success('Producto eliminado del catálogo.');
-        this.deleteConfirmId.set(null);
-        this.load();
+        this.notify.success('Producto quitado del catálogo.');
+        this.quitar.set(null);
+        this.list.load();
       },
-      error: () => {
-        this.notify.error('No se pudo eliminar el producto.');
-        this.deleteConfirmId.set(null);
-      }
+      error: (error: HttpErrorResponse) => this.notify.error(apiMessage(error, 'No se pudo quitar el producto.')),
     });
   }
 
-  getStockActual(p: Producto): number {
-    return Number(p.stock_disponible ?? p.stock_actual) || 0;
+  soles(value: string | number | null | undefined): string { return soles(value); }
+
+  private cerrarGuardado(message: string): void {
+    this.saving.set(false);
+    this.modal.set(false);
+    this.notify.success(message);
+    this.list.load();
   }
 
-  presentacionesDe(p: Producto): string[] {
-    return (p.presentaciones ?? [])
-      .map(item => item.presentacion)
-      .filter(nombre => !!nombre && nombre !== '—');
-  }
-
-  private emptyForm(): ProductoFormExtended {
+  private vacio(): ProductForm {
     return {
       nombre: '',
-      descripcion: '',
-      codigo: '',
-      categoria_id: undefined,
-      proveedor_id: undefined,
-      precio_compra: 0,
-      precio_venta: 0,
-      stock_actual: 0,
-      stock_minimo: 5,
-      unidad_medida: 'unidad',
-      fecha_vencimiento: '',
-      requiere_receta: false,
+      categoria_id: null,
+      marca_id: null,
+      proveedor_id: null,
       activo: true,
-
-      // Ficha clínica
-      principio_activo: '',
-      concentracion: '',
-      tipo_receta: 'OTC',
-      especies_destino: [],
-      cadena_frio: false,
-      tiempo_retiro_dias: undefined,
-
-      // Fraccionamiento
-      permite_fraccionamiento: false,
-      unidad_dispensacion: '',
-      factor_conversion: 1,
-      precio_venta_dosis: 0,
-
-      // Lote
-      codigo_lote: ''
+      requiere_receta: false,
+      requires_batch: true,
     };
   }
 }

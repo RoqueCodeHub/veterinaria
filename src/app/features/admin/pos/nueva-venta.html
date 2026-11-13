@@ -63,15 +63,15 @@
     </div>
 
     <label class="flex flex-col gap-1">Cliente
-      <p-select [options]="clientes()" optionLabel="nombre_completo" optionValue="id" [(ngModel)]="clienteSeleccionadoId" placeholder="Selecciona un cliente" [filter]="true" filterPlaceholder="Buscar cliente" [showClear]="true" appendTo="body" />
+      <p-select [options]="clientes()" optionLabel="nombre_completo" optionValue="id" [ngModel]="clienteSeleccionadoId" (ngModelChange)="onCliente($event)" placeholder="Selecciona un cliente" [filter]="true" filterPlaceholder="Buscar cliente" [showClear]="true" appendTo="body" />
     </label>
     <button type="button" class="pos-link" (click)="abrirNuevoCliente()">+ Nuevo cliente</button>
 
     <div>
       <p class="m-0 mb-1">Mascota</p>
       <div class="pos-pets">
-        @for (nombre of mascotas(); track nombre) {
-          <button type="button" class="pos-pet" [class.is-on]="mascotaActiva() === nombre" (click)="elegirMascota(nombre)">{{ nombre }}</button>
+        @for (mascota of mascotas(); track mascota.id) {
+          <button type="button" class="pos-pet" [class.is-on]="mascotaActiva() === mascota.id" (click)="elegirMascota(mascota)">{{ mascota.nombre }}</button>
         }
         @if (!agregandoMascota()) {
           <button type="button" class="pos-link" (click)="agregandoMascota.set(true)">+ Agregar mascota</button>
@@ -158,11 +158,8 @@
 <p-dialog header="Nuevo cliente" [visible]="showNuevoCliente()" (visibleChange)="!$event && showNuevoCliente.set(false)" [modal]="true" [style]="{ width: '28rem' }">
   <form class="grid gap-4" (ngSubmit)="crearCliente()">
     @if (clienteError()) { <p class="list-error">{{ clienteError() }}</p> }
-    <label class="flex flex-col gap-1">Nombres *
-      <input pInputText [(ngModel)]="nuevoCliente.nombres" name="nombres" />
-    </label>
-    <label class="flex flex-col gap-1">Apellidos *
-      <input pInputText [(ngModel)]="nuevoCliente.apellidos" name="apellidos" />
+    <label class="flex flex-col gap-1">Nombre *
+      <input pInputText [(ngModel)]="nuevoCliente.name" name="name" />
     </label>
     <div class="flex justify-end gap-2">
       <p-button type="button" label="Cancelar" [outlined]="true" (onClick)="showNuevoCliente.set(false)" />

@@ -1,0 +1,87 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Compras</h1>
+      <p>Órdenes a proveedores, confirmación y pagos.</p>
+    </div>
+    @if (auth.can('purchases.create')) {
+      <button type="button" class="list-primary" (click)="abrir()"><i class="pi pi-plus"></i> Nueva compra</button>
+    }
+  </header>
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Borradores</small><strong>{{ list.count('borradores') }}</strong></article>
+    <article><small>Confirmadas</small><strong>{{ list.count('confirmadas') }}</strong></article>
+    <article><small>Por pagar</small><strong>{{ list.count('por_pagar') }}</strong></article>
+  </div>
+  <div class="list-tools">
+    <label class="list-search">
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="Buscar comprobante" [value]="list.q()" (input)="buscar($event)" />
+    </label>
+    <p-select [options]="estados" optionLabel="label" optionValue="value" [(ngModel)]="estado" (ngModelChange)="filtrar()" appendTo="body" />
+  </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="5" itemLabel="compras" emptyIcon="pi pi-shopping-cart" emptyTitle="Sin compras" emptyText="No hay compras con ese filtro.">
+    <ng-template #head><tr><th>Compra</th><th>Fecha</th><th>Total</th><th>Estado</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.supplier?.name || 'Proveedor' }}</span><span class="list-muted">{{ row.comprobante || ('#' + row.id) }}</span></td>
+        <td>{{ fecha(row.fecha) }}</td>
+        <td>{{ soles(row.total) }}</td>
+        <td><span class="list-state" [class.is-warn]="row.status === 'draft'">{{ row.status === 'draft' ? 'Borrador' : 'Confirmada' }}</span></td>
+        <td class="list-actions"><button type="button" class="list-icon" aria-label="Ver" (click)="ver(row)"><i class="pi pi-eye"></i></button></td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+
+  <p-dialog header="Nueva compra" [visible]="modal()" (visibleChange)="modal.set($event)" [modal]="true" [style]="{ width: '46rem' }">
+    <label class="field">Proveedor <app-remote-select [search]="buscarProveedores" [(value)]="cabecera.supplier_id" placeholder="Buscar proveedor" /></label>
+    <label class="field">Comprobante <input pInputText [(ngModel)]="cabecera.comprobante" /></label>
+    <label class="field">Fecha <input pInputText type="date" [(ngModel)]="cabecera.fecha" /></label>
+    <label class="field">Vence <input pInputText type="date" [(ngModel)]="cabecera.due_date" /></label>
+    @for (linea of lineas; track $index) {
+      <div class="grid gap-2 border-t border-slate-100 pt-3">
+        <label class="field">Variante <app-remote-select [search]="buscarVariantes" [(value)]="linea.variant_id" placeholder="Buscar variante" /></label>
+        <label class="field">Lote <input pInputText [(ngModel)]="linea.batch_code" /></label>
+        <label class="field">Vence <input pInputText type="date" [(ngModel)]="linea.expiry_date" /></label>
+        <label class="field">Cantidad <input pInputText type="number" [(ngModel)]="linea.quantity" /></label>
+        <label class="field">Costo <input pInputText type="number" [(ngModel)]="linea.cost" /></label>
+      </div>
+    }
+    <button type="button" class="list-link" (click)="agregarLinea()">Agregar línea</button>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(false)" />
+      <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="guardar()" />
+    </div>
+  </p-dialog>
+
+  <p-dialog header="Detalle de compra" [visible]="detalle() !== null" (visibleChange)="detalle.set($event ? detalle() : null)" [modal]="true" [style]="{ width: '40rem' }">
+    @if (detalle(); as compra) {
+      <p><strong>{{ compra.supplier?.name }}</strong> · {{ compra.comprobante || ('#' + compra.id) }}</p>
+      <p>Total {{ soles(compra.total) }} · saldo {{ soles(compra.balance) }}</p>
+      <ul>
+        @for (item of compra.items || []; track item.variant_id) {
+          <li>{{ item.producto || item.sku }} · {{ item.quantity }} × {{ soles(item.cost) }}</li>
+        }
+      </ul>
+      @if (compra.status === 'draft' && auth.can('purchases.create')) {
+        <p-button label="Confirmar compra" icon="pi pi-check" (onClick)="confirmar.set(compra)" />
+      }
+      @if (compra.status === 'confirmed' && compra.payment_status !== 'pagado') {
+        <label class="field">Monto <input pInputText type="number" [(ngModel)]="pago.amount" /></label>
+        <label class="field">Método <p-select [options]="metodos" optionLabel="label" optionValue="value" [(ngModel)]="pago.method" appendTo="body" /></label>
+        <label class="field">Referencia <input pInputText [(ngModel)]="pago.reference" /></label>
+        <p-button label="Registrar pago" icon="pi pi-wallet" (onClick)="pagar()" />
+      }
+      @if (historial().length) {
+        <h3>Historial de costo</h3>
+        <ul>
+          @for (row of historial(); track row.id) {
+            <li>{{ fecha(row.created_at) }} · {{ soles(row.cost) }} · {{ row.comprobante || 'Sin comprobante' }}</li>
+          }
+        </ul>
+      }
+    }
+  </p-dialog>
+  <app-confirm-dialog [open]="confirmar() !== null" (openChange)="confirmar.set($event ? confirmar() : null)" title="Confirmar compra" message="Al confirmar ingresa el stock de las líneas." confirmLabel="Confirmar" severity="success" (confirmed)="confirmarCompra()" />
+</section>

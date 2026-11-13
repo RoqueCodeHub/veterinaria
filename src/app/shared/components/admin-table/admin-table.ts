@@ -8,6 +8,7 @@ import {
   contentChild,
   input,
   linkedSignal,
+  output,
 } from '@angular/core';
 
 export interface AdminTableRowContext<T> {
@@ -33,6 +34,10 @@ export class AdminTable<T> {
   readonly emptyTitle = input('Sin información');
   readonly emptyText = input('No hay registros para mostrar.');
   readonly resetKey = input<unknown>(0);
+  readonly paging = input<'client' | 'server'>('client');
+  readonly totalItems = input(0);
+  readonly serverPage = input(1);
+  readonly pageChange = output<number>();
 
   readonly headTemplate = contentChild.required<TemplateRef<unknown>>('head');
   readonly rowTemplate = contentChild.required<TemplateRef<AdminTableRowContext<T>>>('row');
@@ -42,16 +47,24 @@ export class AdminTable<T> {
     computation: () => 1,
   });
 
-  readonly totalPages = computed(() => Math.max(1, Math.ceil(this.rows().length / this.pageSize())));
-  readonly currentPage = computed(() => Math.min(this.page(), this.totalPages()));
+  readonly totalPages = computed(() => {
+    const count = this.paging() === 'server' ? this.totalItems() : this.rows().length;
+    return Math.max(1, Math.ceil(count / this.pageSize()));
+  });
+
+  readonly currentPage = computed(() => {
+    const current = this.paging() === 'server' ? this.serverPage() : this.page();
+    return Math.min(Math.max(1, current), this.totalPages());
+  });
 
   readonly visible = computed(() => {
+    if (this.paging() === 'server') return this.rows();
     const start = (this.currentPage() - 1) * this.pageSize();
     return this.rows().slice(start, start + this.pageSize());
   });
 
   readonly summary = computed(() => {
-    const total = this.rows().length;
+    const total = this.paging() === 'server' ? this.totalItems() : this.rows().length;
     if (!total) return `0 de 0 ${this.itemLabel()}`;
     const start = (this.currentPage() - 1) * this.pageSize() + 1;
     const end = Math.min(this.currentPage() * this.pageSize(), total);
@@ -67,6 +80,11 @@ export class AdminTable<T> {
   });
 
   goTo(page: number): void {
-    this.page.set(Math.min(Math.max(1, page), this.totalPages()));
+    const next = Math.min(Math.max(1, page), this.totalPages());
+    if (this.paging() === 'server') {
+      this.pageChange.emit(next);
+      return;
+    }
+    this.page.set(next);
   }
 }

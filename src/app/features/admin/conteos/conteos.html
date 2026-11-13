@@ -1,0 +1,59 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Conteos</h1>
+      <p>Inventario físico, diferencias y aprobación.</p>
+    </div>
+    @if (auth.can('inventory.count')) {
+      <button type="button" class="list-primary" (click)="nuevo.set(true)"><i class="pi pi-plus"></i> Nuevo conteo</button>
+    }
+  </header>
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Borradores</small><strong>{{ list.count('borradores') }}</strong></article>
+    <article><small>Aprobados</small><strong>{{ list.count('aprobados') }}</strong></article>
+    <article><small>De hoy</small><strong>{{ list.count('de_hoy') }}</strong></article>
+  </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="4" itemLabel="conteos" emptyIcon="pi pi-clipboard" emptyTitle="Sin conteos" emptyText="Todavía no hay conteos físicos.">
+    <ng-template #head><tr><th>Conteo</th><th>Fecha</th><th>Estado</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.notes || ('Conteo #' + row.id) }}</span><span class="list-muted">{{ row.user?.name }}</span></td>
+        <td>{{ fecha(row.counted_at) }}</td>
+        <td><span class="list-state" [class.is-off]="row.status !== 'approved'" [class.is-warn]="row.status === 'draft'">{{ row.status === 'approved' ? 'Aprobado' : 'Borrador' }}</span></td>
+        <td class="list-actions">
+          <button type="button" class="list-icon" aria-label="Ver" (click)="ver(row)"><i class="pi pi-eye"></i></button>
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+
+  <p-dialog header="Nuevo conteo" [visible]="nuevo()" (visibleChange)="nuevo.set($event)" [modal]="true" [style]="{ width: '28rem' }">
+    <label class="field">Notas <input pInputText [(ngModel)]="notas" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="nuevo.set(false)" />
+      <p-button label="Crear" icon="pi pi-check" [loading]="saving()" (onClick)="crear()" />
+    </div>
+  </p-dialog>
+
+  <p-dialog header="Detalle del conteo" [visible]="detalle() !== null" (visibleChange)="detalle.set($event ? detalle() : null)" [modal]="true" [style]="{ width: '44rem' }">
+    <app-admin-table [rows]="lineas" [columns]="4" itemLabel="líneas" emptyIcon="pi pi-box" emptyTitle="Sin líneas" emptyText="Este conteo no tiene lotes.">
+      <ng-template #head><tr><th>Producto</th><th>Sistema</th><th>Contado</th><th>Diferencia</th></tr></ng-template>
+      <ng-template #row let-row>
+        <tr>
+          <td><span class="list-name">{{ row.producto }}</span><span class="list-muted">{{ row.sku }}</span></td>
+          <td>{{ row.system_qty }}</td>
+          <td><input pInputText type="number" [(ngModel)]="row.counted_qty" [disabled]="detalle()?.status === 'approved'" /></td>
+          <td>{{ row.counted_qty - row.system_qty }}</td>
+        </tr>
+      </ng-template>
+    </app-admin-table>
+    @if (detalle()?.status === 'draft' && auth.can('inventory.count')) {
+      <div class="prod-form-actions">
+        <p-button label="Guardar cantidades" [outlined]="true" [loading]="saving()" (onClick)="guardarLineas()" />
+        <p-button label="Aprobar" icon="pi pi-check" (onClick)="aprobar.set(detalle())" />
+      </div>
+    }
+  </p-dialog>
+  <app-confirm-dialog [open]="aprobar() !== null" (openChange)="aprobar.set($event ? aprobar() : null)" title="Aprobar conteo" message="Al aprobar se ajusta el stock según las cantidades contadas." confirmLabel="Aprobar" severity="success" icon="pi pi-check" (confirmed)="confirmar()" />
+</section>

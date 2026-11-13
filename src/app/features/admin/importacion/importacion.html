@@ -1,0 +1,39 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Importación</h1>
+      <p>Carga el inventario desde un archivo y corrige lo que quedó pendiente.</p>
+    </div>
+    <button type="button" class="list-primary" (click)="plantilla()"><i class="pi pi-download"></i> Plantilla</button>
+  </header>
+  <article class="rounded-2xl bg-white p-4">
+    <h2 class="m-0 text-lg">Archivo de inventario</h2>
+    <p class="list-muted">CSV o Excel con productos, variantes y stock inicial.</p>
+    <label class="list-primary">
+      <i class="pi pi-upload"></i> {{ saving() ? 'Importando...' : 'Elegir archivo' }}
+      <input type="file" accept=".csv,.xlsx,.xls" hidden (change)="cargar($event)" />
+    </label>
+  </article>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="4" itemLabel="pendientes" emptyIcon="pi pi-check-circle" emptyTitle="Sin pendientes" emptyText="No hay variantes por revisar.">
+    <ng-template #head><tr><th>Producto</th><th>SKU</th><th>Presentación</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.producto?.nombre || 'Sin nombre' }}</span></td>
+        <td>{{ row.sku || '—' }}</td>
+        <td>{{ row.presentation || '—' }}</td>
+        <td class="list-actions">
+          <button type="button" class="list-icon" aria-label="Editar" (click)="abrir(row)"><i class="pi pi-pencil"></i></button>
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+  <p-dialog header="Corregir pendiente" [visible]="modal()" (visibleChange)="modal.set($event)" [modal]="true" [style]="{ width: '28rem' }">
+    <label class="field">SKU <input pInputText [(ngModel)]="form.sku" /></label>
+    <label class="field">Presentación <input pInputText [(ngModel)]="form.presentation" /></label>
+    <label class="field">Precio de venta <input pInputText type="number" [(ngModel)]="form.sale_price" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(false)" />
+      <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="guardar()" />
+    </div>
+  </p-dialog>
+</section>

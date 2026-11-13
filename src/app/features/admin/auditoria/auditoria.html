@@ -1,0 +1,63 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Auditoría</h1>
+      <p>Cambios, accesos, respaldos y revisión de seguridad.</p>
+    </div>
+  </header>
+  <div class="list-tools">
+    <div class="list-switch">
+      <button type="button" [class.is-on]="tab() === 'cambios'" (click)="tab.set('cambios')">Cambios</button>
+      <button type="button" [class.is-on]="tab() === 'accesos'" (click)="tab.set('accesos')">Accesos</button>
+      <button type="button" [class.is-on]="tab() === 'respaldos'" (click)="tab.set('respaldos')">Respaldos</button>
+      <button type="button" [class.is-on]="tab() === 'seguridad'" (click)="tab.set('seguridad')">Seguridad</button>
+    </div>
+  </div>
+
+  @if (tab() === 'cambios') {
+    <app-admin-table [rows]="cambios.rows()" paging="server" [totalItems]="cambios.total()" [serverPage]="cambios.page()" [pageSize]="20" (pageChange)="cambios.load($event)" [columns]="4" itemLabel="cambios" emptyIcon="pi pi-history" emptyTitle="Sin cambios" emptyText="Todavía no hay movimientos auditados.">
+      <ng-template #head><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Registro</th></tr></ng-template>
+      <ng-template #row let-row>
+        <tr>
+          <td>{{ fecha(row.created_at) }}</td>
+          <td>{{ row.user || 'Sistema' }}</td>
+          <td><span class="list-chip">{{ row.action }}</span></td>
+          <td>{{ row.model }} {{ row.model_id || '' }}</td>
+        </tr>
+      </ng-template>
+    </app-admin-table>
+  }
+  @if (tab() === 'accesos') {
+    <app-admin-table [rows]="accesos.rows()" paging="server" [totalItems]="accesos.total()" [serverPage]="accesos.page()" [pageSize]="20" (pageChange)="accesos.load($event)" [columns]="4" itemLabel="accesos" emptyIcon="pi pi-sign-in" emptyTitle="Sin accesos" emptyText="No hay intentos de ingreso registrados.">
+      <ng-template #head><tr><th>Fecha</th><th>Correo</th><th>Usuario</th><th>Resultado</th></tr></ng-template>
+      <ng-template #row let-row>
+        <tr>
+          <td>{{ fecha(row.created_at) }}</td>
+          <td>{{ row.email }}</td>
+          <td>{{ row.user || '—' }}</td>
+          <td><span class="list-state" [class.is-off]="!row.success">{{ row.success ? 'Correcto' : 'Fallido' }}</span></td>
+        </tr>
+      </ng-template>
+    </app-admin-table>
+  }
+  @if (tab() === 'respaldos') {
+    <app-admin-table [rows]="respaldos()" [columns]="3" itemLabel="respaldos" emptyIcon="pi pi-database" emptyTitle="Sin respaldos" emptyText="No hay copias disponibles.">
+      <ng-template #head><tr><th>Archivo</th><th>Tamaño</th><th>Fecha</th></tr></ng-template>
+      <ng-template #row let-row>
+        <tr><td>{{ row.name }}</td><td>{{ tamano(row.size) }}</td><td>{{ fecha(row.modified_at) }}</td></tr>
+      </ng-template>
+    </app-admin-table>
+  }
+  @if (tab() === 'seguridad') {
+    <div class="grid gap-3 md:grid-cols-2">
+      @for (clave of claves(); track clave) {
+        <article class="rounded-2xl bg-white p-4">
+          <small class="text-slate-500">{{ clave }}</small>
+          <strong class="block text-lg">{{ seguridad()[clave] }}</strong>
+        </article>
+      } @empty {
+        <p>Sin hallazgos de seguridad.</p>
+      }
+    </div>
+  }
+</section>

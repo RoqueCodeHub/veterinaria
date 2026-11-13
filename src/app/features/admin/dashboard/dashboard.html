@@ -1,83 +1,106 @@
-<div class="dash">
+<section class="dash">
   <header class="dash-header">
     <div>
-      <span class="dash-greet">{{ greeting }}</span>
-      <h1>Hola, {{ user?.nombre ?? 'Administrador' }}</h1>
-      <p>Resumen operativo general de Ali-Vet</p>
+      <span class="dash-greet">{{ saludo() }}</span>
+      <h1>Hola, {{ auth.getUser()?.name || 'equipo' }}</h1>
+      <p>{{ reporte()?.role === 'operator' ? 'Tus ventas de hoy y el estado de la caja.' : 'Resumen operativo general de Ali-Vet' }}</p>
       <div class="dash-actions">
-        <button type="button" class="dash-primary" (click)="navegarA('/admin/pos')">
-          <i class="pi pi-plus" aria-hidden="true"></i>
-          Nueva venta
-        </button>
-        <button type="button" class="dash-chip" (click)="navegarA('/admin/caja')">Caja</button>
-        <button type="button" class="dash-chip" (click)="navegarA('/admin/stock')">Stock</button>
-        <button type="button" class="dash-chip" (click)="navegarA('/admin/productos')">Productos</button>
-        <button type="button" class="dash-chip" (click)="navegarA('/admin/clientes')">Clientes</button>
+        @if (auth.can('sales.create')) {
+          <a class="dash-primary" routerLink="/admin/pos"><i class="pi pi-plus"></i> Nueva venta</a>
+        }
+        @if (auth.can('cash.open', 'cash.close', 'sales.charge')) {
+          <a class="dash-chip" routerLink="/admin/caja">Caja</a>
+        }
+        @if (auth.can('inventory.view')) {
+          <a class="dash-chip" routerLink="/admin/stock">Stock</a>
+        }
+        @if (auth.can('products.view')) {
+          <a class="dash-chip" routerLink="/admin/productos">Productos</a>
+        }
+        @if (auth.can('customers.view', 'sales.create')) {
+          <a class="dash-chip" routerLink="/admin/clientes">Clientes</a>
+        }
       </div>
     </div>
     <div class="dash-tools">
-      <form class="dash-search" (submit)="buscar($event)">
-        <i class="pi pi-search" aria-hidden="true"></i>
-        <input
-          type="search"
-          placeholder="Buscar producto o cliente..."
-          [ngModel]="busqueda()"
-          (ngModelChange)="busqueda.set($event)"
-          name="busqueda"
-        />
+      <form class="dash-search" (ngSubmit)="buscar()">
+        <i class="pi pi-search"></i>
+        <input type="search" name="q" [(ngModel)]="consulta" placeholder="Buscar producto o cliente..." />
       </form>
       <div class="dash-clock">
-        <strong>{{ currentTime() | date:'HH:mm' }}</strong>
-        <span>{{ currentTime() | date:'dd/MM/yyyy' }}</span>
+        <strong>{{ ahora() | date:'HH:mm' }}</strong>
+        <span>{{ ahora() | date:'dd/MM/yyyy' }}</span>
       </div>
     </div>
   </header>
 
-  @if (loading()) {
+  @if (cargando()) {
     <p class="dash-loading">Cargando resumen...</p>
-  } @else {
+  } @else if (reporte(); as data) {
+  @if (data.role === 'admin') {
     <section class="dash-kpis">
-      <button type="button" class="dash-kpi" (click)="navegarA('/admin/ventas-historial')">
-        <span class="dash-kpi-icon is-green"><i class="pi pi-wallet" aria-hidden="true"></i></span>
+      <a class="dash-kpi" routerLink="/admin/ventas-historial">
+        <span class="dash-kpi-icon is-green"><i class="pi pi-wallet"></i></span>
         <span>
           <small>Ingresos de hoy</small>
-          <strong>S/ {{ totalVentasHoy() | number:'1.2-2' }}</strong>
-          <em>{{ ventasHoy().length }} órdenes procesadas hoy</em>
+          <strong>{{ soles(data.today.total) }}</strong>
+          <em>{{ data.today.count || 0 }} órdenes procesadas hoy</em>
         </span>
-      </button>
-      <button type="button" class="dash-kpi" (click)="navegarA('/admin/productos')">
-        <span class="dash-kpi-icon is-violet"><i class="pi pi-box" aria-hidden="true"></i></span>
+      </a>
+      <a class="dash-kpi" routerLink="/admin/productos">
+        <span class="dash-kpi-icon is-sage"><i class="pi pi-box"></i></span>
         <span>
           <small>Productos activos</small>
-          <strong>{{ totalProductosActivos() }}</strong>
+          <strong>{{ data.board?.active_products || 0 }}</strong>
           <em>Ítems disponibles en tienda</em>
         </span>
-      </button>
-      <button type="button" class="dash-kpi" (click)="navegarA('/admin/clientes')">
-        <span class="dash-kpi-icon is-blue"><i class="pi pi-users" aria-hidden="true"></i></span>
+      </a>
+      <a class="dash-kpi" routerLink="/admin/clientes">
+        <span class="dash-kpi-icon is-accent"><i class="pi pi-users"></i></span>
         <span>
           <small>Clientes registrados</small>
-          <strong>{{ totalClientesActivos() }}</strong>
+          <strong>{{ data.board?.customers || 0 }}</strong>
           <em>Propietarios en base de datos</em>
         </span>
-      </button>
-      <button type="button" class="dash-kpi" (click)="navegarA('/admin/stock')">
-        <span class="dash-kpi-icon is-amber"><i class="pi pi-exclamation-triangle" aria-hidden="true"></i></span>
+      </a>
+      <a class="dash-kpi" routerLink="/admin/stock">
+        <span class="dash-kpi-icon is-amber"><i class="pi pi-exclamation-triangle"></i></span>
         <span>
           <small>Alertas de stock</small>
-          <strong>{{ productosStockBajoCount() }}</strong>
-          <em>{{ productosStockBajoCount() > 0 ? 'Ítems por reponer urgente' : 'Stock en niveles óptimos' }}</em>
+          <strong>{{ data.board?.low_stock || 0 }}</strong>
+          <em>{{ (data.board?.low_stock || 0) > 0 ? 'Ítems por reponer urgente' : 'Stock en niveles óptimos' }}</em>
         </span>
-      </button>
+      </a>
+    </section>
+
+    <section class="dash-more">
+      <a routerLink="/admin/reportes">
+        <small>Esta semana</small>
+        <strong>{{ soles(data.week?.total) }}</strong>
+        <em>{{ data.week?.count || 0 }} ventas cobradas</em>
+      </a>
+      <a routerLink="/admin/reportes">
+        <small>Este mes</small>
+        <strong>{{ soles(data.month?.total) }}</strong>
+        <em>{{ comparacionMes() }}</em>
+      </a>
+      <a routerLink="/admin/reportes">
+        <small>Utilidad del periodo</small>
+        <strong>{{ soles(data.profit?.profit) }}</strong>
+        <em>Sobre {{ soles(data.profit?.sales_total) }} vendidos</em>
+      </a>
+      <a routerLink="/admin/stock">
+        <small>Inventario</small>
+        <strong>{{ soles(data.inventory_value?.value) }}</strong>
+        <em>{{ data.inventory_value?.units || 0 }} unidades en almacén</em>
+      </a>
     </section>
 
     <section class="dash-grid">
-      <article class="dash-card dash-chart-card">
+      <article class="dash-card">
         <div class="dash-card-head">
           <h2>Ventas de la semana</h2>
-          @if (sinActividad()) {
-            <span class="dash-sample">Datos de ejemplo</span>
-          }
+          @if (sinActividad()) { <span class="dash-sample">Datos de ejemplo</span> }
         </div>
         <div class="dash-legend">
           <span><i class="is-green"></i>Ingresos (S/)</span>
@@ -87,9 +110,8 @@
           <p-chart type="line" [data]="ingresosChart()" [options]="chartOptions" />
         </div>
       </article>
-
       <article class="dash-card">
-        <h2>Órdenes · {{ rangoEtiqueta() }}</h2>
+        <h2>Órdenes · 7 días</h2>
         <div class="dash-donut-row">
           <div class="dash-donut">
             <p-chart type="doughnut" [data]="ordenesDonut()" [options]="donutOptions" />
@@ -102,10 +124,7 @@
           </ul>
         </div>
         @if (ordenesSemana() === 0) {
-          <p class="dash-empty">
-            Aún no hay órdenes esta semana.
-            <a routerLink="/admin/pos">Registrar una venta →</a>
-          </p>
+          <p class="dash-empty">Aún no hay órdenes esta semana. <a routerLink="/admin/pos">Registrar una venta →</a></p>
         }
       </article>
     </section>
@@ -113,30 +132,25 @@
     <section class="dash-bottom">
       <article class="dash-card">
         <h2>Ingreso de hoy</h2>
-        <p class="dash-money">S/ {{ totalVentasHoy() | number:'1.2-2' }}</p>
+        <p class="dash-money">{{ soles(data.today.total) }}</p>
         <p class="dash-note">{{ comparacionHoy() }}</p>
       </article>
-
       <article class="dash-card">
-        <h2>Movimiento · {{ rangoEtiqueta() }}</h2>
+        <h2>Movimiento · 7 días</h2>
         <table class="dash-table">
           <thead>
-            <tr>
-              <th>Día</th>
-              <th>Órdenes</th>
-              <th>Variación</th>
-            </tr>
+            <tr><th>Día</th><th>Órdenes</th><th>Variación</th></tr>
           </thead>
           <tbody>
-            @for (d of semana(); track d.clave) {
+            @for (dia of semana(); track dia.clave) {
               <tr>
-                <td>{{ d.label }}</td>
-                <td>{{ d.ordenes }}</td>
+                <td>{{ dia.label }}</td>
+                <td>{{ dia.ordenes }}</td>
                 <td>
-                  @if (d.variacion == null) {
+                  @if (dia.variacion == null) {
                     —
                   } @else {
-                    {{ d.variacion >= 0 ? '+' : '' }}{{ d.variacion | number:'1.0-0' }}%
+                    {{ dia.variacion >= 0 ? '+' : '' }}{{ dia.variacion | number:'1.0-0' }}%
                   }
                 </td>
               </tr>
@@ -145,5 +159,41 @@
         </table>
       </article>
     </section>
+  } @else {
+    <section class="dash-kpis">
+      <a class="dash-kpi" routerLink="/admin/ventas-historial">
+        <span class="dash-kpi-icon is-green"><i class="pi pi-wallet"></i></span>
+        <span>
+          <small>Ingresos de hoy</small>
+          <strong>{{ soles(data.today.total) }}</strong>
+          <em>{{ data.today.count || 0 }} órdenes procesadas hoy</em>
+        </span>
+      </a>
+      <article class="dash-kpi">
+        <span class="dash-kpi-icon is-accent"><i class="pi pi-shopping-bag"></i></span>
+        <span>
+          <small>Órdenes de hoy</small>
+          <strong>{{ data.today.count || 0 }}</strong>
+          <em>Solo las de tu turno</em>
+        </span>
+      </article>
+      <a class="dash-kpi" routerLink="/admin/caja">
+        <span class="dash-kpi-icon is-amber"><i class="pi pi-box"></i></span>
+        <span>
+          <small>Caja</small>
+          <strong>{{ data.cash?.open ? 'Abierta' : 'Cerrada' }}</strong>
+          <em>{{ soles(data.cash?.opening_amount) }} de apertura</em>
+        </span>
+      </a>
+      <a class="dash-kpi" routerLink="/admin/caja">
+        <span class="dash-kpi-icon is-sage"><i class="pi pi-money-bill"></i></span>
+        <span>
+          <small>Esperado en caja</small>
+          <strong>{{ soles(data.cash?.expected_amount) }}</strong>
+          <em>{{ data.cash?.cajero || 'Tu turno' }}</em>
+        </span>
+      </a>
+    </section>
   }
-</div>
+  }
+</section>

@@ -1,245 +1,81 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Checkbox } from 'primeng/checkbox';
 import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
-import { Select } from 'primeng/select';
-import { ProveedoresService, Proveedor, ProveedorForm } from '../../../core/services/proveedores.service';
+import { apiMessage } from '../../../core/api/api-message';
+import { PagedList } from '../../../core/api/paged-list';
+import { Supplier, SupplierForm } from '../../../core/api/models';
+import { AuthService } from '../../../core/auth/auth';
+import { SuppliersService } from '../../../core/services/parties.service';
+import { clearError, whatsapp } from '../../../core/ui/format';
 import { NotifyService } from '../../../core/ui/notify';
 import { AdminTable } from '../../../shared/components/admin-table/admin-table';
 
 @Component({
   selector: 'app-proveedores',
   standalone: true,
-  imports: [CommonModule, FormsModule, Button, Checkbox, Dialog, InputText, Select, AdminTable],
+  imports: [FormsModule, Button, Checkbox, Dialog, InputText, AdminTable],
   templateUrl: './proveedores.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Proveedores implements OnInit {
-  private svc = inject(ProveedoresService);
-  private notify = inject(NotifyService);
+  private readonly svc = inject(SuppliersService);
+  private readonly notify = inject(NotifyService);
+  readonly auth = inject(AuthService);
+  readonly list = new PagedList<Supplier>(
+    (query) => this.svc.list(query),
+    (error) => this.notify.error(apiMessage(error as HttpErrorResponse, 'No se pudieron cargar los proveedores.')),
+  );
+  readonly modal = signal(false);
+  readonly saving = signal(false);
+  readonly editing = signal<Supplier | null>(null);
+  readonly errors = signal<Record<string, string>>({});
+  form: SupplierForm = this.vacio();
 
-  // Estados de Datos (Signals)
-  proveedores = signal<Proveedor[]>([]);
-  loading = signal(false);
-  savingModal = signal(false);
-  error = signal<string | null>(null);
-  formError = signal<string | null>(null);
+  ngOnInit(): void { this.list.load(1); }
 
-  // Modales
-  showModal = signal(false);
-  editingId = signal<number | null>(null);
-  deleteConfirmId = signal<number | null>(null);
+  buscar(event: Event): void { this.list.search((event.target as HTMLInputElement).value); }
 
-  // Filtros reactivos con Signals
-  busquedaTexto = signal('');
-  filtroTipoDoc = signal<string>('todos');
-  filtroEstado = signal<'todos' | 'activos' | 'inactivos'>('todos');
-  readonly tiposDocumento = [
-    { label: 'RUC', value: 'RUC' },
-    { label: 'DNI', value: 'DNI' },
-    { label: 'Carnet de extranjería', value: 'CE' },
-    { label: 'Pasaporte', value: 'Pasaporte' },
-  ];
-  readonly estadosFiltro = [
-    { label: 'Todos los estados', value: 'todos' },
-    { label: 'Solo activos', value: 'activos' },
-    { label: 'Inactivos', value: 'inactivos' },
-  ];
-  get opcionesDocumento() {
-    return [{ label: 'Todos los documentos', value: 'todos' }, ...this.tiposDocumento];
+  abrir(row?: Supplier): void {
+    this.errors.set({});
+    this.editing.set(row ?? null);
+    this.form = row ? { name: row.name, ruc: row.ruc, phone: row.phone, email: row.email, activo: row.activo } : this.vacio();
+    this.modal.set(true);
   }
 
-  // Formulario
-  form: ProveedorForm = this.emptyForm();
+  limpiar(key: string): void { this.errors.update((current) => clearError(current, key)); }
 
-  // Métricas KPI
-  metricas = computed(() => {
-    const list = this.proveedores();
-    const total = list.length;
-    const activos = list.filter(p => p.activo !== false).length;
-    const inactivos = total - activos;
-    const empresasConRuc = list.filter(p => p.tipo_documento === 'RUC' || !!p.empresa).length;
-
-    return { total, activos, inactivos, empresasConRuc };
-  });
-
-  // Lista Filtrada Reactiva
-  proveedoresFiltrados = computed(() => {
-    const q = this.busquedaTexto().toLowerCase().trim();
-    const docType = this.filtroTipoDoc();
-    const est = this.filtroEstado();
-
-    return this.proveedores().filter(p => {
-      const nombreFull = (p.nombre_completo || `${p.nombres || ''} ${p.apellidos || ''}`).toLowerCase();
-      const empresaStr = (p.empresa || '').toLowerCase();
-      const docNum = (p.numero_documento || '').toLowerCase();
-      const emailStr = (p.email || '').toLowerCase();
-      const telStr = (p.telefono || '').toLowerCase();
-
-      // Filtro por texto
-      const coincideTexto = !q || 
-        nombreFull.includes(q) || 
-        empresaStr.includes(q) || 
-        docNum.includes(q) ||
-        emailStr.includes(q) ||
-        telStr.includes(q);
-
-      // Filtro por Tipo de Documento
-      const coincideDoc = docType === 'todos' || (p.tipo_documento || '').toUpperCase() === docType.toUpperCase();
-
-      // Filtro por Estado
-      let coincideEstado = true;
-      if (est === 'activos') coincideEstado = p.activo !== false;
-      if (est === 'inactivos') coincideEstado = p.activo === false;
-
-      return coincideTexto && coincideDoc && coincideEstado;
-    });
-  });
-
-  ngOnInit(): void {
-    this.load();
-  }
-
-  load(): void {
-    this.loading.set(true);
-    this.error.set(null);
-
-    this.svc.getAll().subscribe({
-      next: (data) => {
-        this.proveedores.set(data);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('Error al cargar la lista de proveedores.');
-        this.loading.set(false);
-      }
-    });
-  }
-
-  setFiltroEstado(estado: 'todos' | 'activos' | 'inactivos'): void {
-    this.filtroEstado.set(estado);
-  }
-
-  openCreate(): void {
-    this.form = this.emptyForm();
-    this.editingId.set(null);
-    this.formError.set(null);
-    this.showModal.set(true);
-  }
-
-  openEdit(p: Proveedor): void {
-    this.form = {
-      nombres: p.nombres || '',
-      apellidos: p.apellidos || '',
-      tipo_documento: p.tipo_documento ?? 'RUC',
-      numero_documento: p.numero_documento ?? '',
-      telefono: p.telefono ?? '',
-      email: p.email ?? '',
-      direccion: p.direccion ?? '',
-      empresa: p.empresa ?? '',
-      activo: p.activo ?? true,
-    };
-    this.editingId.set(p.id);
-    this.formError.set(null);
-    this.showModal.set(true);
-  }
-
-  closeModal(): void {
-    this.showModal.set(false);
-    this.savingModal.set(false);
-    this.formError.set(null);
-  }
-
-  onEmpresa(valor: string): void {
-    this.form.empresa = valor;
-    this.ocultarErrorProveedor();
-  }
-
-  onNombres(valor: string): void {
-    this.form.nombres = valor;
-    this.ocultarErrorProveedor();
-  }
-
-  private ocultarErrorProveedor(): void {
-    if (this.form.empresa?.trim() || this.form.nombres.trim()) this.formError.set(null);
-  }
-
-  save(): void {
-    if (!this.form.nombres.trim() && !this.form.empresa?.trim()) {
-      this.formError.set('Debes ingresar al menos la Empresa o el Nombre Comercial.');
-      return;
-    }
-
-    this.savingModal.set(true);
-    this.formError.set(null);
-
-    const payload: ProveedorForm = {
-      ...this.form,
-      nombres: this.form.nombres.trim(),
-      apellidos: this.form.apellidos?.trim() || '',
-      email: this.form.email?.trim() || '',
-      telefono: this.form.telefono?.trim() || '',
-      numero_documento: this.form.numero_documento?.trim() || '',
-      empresa: this.form.empresa?.trim() || '',
-      direccion: this.form.direccion?.trim() || '',
-    };
-
-    const id = this.editingId();
-    const obs = id ? this.svc.update(id, payload) : this.svc.create(payload);
-
-    obs.subscribe({
+  guardar(): void {
+    const errors: Record<string, string> = {};
+    if (!this.form.name.trim()) errors['name'] = 'Escribe el nombre del proveedor.';
+    if (this.form.ruc && !/^\d{11}$/.test(this.form.ruc)) errors['ruc'] = 'El RUC tiene 11 dígitos.';
+    if (this.form.phone && !/^9\d{8}$/.test(this.form.phone)) errors['phone'] = 'El celular tiene 9 dígitos y empieza con 9.';
+    if (this.form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.email)) errors['email'] = 'Escribe un correo válido.';
+    this.errors.set(errors);
+    if (Object.keys(errors).length) return;
+    this.saving.set(true);
+    const id = this.editing()?.id;
+    const request = id ? this.svc.update(id, this.form) : this.svc.create(this.form);
+    request.subscribe({
       next: () => {
-        this.notify.success(id ? 'Proveedor actualizado.' : 'Proveedor registrado.');
-        this.closeModal();
-        this.load();
+        this.saving.set(false);
+        this.modal.set(false);
+        this.notify.success(id ? 'Proveedor actualizado.' : 'Proveedor creado.');
+        this.list.load();
       },
-      error: (err) => {
-        const apiErrors = err?.error?.errors;
-        const detail = apiErrors ? Object.values(apiErrors).flat().join(' ') : err?.error?.message;
-        this.formError.set(detail || 'Error al guardar el proveedor.');
-        this.savingModal.set(false);
-      }
+      error: (error: HttpErrorResponse) => {
+        this.saving.set(false);
+        this.notify.error(apiMessage(error, 'No se pudo guardar el proveedor.'));
+      },
     });
   }
 
-  confirmDelete(id: number): void {
-    this.deleteConfirmId.set(id);
-  }
+  wa(phone: string | null): string | null { return whatsapp(phone); }
 
-  cancelDelete(): void {
-    this.deleteConfirmId.set(null);
-  }
-
-  doDelete(): void {
-    const id = this.deleteConfirmId();
-    if (!id) return;
-
-    this.svc.delete(id).subscribe({
-      next: () => {
-        this.notify.success('Proveedor eliminado del directorio.');
-        this.deleteConfirmId.set(null);
-        this.load();
-      },
-      error: () => {
-        this.notify.error('No se pudo eliminar el proveedor.');
-        this.deleteConfirmId.set(null);
-      }
-    });
-  }
-
-  private emptyForm(): ProveedorForm {
-    return {
-      nombres: '',
-      apellidos: '',
-      tipo_documento: 'RUC',
-      numero_documento: '',
-      telefono: '',
-      email: '',
-      direccion: '',
-      empresa: '',
-      activo: true,
-    };
+  private vacio(): SupplierForm {
+    return { name: '', ruc: '', phone: '', email: '', activo: true };
   }
 }

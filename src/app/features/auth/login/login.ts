@@ -7,6 +7,7 @@ import { Button } from 'primeng/button';
 import { Checkbox } from 'primeng/checkbox';
 import { InputText } from 'primeng/inputtext';
 import { Message } from 'primeng/message';
+import { firstAllowedPath } from '../../../core/auth/admin-nav';
 import { AuthService } from '../../../core/auth/auth';
 
 type LoginView = 'login' | 'forgot' | 'reset';
@@ -53,7 +54,7 @@ export class Login implements OnInit, OnDestroy {
 
   readonly resetForm = this.fb.group({
     email: ['', [Validators.required, Validators.email]],
-    password: ['', [Validators.required, Validators.minLength(6)]],
+    password: ['', [Validators.required, Validators.minLength(8)]],
     confirmation: ['', [Validators.required]],
   });
 
@@ -77,6 +78,9 @@ export class Login implements OnInit, OnDestroy {
       return;
     }
     const params = this.route.snapshot.queryParamMap;
+    if (params.get('sesion') === 'vencida') {
+      this.noticeMessage.set('Tu sesión ya no es válida. Vuelve a entrar.');
+    }
     const token = params.get('token');
     const emailFromLink = params.get('email');
     const recovering = this.router.url.startsWith('/recuperar-contrasena');
@@ -157,7 +161,8 @@ export class Login implements OnInit, OnDestroy {
     }).subscribe({
       next: () => {
         this.isLoading.set(false);
-        this.router.navigate(['/admin/dashboard']);
+        const destino = firstAllowedPath((...permissions) => this.authService.can(...permissions)) ?? '/admin/dashboard';
+        void this.router.navigateByUrl(destino);
       },
       error: (err: HttpErrorResponse) => {
         this.isLoading.set(false);

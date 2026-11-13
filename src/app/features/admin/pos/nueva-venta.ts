@@ -6,10 +6,12 @@ import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
-import { VentasService } from '../../../core/services/ventas.service';
-import { ProductosService } from '../../../core/services/productos.service';
-import { ClientesService } from '../../../core/services/clientes.service';
-import { CategoriasService, Categoria } from '../../../core/services/categorias.service';
+import { HttpErrorResponse } from '@angular/common/http';
+import { apiMessage } from '../../../core/api/api-message';
+import { Category } from '../../../core/api/models';
+import { SalesService } from '../../../core/services/commerce.service';
+import { CategoriesService } from '../../../core/services/catalog.service';
+import { CustomersService } from '../../../core/services/parties.service';
 import { NotifyService } from '../../../core/ui/notify';
 import { TicketViewer } from '../../../shared/components/ticket-viewer/ticket-viewer';
 
@@ -29,6 +31,11 @@ export interface ProductoItem {
   ejemplo?: boolean;
 }
 
+interface MascotaPos {
+  id: number;
+  nombre: string;
+}
+
 export interface CartItem {
   producto: ProductoItem;
   cantidad: number;
@@ -42,10 +49,9 @@ export interface CartItem {
   templateUrl: './nueva-venta.html',
 })
 export class NuevaVentaComponent implements OnInit {
-  private ventasSvc = inject(VentasService);
-  private productosSvc = inject(ProductosService);
-  private clientesSvc = inject(ClientesService);
-  private categoriasSvc = inject(CategoriasService);
+  private ventasSvc = inject(SalesService);
+  private clientesSvc = inject(CustomersService);
+  private categoriasSvc = inject(CategoriesService);
   private router = inject(Router);
   private notify = inject(NotifyService);
 
@@ -62,7 +68,7 @@ export class NuevaVentaComponent implements OnInit {
   busqueda = '';
   categoriaSeleccionada = 'todas';
   verMasCategorias = signal(false);
-  arbol = signal<Categoria[]>([]);
+  arbol = signal<Category[]>([]);
   filtros = computed(() =>
     this.arbol()
       .filter(c => this.esPrincipal(c))
@@ -82,8 +88,8 @@ export class NuevaVentaComponent implements OnInit {
 
   cart = signal<CartItem[]>([]);
   clienteSeleccionadoId: number | null = null;
-  mascotas = signal<string[]>([]);
-  mascotaActiva = signal<string | null>(null);
+  mascotas = signal<MascotaPos[]>([]);
+  mascotaActiva = signal<number | null>(null);
   nuevaMascota = '';
   agregandoMascota = signal(false);
   metodoPago = signal<'efectivo' | 'yape' | 'tarjeta' | 'transferencia'>('efectivo');
@@ -104,7 +110,7 @@ export class NuevaVentaComponent implements OnInit {
   showNuevoCliente = signal(false);
   guardandoCliente = signal(false);
   clienteError = signal<string | null>(null);
-  nuevoCliente = { nombres: '', apellidos: '' };
+  nuevoCliente = { name: '' };
 
   disponibles = computed(() => this.productos().filter(p => p.stock > 0).length);
   agotados = computed(() => this.productos().filter(p => p.stock <= 0).length);
@@ -153,10 +159,12 @@ export class NuevaVentaComponent implements OnInit {
 
   onBusqueda(valor: string): void {
     this.busqueda = valor;
+    this.cargarProductosBD();
   }
 
   seleccionarCategoria(cat: string): void {
     this.categoriaSeleccionada = cat;
+    this.cargarProductosBD();
   }
 
   alternarCategorias(): void {
@@ -185,7 +193,7 @@ export class NuevaVentaComponent implements OnInit {
   tonoDe(p: ProductoItem): string {
     const grupo = this.grupoDe(p).toLowerCase();
     if (grupo.includes('servicio')) return 'is-rose';
-    if (grupo.includes('farma') || grupo.includes('dermat')) return 'is-violet';
+    if (grupo.includes('farma') || grupo.includes('dermat')) return 'is-sage';
     if (grupo.includes('snack')) return 'is-amber';
     return 'is-green';
   }
@@ -215,41 +223,40 @@ export class NuevaVentaComponent implements OnInit {
   cargarProductosBD(): void {
     this.loadingProductos.set(true);
     this.error.set(null);
-
-    this.productosSvc.getAll().subscribe({
-      next: (list) => {
-        const mapped: ProductoItem[] = list
-          .filter(item => item.activo !== false)
-          .map(item => ({
-            id: item.id,
-            nombre: item.nombre || 'Producto sin nombre',
-            categoria: item.categoria || 'General',
-            categoria_id: item.categoria_id ?? null,
-            precio: Number(item.precio_venta) || 0,
-            stock: Math.max(0, Math.floor(Number(item.stock_disponible ?? item.stock_actual) || 0)),
-            codigo_barras: item.codigo || '',
-          }));
-        this.productos.set(mapped);
+    const categoria = this.arbol().find((item) => item.nombre === this.categoriaSeleccionada);
+    this.ventasSvc.search({
+      q: this.busqueda,
+      page: 1,
+      perPage: 20,
+      extra: { category_id: this.categoriaSeleccionada === 'todas' ? undefined : categoria?.id },
+    }).subscribe({
+      next: (page) => {
+        this.productos.set(page.items.map((item) => ({
+          id: item.variant_id,
+          nombre: `${item.nombre ?? 'Producto'}${item.presentacion ? ` · ${item.presentacion}` : ''}`,
+          categoria: item.categoria ?? 'General',
+          categoria_id: item.categoria_id,
+          precio: Number(item.sale_price) || 0,
+          stock: item.on_hand,
+          codigo_barras: item.sku ?? item.codigo ?? '',
+        })));
         this.loadingProductos.set(false);
       },
       error: () => {
         this.notify.error('No se pudieron obtener los productos.');
         this.loadingProductos.set(false);
-      }
+      },
     });
   }
 
   cargarClientesBD(preferido?: string): void {
     this.loadingClientes.set(true);
 
-    this.clientesSvc.getAll().subscribe({
-      next: (list) => {
-        const mapped: ClienteItem[] = list
+    this.clientesSvc.list({ q: '', page: 1, perPage: 50 }).subscribe({
+      next: (page) => {
+        const mapped: ClienteItem[] = page.items
           .filter(c => c.activo !== false)
-          .map(c => ({
-            id: c.id,
-            nombre_completo: c.nombre_completo || `${c.nombres || ''} ${c.apellidos || ''}`.trim() || `Cliente #${c.id}`,
-          }));
+          .map(c => ({ id: c.id, nombre_completo: c.name || `Cliente #${c.id}` }));
 
         this.clientes.set(mapped);
         const elegido = preferido
@@ -321,17 +328,33 @@ export class NuevaVentaComponent implements OnInit {
     this.error.set(null);
   }
 
-  elegirMascota(nombre: string): void {
-    this.mascotaActiva.set(this.mascotaActiva() === nombre ? null : nombre);
+  elegirMascota(mascota: MascotaPos): void {
+    this.mascotaActiva.set(this.mascotaActiva() === mascota.id ? null : mascota.id);
+  }
+
+  onCliente(id: number | null): void {
+    this.clienteSeleccionadoId = id;
+    this.mascotas.set([]);
+    this.mascotaActiva.set(null);
+    if (!id) return;
+    this.clientesSvc.pets(id, { page: 1, perPage: 20 }).subscribe({
+      next: (page) => this.mascotas.set(page.items.map((pet) => ({ id: pet.id, nombre: pet.nombre }))),
+    });
   }
 
   confirmarMascota(): void {
     const nombre = this.nuevaMascota.trim();
-    if (!nombre) return;
-    this.mascotas.update(lista => lista.some(item => item.toLowerCase() === nombre.toLowerCase()) ? lista : [...lista, nombre]);
-    this.mascotaActiva.set(nombre);
-    this.nuevaMascota = '';
-    this.agregandoMascota.set(false);
+    const clienteId = Number(this.clienteSeleccionadoId);
+    if (!nombre || !clienteId) return;
+    this.clientesSvc.addPet(clienteId, { nombre }).subscribe({
+      next: (pet) => {
+        this.mascotas.update((lista) => [...lista, { id: pet.id, nombre: pet.nombre }]);
+        this.mascotaActiva.set(pet.id);
+        this.nuevaMascota = '';
+        this.agregandoMascota.set(false);
+      },
+      error: (error: HttpErrorResponse) => this.notify.error(apiMessage(error, 'No se pudo agregar la mascota.')),
+    });
   }
 
   abrirDescuento(): void {
@@ -356,38 +379,27 @@ export class NuevaVentaComponent implements OnInit {
   }
 
   abrirNuevoCliente(): void {
-    this.nuevoCliente = { nombres: '', apellidos: '' };
+    this.nuevoCliente = { name: '' };
     this.clienteError.set(null);
     this.showNuevoCliente.set(true);
   }
 
   crearCliente(): void {
-    const nombres = this.nuevoCliente.nombres.trim();
-    const apellidos = this.nuevoCliente.apellidos.trim();
-    if (!nombres || !apellidos) {
-      this.clienteError.set('Nombres y apellidos son obligatorios.');
+    const name = this.nuevoCliente.name.trim();
+    if (!name) {
+      this.clienteError.set('El nombre es obligatorio.');
       return;
     }
     this.guardandoCliente.set(true);
     this.clienteError.set(null);
-    this.clientesSvc.create({
-      nombres,
-      apellidos,
-      tipo_documento: 'DNI',
-      numero_documento: '',
-      telefono: '',
-      email: '',
-      direccion: '',
-      activo: true,
-      observaciones: '',
-    }).subscribe({
+    this.clientesSvc.create({ name, activo: true }).subscribe({
       next: () => {
         this.guardandoCliente.set(false);
         this.showNuevoCliente.set(false);
-        this.cargarClientesBD(`${nombres} ${apellidos}`);
+        this.cargarClientesBD(name);
       },
-      error: (err) => {
-        this.clienteError.set(this.mensajeVisible(err?.error?.message, 'No se pudo registrar el cliente.'));
+      error: (err: HttpErrorResponse) => {
+        this.clienteError.set(apiMessage(err, 'No se pudo registrar el cliente.'));
         this.guardandoCliente.set(false);
       }
     });
@@ -441,20 +453,22 @@ export class NuevaVentaComponent implements OnInit {
 
     this.savingVenta.set(true);
     this.error.set(null);
-    const mascota = this.mascotaActiva()?.trim();
+    const mascotaId = this.mascotaActiva();
+    const metodo = this.metodoPago() === 'yape' ? 'yape' : this.metodoPago();
     const monto = this.metodoPago() === 'efectivo' ? this.montoRecibido() : this.totalCart();
 
     this.ventasSvc.create({
-      cliente_id: clienteId,
-      descuento: this.descuentoAplicado(),
-      observaciones: mascota ? `Mascota: ${mascota}` : undefined,
-      metodo_pago: cobrar ? this.metodoPago() : undefined,
-      monto_pagado: cobrar ? monto : undefined,
+      idempotency_key: crypto.randomUUID(),
+      customer_id: clienteId,
+      pet_id: mascotaId,
+      discount: this.descuentoAplicado(),
+      pending: !cobrar,
       items: this.cart().map(i => ({
-        producto_id: i.producto.id,
-        cantidad: i.cantidad,
-        precio_unitario: i.producto.precio,
+        variant_id: i.producto.id,
+        quantity: i.cantidad,
+        unit_price: i.producto.precio,
       })),
+      payments: cobrar ? [{ method: metodo, amount: monto }] : undefined,
     }).subscribe({
       next: (venta) => {
         const id = venta?.id ?? null;
@@ -473,7 +487,7 @@ export class NuevaVentaComponent implements OnInit {
         this.notify.success(`Ticket #${id}. La orden quedó pendiente por cobrar en Caja.`);
       },
       error: (err) => {
-        this.notify.error(this.mensajeVisible(err?.error?.message, 'No se pudo registrar la venta.'));
+        this.notify.error(apiMessage(err, 'No se pudo registrar la venta.'));
         this.savingVenta.set(false);
       }
     });
@@ -495,16 +509,15 @@ export class NuevaVentaComponent implements OnInit {
     return this.filtrar(this.ejemplos);
   }
 
-  private esPrincipal(c: Categoria): boolean {
-    const activa = c.activo !== false && c.activo !== 0;
-    const esRaiz = c.parent_id == null || c.parent_id === 0;
+  private esPrincipal(c: Category): boolean {
+    const esRaiz = c.parent_id == null;
     const esPrueba = /[0-9a-f]{8,}/i.test(c.nombre);
-    return activa && esRaiz && !esPrueba;
+    return c.activo && esRaiz && !esPrueba;
   }
 
   private cargarCategorias(): void {
-    this.categoriasSvc.getAll().subscribe({
-      next: (data) => this.arbol.set(data),
+    this.categoriasSvc.list({ page: 1, perPage: 50 }).subscribe({
+      next: (page) => this.arbol.set(page.items),
       error: () => {},
     });
   }
@@ -513,11 +526,6 @@ export class NuevaVentaComponent implements OnInit {
     const limpio = valor.replace(',', '.').replace(/[^\d.]/g, '');
     const monto = Number(limpio);
     return Number.isFinite(monto) ? this.redondear(monto) : 0;
-  }
-
-  private mensajeVisible(message: string | undefined, fallback: string): string {
-    if (!message || /SQLSTATE|SQL:|Unknown column|Connection:/i.test(message)) return fallback;
-    return message;
   }
 
   private redondear(valor: number): number {

@@ -1,104 +1,66 @@
-<div class="list-page view-fill">
+<section class="list-page view-fill">
   <header class="list-header">
     <div>
       <h1>Proveedores</h1>
-      <p>Directorio de empresas y contactos comerciales</p>
+      <p>A quién le compramos y cómo contactarlo.</p>
     </div>
-    <button type="button" class="list-primary" (click)="openCreate()">
-      <i class="pi pi-plus" aria-hidden="true"></i>
-      Nuevo proveedor
-    </button>
+    @if (auth.can('purchases.create')) {
+      <button type="button" class="list-primary" (click)="abrir()"><i class="pi pi-plus"></i> Nuevo proveedor</button>
+    }
   </header>
-
-  @if (error() && !showModal()) { <p class="list-error">{{ error() }}</p> }
-  <section class="list-kpis">
-    <article><small>Total</small><strong>{{ metricas().total }}</strong></article>
-    <article><small>Activos</small><strong>{{ metricas().activos }}</strong></article>
-    <article><small>Inactivos</small><strong>{{ metricas().inactivos }}</strong></article>
-    <article><small>Con RUC o empresa</small><strong>{{ metricas().empresasConRuc }}</strong></article>
-  </section>
-
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Activos</small><strong>{{ list.count('activos') }}</strong></article>
+    <article><small>Con RUC</small><strong>{{ list.count('con_ruc') }}</strong></article>
+    <article><small>Con teléfono</small><strong>{{ list.count('con_telefono') }}</strong></article>
+  </div>
   <div class="list-tools">
     <label class="list-search">
-      <i class="pi pi-search" aria-hidden="true"></i>
-      <input type="search" placeholder="Buscar empresa, contacto o documento" [ngModel]="busquedaTexto()" (ngModelChange)="busquedaTexto.set($event)" />
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="Buscar proveedor o RUC" [value]="list.q()" (input)="buscar($event)" />
     </label>
-    <p-select [options]="opcionesDocumento" optionLabel="label" optionValue="value" [ngModel]="filtroTipoDoc()" (ngModelChange)="filtroTipoDoc.set($event)" appendTo="body" />
-    <p-select [options]="estadosFiltro" optionLabel="label" optionValue="value" [ngModel]="filtroEstado()" (ngModelChange)="setFiltroEstado($event)" appendTo="body" />
   </div>
-
-  @if (loading()) {
-    <p class="list-note">Cargando directorio de proveedores...</p>
-  } @else {
-    <app-admin-table
-      [rows]="proveedoresFiltrados()"
-      [pageSize]="12"
-      [columns]="9"
-      itemLabel="proveedores"
-      emptyIcon="pi pi-truck"
-      emptyTitle="Sin proveedores"
-      emptyText="No se encontraron proveedores registrados."
-      [resetKey]="busquedaTexto() + '|' + filtroTipoDoc() + '|' + filtroEstado()"
-    >
-      <ng-template #head>
-        <tr>
-          <th>#</th><th>Empresa</th><th>Contacto</th><th>Documento</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Estado</th><th></th>
-        </tr>
-      </ng-template>
-      <ng-template #row let-p>
-        <tr>
-          <td class="list-id">#{{ p.id }}</td>
-          <td>
-            <div class="list-name">{{ p.empresa || p.nombre_completo || p.nombres }}</div>
-            @if (p.empresa && p.nombre_completo) { <div class="list-muted">Contacto: {{ p.nombre_completo }}</div> }
-          </td>
-          <td>{{ p.nombre_completo || p.nombres }}</td>
-          <td>{{ p.tipo_documento && p.numero_documento ? p.tipo_documento + ': ' + p.numero_documento : '—' }}</td>
-          <td>{{ p.telefono || '—' }}</td>
-          <td>{{ p.email || '—' }}</td>
-          <td>{{ p.direccion || '—' }}</td>
-          <td><span class="list-state" [class.is-off]="!p.activo">{{ p.activo ? 'Activo' : 'Inactivo' }}</span></td>
-          <td class="list-actions">
-            <button type="button" class="list-icon" (click)="openEdit(p)" aria-label="Editar proveedor"><i class="pi pi-pencil" aria-hidden="true"></i></button>
-            <button type="button" class="list-icon is-danger" (click)="confirmDelete(p.id)" aria-label="Eliminar proveedor"><i class="pi pi-trash" aria-hidden="true"></i></button>
-          </td>
-        </tr>
-      </ng-template>
-    </app-admin-table>
-  }
-</div>
-
-<p-dialog [header]="editingId() ? 'Editar proveedor' : 'Nuevo proveedor'" [visible]="showModal()" (visibleChange)="$event ? showModal.set(true) : closeModal()" [modal]="true" [style]="{ width: '40rem' }">
-  <form class="grid gap-6 md:grid-cols-2" (ngSubmit)="save()">
-    <label class="field flex flex-col gap-1 md:col-span-2" [class.is-invalid]="!!formError()">
-      Empresa
-      <input pInputText class="w-full" [ngModel]="form.empresa" (ngModelChange)="onEmpresa($event)" name="empresa" />
-      <span class="field-error">{{ formError() }}</span>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="5" itemLabel="proveedores" emptyIcon="pi pi-truck" emptyTitle="Sin proveedores" emptyText="Registra el primer proveedor.">
+    <ng-template #head><tr><th>Proveedor</th><th>RUC</th><th>Teléfono</th><th>Estado</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.name }}</span><span class="list-muted">{{ row.email }}</span></td>
+        <td>{{ row.ruc || '—' }}</td>
+        <td>
+          @if (wa(row.phone); as link) {
+            <a class="wa-tag" [href]="link" target="_blank" rel="noopener">{{ row.phone }}</a>
+          } @else { — }
+        </td>
+        <td><span class="list-state" [class.is-off]="!row.activo">{{ row.activo ? 'Activo' : 'Inactivo' }}</span></td>
+        <td class="list-actions">
+          @if (auth.can('purchases.create')) {
+            <button type="button" class="list-icon" aria-label="Editar" (click)="abrir(row)"><i class="pi pi-pencil"></i></button>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+  <p-dialog [header]="editing() ? 'Editar proveedor' : 'Nuevo proveedor'" [visible]="modal()" (visibleChange)="modal.set($event)" [modal]="true" [style]="{ width: '30rem' }">
+    <label class="field" [class.is-invalid]="errors()['name']">Nombre
+      <input pInputText [(ngModel)]="form.name" (ngModelChange)="limpiar('name')" />
+      <small class="field-error">{{ errors()['name'] }}</small>
     </label>
-    <label class="flex flex-col gap-1">Nombres *<input pInputText class="w-full" [ngModel]="form.nombres" (ngModelChange)="onNombres($event)" name="nombres" /></label>
-    <label class="flex flex-col gap-1">Apellidos<input pInputText class="w-full" [(ngModel)]="form.apellidos" name="apellidos" /></label>
-    <label class="flex flex-col gap-1">Tipo de documento
-      <p-select [options]="tiposDocumento" optionLabel="label" optionValue="value" [(ngModel)]="form.tipo_documento" name="tipo_documento" appendTo="body" />
+    <label class="field" [class.is-invalid]="errors()['ruc']">RUC
+      <input pInputText [(ngModel)]="form.ruc" (ngModelChange)="limpiar('ruc')" maxlength="11" />
+      <small class="field-error">{{ errors()['ruc'] }}</small>
     </label>
-    <label class="flex flex-col gap-1">Número<input pInputText class="w-full" [(ngModel)]="form.numero_documento" name="numero_documento" /></label>
-    <label class="flex flex-col gap-1">Teléfono<input pInputText class="w-full" [(ngModel)]="form.telefono" name="telefono" /></label>
-    <label class="flex flex-col gap-1">Correo<input pInputText class="w-full" type="email" [(ngModel)]="form.email" name="email" /></label>
-    <label class="flex flex-col gap-1 md:col-span-2">Dirección<input pInputText class="w-full" [(ngModel)]="form.direccion" name="direccion" /></label>
-    <div class="flex items-center gap-2 md:col-span-2">
-      <p-checkbox [(ngModel)]="form.activo" name="activo" [binary]="true" inputId="prov-activo" />
-      <label for="prov-activo">Proveedor activo</label>
+    <label class="field" [class.is-invalid]="errors()['phone']">Teléfono
+      <input pInputText [(ngModel)]="form.phone" (ngModelChange)="limpiar('phone')" maxlength="9" />
+      <small class="field-error">{{ errors()['phone'] }}</small>
+    </label>
+    <label class="field" [class.is-invalid]="errors()['email']">Correo
+      <input pInputText [(ngModel)]="form.email" (ngModelChange)="limpiar('email')" />
+      <small class="field-error">{{ errors()['email'] }}</small>
+    </label>
+    <label class="field"><p-checkbox [(ngModel)]="form.activo" [binary]="true" /> Activo</label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(false)" />
+      <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="guardar()" />
     </div>
-    <div class="md:col-span-2 flex justify-end gap-2">
-      <p-button type="button" label="Cancelar" [outlined]="true" (onClick)="closeModal()" />
-      <p-button type="submit" [label]="savingModal() ? 'Guardando...' : 'Guardar'" [disabled]="savingModal()" />
-    </div>
-  </form>
-</p-dialog>
-
-<p-dialog header="Confirmar eliminación" [visible]="deleteConfirmId() !== null" (visibleChange)="!$event && cancelDelete()" [modal]="true" [style]="{ width: '28rem' }">
-  <p>¿Estás seguro de eliminar este proveedor?</p>
-  <div class="flex justify-end gap-2">
-    <p-button label="Cancelar" [outlined]="true" (onClick)="cancelDelete()" />
-    <p-button label="Eliminar" severity="danger" icon="pi pi-trash" (onClick)="doDelete()" />
-  </div>
-</p-dialog>
+  </p-dialog>
+</section>

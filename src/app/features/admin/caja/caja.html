@@ -1,182 +1,96 @@
-<div class="list-page view-fill">
+<section class="list-page view-fill">
   <header class="list-header">
     <div>
-      <h1>Caja y Cobranza</h1>
-      <p>Gestión de cobranzas y emisión de comprobantes electrónicos</p>
+      <h1>Caja</h1>
+      <p>{{ session()?.open ? 'Turno abierto' : 'No hay un turno abierto' }} · esperado {{ soles(session()?.expected_amount) }}</p>
     </div>
-    <button type="button" class="list-primary" (click)="abrirModalCierre()">
-      <i class="pi pi-lock" aria-hidden="true"></i>
-      Cerrar turno
-    </button>
+    <div class="flex gap-2">
+      @if (!session()?.open && auth.can('cash.open')) {
+        <button type="button" class="list-primary" (click)="abrirCaja.set(true)"><i class="pi pi-lock-open"></i> Abrir caja</button>
+      }
+      @if (session()?.open && auth.can('cash.close')) {
+        <button type="button" class="list-primary" (click)="cerrarCaja.set(true)"><i class="pi pi-lock"></i> Cerrar turno</button>
+      }
+    </div>
   </header>
-
-  @if (error()) { <p class="list-error">{{ error() }}</p> }
-
-  <section class="list-kpis">
-    <article><small>Por cobrar</small><strong>{{ pendientes().length }}</strong></article>
-    <article><small>Monto pendiente</small><strong class="is-compact">S/ {{ porCobrar() | number:'1.2-2' }}</strong></article>
-    <article><small>Cobradas en el turno</small><strong>{{ completadasTurno().length }}</strong></article>
-    <article><small>Fondo inicial</small><strong class="is-compact">S/ {{ fondoInicial | number:'1.2-2' }}</strong></article>
-  </section>
-
-  <div class="list-tools">
-    <label class="list-search">
-      <i class="pi pi-search" aria-hidden="true"></i>
-      <input type="search" placeholder="Buscar por ticket o cliente" [ngModel]="busquedaPending()" (ngModelChange)="busquedaPending.set($event)" />
-    </label>
-    <span class="list-state">Caja abierta</span>
-  </div>
-
   <div class="list-split">
-    <app-admin-table
-      [rows]="ventasFiltradas()"
-      [pageSize]="12"
-      [columns]="5"
-      itemLabel="ventas"
-      emptyIcon="pi pi-wallet"
-      emptyTitle="Sin ventas por cobrar"
-      emptyText="No hay ventas pendientes por cobrar."
-      [resetKey]="busquedaPending()"
-    >
-      <ng-template #head>
+    <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="4" itemLabel="pendientes" emptyIcon="pi pi-wallet" emptyTitle="Sin pendientes" emptyText="No hay ventas por cobrar.">
+      <ng-template #head><tr><th>Documento</th><th>Cliente</th><th>Total</th><th></th></tr></ng-template>
+      <ng-template #row let-row>
         <tr>
-          <th>Ticket</th>
-          <th>Cliente</th>
-          <th>Hora</th>
-          <th>Total</th>
-          <th></th>
-        </tr>
-      </ng-template>
-      <ng-template #row let-v>
-        <tr [class.is-selected]="ventaSeleccionada()?.id === v.id">
-          <td class="list-id">#{{ v.id }}</td>
-          <td class="list-name"><span class="caja-name" [title]="v.cliente?.nombre_completo || 'Cliente varios'">{{ v.cliente?.nombre_completo || 'Cliente varios' }}</span></td>
-          <td>{{ v.fecha | date:'shortTime' }} · {{ v.items.length }} ítem(s)</td>
-          <td>S/ {{ v.total | number:'1.2-2' }}</td>
-          <td class="list-actions">
-            <button type="button" class="list-link" (click)="seleccionarVenta(v)">Cobrar</button>
-          </td>
+          <td><span class="list-name">{{ row.document }}</span></td>
+          <td>{{ row.cliente || 'Cliente varios' }}</td>
+          <td>{{ soles(row.total) }}</td>
+          <td class="list-actions"><button type="button" class="list-icon" aria-label="Cobrar" (click)="elegir(row)"><i class="pi pi-wallet"></i></button></td>
         </tr>
       </ng-template>
     </app-admin-table>
-
     <aside class="list-panel caja-panel">
-      @if (ventaSeleccionada(); as venta) {
-        <header class="caja-head">
+      @if (seleccion(); as venta) {
+        <div class="caja-head">
           <div>
-            <h2>Ticket #{{ venta.id }}</h2>
-            <p class="caja-client" [title]="venta.cliente?.nombre_completo || 'Cliente varios'">{{ venta.cliente?.nombre_completo || 'Cliente varios' }}</p>
+            <h2>{{ venta.document }}</h2>
+            <p class="caja-client">{{ venta.cliente || 'Cliente varios' }}</p>
           </div>
-          <span class="list-state is-warn">Pendiente</span>
-        </header>
+          <strong>{{ soles(venta.total) }}</strong>
+        </div>
         <div class="caja-lines">
-          @for (item of venta.items; track $index) {
+          @for (item of venta.items || []; track item.id) {
             <div class="caja-line">
-              <div>
-                <strong>{{ item.producto?.nombre || item.description }}</strong>
-                <p>{{ item.cantidad || item.quantity }} × S/ {{ (item.precio_unitario || item.unit_price) | number:'1.2-2' }}</p>
-              </div>
-              <strong>S/ {{ (item.subtotal || item.line_total) | number:'1.2-2' }}</strong>
+              <div><strong>{{ item.description }}</strong><p>{{ item.quantity }} × {{ soles(item.unit_price) }}</p></div>
+              <span>{{ soles(item.line_total) }}</span>
             </div>
           }
         </div>
-        @if (+venta.discount > 0) {
-          <p class="caja-money"><span>Descuento</span><span>S/ {{ venta.discount | number:'1.2-2' }}</span></p>
-        }
-        <p class="caja-total"><span>Total</span><strong>S/ {{ venta.total | number:'1.2-2' }}</strong></p>
-        <p class="caja-label">Comprobante</p>
         <div class="caja-pays">
-          @for (tipo of comprobantes; track tipo.value) {
-            <button type="button" class="caja-pay" [class.is-on]="tipoComprobante === tipo.value" (click)="tipoComprobante = tipo.value">{{ tipo.label }}</button>
+          @for (opcion of metodos; track opcion.id) {
+            <button type="button" class="caja-pay" [class.is-on]="metodo === opcion.id" (click)="metodo = opcion.id">{{ opcion.label }}</button>
           }
         </div>
-        <p class="caja-label">Método de pago</p>
-        <div class="caja-pays">
-          @for (metodo of metodos; track metodo.value) {
-            <button type="button" class="caja-pay" [class.is-on]="metodoPago === metodo.value" (click)="cambiarMetodo(metodo.value)">
-              <i [class]="metodo.icon" aria-hidden="true"></i>
-              {{ metodo.label }}
-            </button>
-          }
-        </div>
-        @if (metodoPago === 'efectivo') {
-          <label class="caja-money">Recibido
-            <span class="caja-soles">
-              <span>S/</span>
-              <input inputmode="decimal" autocomplete="off" [ngModel]="recibidoTexto" (ngModelChange)="onRecibidoTexto($event)" (blur)="formatearRecibido($event)" (keydown.enter)="$any($event.target).blur()" />
-            </span>
-          </label>
+        @if (metodo === 'efectivo') {
+          <label class="caja-soles">Recibido <input type="number" [(ngModel)]="recibido" /></label>
           <div class="caja-bills">
-            <button type="button" (click)="fijarRecibido(+venta.total)">Exacto</button>
-            <button type="button" (click)="fijarRecibido(20)">S/ 20</button>
-            <button type="button" (click)="fijarRecibido(50)">S/ 50</button>
-            <button type="button" (click)="fijarRecibido(100)">S/ 100</button>
+            @for (billete of billetes; track billete) {
+              <button type="button" (click)="sumar(billete)">{{ billete }}</button>
+            }
           </div>
-          <p class="caja-vuelto" [class.is-ok]="vuelto >= 0">{{ vuelto >= 0 ? 'Vuelto S/ ' + (vuelto | number:'1.2-2') : 'Falta S/ ' + ((vuelto * -1) | number:'1.2-2') }}</p>
-        } @else {
-          <label class="flex flex-col gap-1">Nro. de operación
-            <input pInputText class="w-full" [(ngModel)]="numeroOperacion" placeholder="Ej: 128495" />
-          </label>
+          <p class="caja-vuelto" [class.is-ok]="vuelto() === 0">Vuelto {{ soles(vuelto()) }}</p>
         }
-        <button type="button" class="caja-charge" [disabled]="!esPagoValido() || saving()" (click)="procesarCobro()">
-          <i class="pi pi-check" aria-hidden="true"></i>
-          Cobrar ahora
-        </button>
-        <button type="button" class="caja-void" [disabled]="cancelando()" (click)="abrirAnulacion()">Anular venta</button>
+        <button type="button" class="caja-charge" [disabled]="saving()" (click)="cobrar()"><i class="pi pi-check"></i> Cobrar ahora</button>
+        @if (auth.can('sales.void')) {
+          <button type="button" class="caja-void" (click)="anular.set(true)">Anular venta</button>
+        }
       } @else {
         <div class="caja-empty">
-          <span class="empty-state-icon"><i class="pi pi-wallet" aria-hidden="true"></i></span>
-          <strong>Sin cobro seleccionado</strong>
-          <p>Elige una venta pendiente para cobrarla.</p>
+          <span class="empty-state-icon"><i class="pi pi-wallet"></i></span>
+          <strong>Elige una venta</strong>
+          <p>El cobro se hace desde este panel.</p>
         </div>
       }
     </aside>
   </div>
-</div>
 
-<p-dialog header="Anular venta" [visible]="mostrarAnulacion()" (visibleChange)="mostrarAnulacion.set($event)" [modal]="true" [style]="{ width: '26rem' }">
-  @if (ventaSeleccionada(); as venta) {
-    <p class="caja-client">Ticket #{{ venta.id }} · {{ venta.cliente?.nombre_completo || 'Cliente varios' }}</p>
-    <label class="flex flex-col gap-1">Motivo
-      <textarea pTextarea class="w-full" rows="3" [(ngModel)]="motivoAnulacion" (ngModelChange)="errorAnulacion.set(null)"></textarea>
-    </label>
-    @if (errorAnulacion()) { <p class="list-error">{{ errorAnulacion() }}</p> }
-    <div class="flex justify-end gap-2 mt-3">
-      <p-button label="Cancelar" [outlined]="true" (onClick)="mostrarAnulacion.set(false)" />
-      <p-button label="Anular" icon="pi pi-ban" severity="danger" [loading]="cancelando()" (onClick)="confirmarAnulacion()" />
+  <p-dialog header="Abrir caja" [visible]="abrirCaja()" (visibleChange)="abrirCaja.set($event)" [modal]="true" [style]="{ width: '24rem' }">
+    <label class="field">Monto de apertura <input pInputText type="number" [(ngModel)]="apertura" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="abrirCaja.set(false)" />
+      <p-button label="Abrir" icon="pi pi-check" [loading]="saving()" (onClick)="abrir()" />
     </div>
-  }
-</p-dialog>
-
-<app-ticket-viewer [visible]="visorTicket()" (visibleChange)="visorTicket.set($event)" [ventaId]="ticketGeneradoId()">
-  <p-button label="Listo" (onClick)="visorTicket.set(false)" />
-</app-ticket-viewer>
-
-<p-dialog header="Arqueo y cierre de turno" [visible]="mostrarModalCierre()" (visibleChange)="!$event && !cajaCerradaExito() && cerrarModalCierre()" [modal]="true" [closable]="!cajaCerradaExito()" [style]="{ width: '36rem' }">
-  @if (!cajaCerradaExito()) {
-    <p>Fondo inicial: S/ {{ fondoInicial | number:'1.2-2' }}</p>
-    <p>Ventas en efectivo: S/ {{ totalEfectivoTurno() | number:'1.2-2' }}</p>
-    <p>Efectivo esperado: S/ {{ efectivoEsperado() | number:'1.2-2' }}</p>
-    <p>Yape: S/ {{ totalYapeTurno() | number:'1.2-2' }} · Plin: S/ {{ totalPlinTurno() | number:'1.2-2' }} · Tarjeta: S/ {{ totalTarjetaTurno() | number:'1.2-2' }}</p>
-    <p>Total recaudado: S/ {{ (totalEfectivoTurno() + totalYapeTurno() + totalPlinTurno() + totalTarjetaTurno()) | number:'1.2-2' }}</p>
-    <label class="flex flex-col gap-1">Efectivo real contado
-      <input pInputText class="w-full" type="number" [(ngModel)]="efectivoFisico" placeholder="0.00" />
-    </label>
-    @if (efectivoFisico !== null) {
-      <p-message [severity]="diferenciaEfectivo() === 0 ? 'success' : 'warn'" [text]="diferenciaEfectivo() === 0 ? 'Caja cuadrada' : (diferenciaEfectivo() < 0 ? 'Faltante: S/ ' + ((diferenciaEfectivo() * -1) | number:'1.2-2') : 'Sobrante: S/ ' + (diferenciaEfectivo() | number:'1.2-2'))" />
-    }
-    <label class="flex flex-col gap-1 mt-3">Observaciones
-      <textarea pTextarea class="w-full" rows="3" [(ngModel)]="observacionesCierre"></textarea>
-    </label>
-    <div class="flex justify-end gap-2 mt-3">
-      <p-button label="Cancelar" [outlined]="true" (onClick)="cerrarModalCierre()" />
-      <p-button label="Confirmar cierre" icon="pi pi-lock" (onClick)="confirmarCierreTurno()" />
+  </p-dialog>
+  <p-dialog header="Cerrar turno" [visible]="cerrarCaja()" (visibleChange)="cerrarCaja.set($event)" [modal]="true" [style]="{ width: '24rem' }">
+    <label class="field">Efectivo contado <input pInputText type="number" [(ngModel)]="conteo" /></label>
+    <label class="field">Notas <input pInputText [(ngModel)]="notas" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="cerrarCaja.set(false)" />
+      <p-button label="Cerrar" icon="pi pi-check" [loading]="saving()" (onClick)="cerrar()" />
     </div>
-  } @else {
-    <p>El turno se cerró correctamente.</p>
-    <div class="flex justify-end gap-2">
-      <p-button label="Imprimir reporte Z" icon="pi pi-print" (onClick)="imprimirReporteZ()" />
-      <p-button label="Finalizar" (onClick)="finalizarSesionCaja()" />
+  </p-dialog>
+  <p-dialog header="Anular venta" [visible]="anular()" (visibleChange)="anular.set($event)" [modal]="true" [style]="{ width: '28rem' }">
+    <label class="field">Motivo <input pInputText [(ngModel)]="motivo" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="anular.set(false)" />
+      <p-button label="Anular" severity="danger" icon="pi pi-ban" (onClick)="confirmarAnular()" />
     </div>
-  }
-</p-dialog>
+  </p-dialog>
+  <app-ticket-viewer [visible]="ticketOpen()" (visibleChange)="ticketOpen.set($event)" [ventaId]="ticketId()" />
+</section>

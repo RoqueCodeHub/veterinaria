@@ -18,6 +18,7 @@ export class NotifyService {
   }
 
   error(detail: string, summary = 'No se pudo completar'): void {
+    if (detail === 'No autenticado') return;
     this.messages.add({ severity: 'error', summary, detail, life: 5500 });
   }
 }

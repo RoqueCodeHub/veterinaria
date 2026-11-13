@@ -1,0 +1,55 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Alertas</h1>
+      <p>Stock bajo el mínimo y lotes vencidos o próximos a vencer.</p>
+    </div>
+  </header>
+  <div class="list-kpis">
+    <article><small>Bajo mínimo</small><strong>{{ bajos().length }}</strong></article>
+    <article><small>Vencidos</small><strong>{{ vencido().length }}</strong></article>
+    <article><small>Por vencer 30</small><strong>{{ d30().length }}</strong></article>
+    <article><small>Por vencer 60 / 90</small><strong>{{ d60().length + d90().length }}</strong></article>
+  </div>
+  <div class="list-tools alertas-tools">
+    @if (tab() === 'vencimiento') {
+      <p-select styleClass="alertas-plazo" [options]="plazos" optionLabel="label" optionValue="value" [ngModel]="plazo()" (ngModelChange)="plazo.set($event)" appendTo="body" />
+    }
+    <div class="list-switch">
+      <button type="button" [class.is-on]="tab() === 'stock'" (click)="tab.set('stock')">Stock bajo</button>
+      <button type="button" [class.is-on]="tab() === 'vencimiento'" (click)="tab.set('vencimiento')">Vencimientos</button>
+    </div>
+  </div>
+
+  @if (tab() === 'stock') {
+    <app-admin-table [rows]="bajos()" [columns]="5" itemLabel="productos" emptyIcon="pi pi-box" emptyTitle="Sin stock bajo" emptyText="Ningún producto está en el mínimo o por debajo.">
+      <ng-template #head>
+        <tr><th>Producto</th><th>Presentación</th><th>SKU</th><th>Existencia</th><th>Mínimo</th></tr>
+      </ng-template>
+      <ng-template #row let-row>
+        <tr>
+          <td><span class="list-name">{{ row.producto }}</span></td>
+          <td>{{ row.presentation || '—' }}</td>
+          <td class="list-muted">{{ row.sku || '—' }}</td>
+          <td><span class="list-state is-warn">{{ row.on_hand }}</span></td>
+          <td>{{ row.min_stock }}</td>
+        </tr>
+      </ng-template>
+    </app-admin-table>
+  } @else {
+    <app-admin-table [rows]="filas()" [columns]="5" itemLabel="lotes" emptyIcon="pi pi-calendar" emptyTitle="Sin vencimientos" emptyText="No hay lotes en el plazo elegido." [resetKey]="plazo()">
+      <ng-template #head>
+        <tr><th>Producto</th><th>Lote</th><th>Vence</th><th>Cantidad</th><th>Plazo</th></tr>
+      </ng-template>
+      <ng-template #row let-row>
+        <tr>
+          <td><span class="list-name">{{ row.producto }}</span><span class="list-muted">{{ row.presentation }}</span></td>
+          <td>{{ row.batch_code || '—' }}</td>
+          <td>{{ fecha(row.expiry_date) }}</td>
+          <td>{{ row.quantity }}</td>
+          <td><span class="list-state" [class.is-warn]="severidad(row) !== '90 días'" [class.is-off]="severidad(row) === 'Vencido'">{{ severidad(row) }}</span></td>
+        </tr>
+      </ng-template>
+    </app-admin-table>
+  }
+</section>

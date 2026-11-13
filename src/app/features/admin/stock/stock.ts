@@ -1,290 +1,150 @@
-import { Component, OnInit, inject, signal, computed } from '@angular/core';
-import { CommonModule, DatePipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
-import { StockService, MovimientoStock, MovimientoForm } from '../../../core/services/stock.service';
-import { ProductosService, Producto } from '../../../core/services/productos.service';
+import { map, tap } from 'rxjs';
+import { apiMessage } from '../../../core/api/api-message';
+import { PagedList } from '../../../core/api/paged-list';
+import { CatalogItem, KardexLine, StockRow } from '../../../core/api/models';
+import { AuthService } from '../../../core/auth/auth';
+import { SalesService } from '../../../core/services/commerce.service';
+import { InventoryService } from '../../../core/services/inventory.service';
+import { fechaCorta } from '../../../core/ui/format';
 import { NotifyService } from '../../../core/ui/notify';
 import { AdminTable } from '../../../shared/components/admin-table/admin-table';
-
-interface FilaInventario {
-  key: string;
-  producto_id: number;
-  variante_id: number | null;
-  codigo: string;
-  nombre: string;
-  presentacion: string;
-  categoria: string;
-  precio_venta: number;
-  stock: number;
-  stock_minimo: number;
-}
+import { RemoteOption, RemoteSelect } from '../../../shared/components/remote-select/remote-select';
 
 @Component({
   selector: 'app-stock',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, Button, Dialog, InputText, Select, AdminTable],
+  imports: [FormsModule, Button, Dialog, InputText, Select, AdminTable, RemoteSelect],
   templateUrl: './stock.html',
-  styleUrl: './stock.css',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Stock implements OnInit {
-  private stockSvc = inject(StockService);
-  private notify = inject(NotifyService);
-  private productosSvc = inject(ProductosService);
-
-  // Control de Pestañas (Se cambia pestañaActiva por tabActiva)
-  tabActiva = signal<'inventario' | 'kardex'>('inventario');
-
-  // Estados de Datos
-  movimientos = signal<MovimientoStock[]>([]);
-  productos = signal<Producto[]>([]);
-  loading = signal(false);
-  savingModal = signal(false);
-  error = signal<string | null>(null);
-  formError = signal<string | null>(null);
-
-  // Filtros en Signals
-  busquedaTexto = signal('');
-  filterProductoId = signal<number | null>(null);
-  filterTipo = signal<'todos' | 'entrada' | 'salida' | 'ajuste'>('todos');
-  filtroNivel = signal<'todos' | 'bajo' | 'agotado'>('todos');
-  readonly pestanas: { label: string; value: 'inventario' | 'kardex' }[] = [
-    { label: 'Stock actual', value: 'inventario' },
-    { label: 'Kardex', value: 'kardex' },
-  ];
-  readonly tiposMovimiento = [
-    { label: 'Todos los tipos', value: 'todos' },
-    { label: 'Entradas', value: 'entrada' },
-    { label: 'Salidas', value: 'salida' },
-  ];
-  readonly tiposRegistro = [
+  private readonly svc = inject(InventoryService);
+  private readonly sales = inject(SalesService);
+  private readonly notify = inject(NotifyService);
+  readonly auth = inject(AuthService);
+  readonly list = new PagedList<StockRow>(
+    (query) => this.svc.stock(query),
+    (error) => this.notify.error(apiMessage(error as HttpErrorResponse, 'No se pudo cargar el stock.')),
+  );
+  readonly ingresoOpen = signal(false);
+  readonly ajusteOpen = signal(false);
+  readonly cajaOpen = signal(false);
+  readonly kardexOpen = signal(false);
+  readonly kardex = signal<KardexLine[]>([]);
+  readonly lotes = signal<{ id: number; label: string }[]>([]);
+  readonly saving = signal(false);
+  soloBajo = false;
+  private catalogo: CatalogItem[] = [];
+  ingreso = { variant_id: null as number | null, quantity: 1, cost: null as number | null, batch_code: '', expiry_date: '' };
+  ajuste = { variant_id: null as number | null, batch_id: null as number | null, direction: 'entrada' as 'entrada' | 'salida', quantity: 1, reason: '' };
+  caja = { variant_id: null as number | null, batch_id: null as number | null, boxes: 1 };
+  readonly direcciones = [
     { label: 'Entrada', value: 'entrada' },
     { label: 'Salida', value: 'salida' },
   ];
-  // Modal
-  showModal = signal(false);
-  form: MovimientoForm = this.emptyForm();
-  seleccion = '';
+  readonly buscarVariantes = (term: string) => this.sales.search({ page: 1, perPage: 20, q: term }).pipe(
+    tap((page) => { this.catalogo = page.items; }),
+    map((page) => page.items.map((item): RemoteOption => ({
+      id: item.variant_id,
+      label: `${item.nombre}${item.presentacion ? ' · ' + item.presentacion : ''}`,
+    }))),
+  );
 
-  filasInventario = computed(() => this.productos().flatMap(p => this.filasDe(p)));
+  ngOnInit(): void { this.list.load(1); }
 
-  // Métricas KPI
-  metricas = computed(() => {
-    const prods = this.productos();
-    const filas = this.filasInventario();
-    const movs = this.movimientos();
+  buscar(event: Event): void { this.list.search((event.target as HTMLInputElement).value); }
 
-    const totalProductos = prods.length;
-    const conStockBajo = filas.filter(f => f.stock > 0 && f.stock <= (f.stock_minimo || 5)).length;
-
-    const agotados = filas.filter(f => f.stock <= 0).length;
-
-    const totalEntradas = movs
-      .filter(m => m.tipo === 'entrada')
-      .reduce((sum, m) => sum + Number(m.cantidad || 0), 0);
-
-    const totalSalidas = movs
-      .filter(m => m.tipo === 'salida')
-      .reduce((sum, m) => sum + Number(m.cantidad || 0), 0);
-
-    return { totalProductos, conStockBajo, agotados, totalEntradas, totalSalidas };
-  });
-
-  // 1. Filtrado para Pestaña 1: una fila por presentación
-  productosFiltrados = computed(() => {
-    const q = this.busquedaTexto().toLowerCase().trim();
-    const nivel = this.filtroNivel();
-    return this.filasInventario().filter((fila) => {
-      const coincideTexto = !q ||
-        fila.nombre.toLowerCase().includes(q) ||
-        fila.codigo.toLowerCase().includes(q) ||
-        fila.presentacion.toLowerCase().includes(q) ||
-        fila.categoria.toLowerCase().includes(q);
-      const minimo = fila.stock_minimo || 5;
-      const bajo = fila.stock > 0 && fila.stock <= minimo;
-      const agotado = fila.stock <= 0;
-      const coincideNivel = nivel === 'todos' || (nivel === 'bajo' && bajo) || (nivel === 'agotado' && agotado);
-      return coincideTexto && coincideNivel;
-    });
-  });
-
-  // 2. Filtrado para Pestaña 2: Kardex / Historial
-  movimientosFiltrados = computed(() => {
-    const text = this.busquedaTexto().toLowerCase().trim();
-    const prodId = this.filterProductoId();
-    const tipo = this.filterTipo();
-
-    return this.movimientos().filter(m => {
-      const prodNombre = m.producto?.nombre || this.getProductoNombre(m.producto_id);
-      const coincideProd = !prodId || m.producto_id === prodId;
-      const coincideTipo = tipo === 'todos' || (m.tipo as string) === tipo;
-      const presentacion = m.variante?.presentation || '';
-      const coincideTexto = !text || 
-        prodNombre.toLowerCase().includes(text) || 
-        presentacion.toLowerCase().includes(text) ||
-        (m.motivo || '').toLowerCase().includes(text) ||
-        (m.referencia || '').toLowerCase().includes(text);
-
-      return coincideProd && coincideTipo && coincideTexto;
-    });
-  });
-
-  ngOnInit(): void {
-    this.loadProductos();
-    this.loadMovimientos();
+  filtrar(): void {
+    this.list.extra = { low_stock: this.soloBajo ? 1 : undefined };
+    this.list.load(1);
   }
 
-  loadProductos(): void {
-    this.productosSvc.getAll().subscribe({
-      next: (data) => this.productos.set(data),
-      error: () => this.error.set('No se pudieron cargar los productos del inventario.')
+  cargarLotes(variantId: number | null | undefined): void {
+    this.lotes.set([]);
+    if (!variantId) return;
+    this.svc.show(variantId).subscribe({
+      next: (detail) => this.lotes.set(detail.batches.map((batch) => ({
+        id: batch.id,
+        label: `${batch.batch_code || 'Sin lote'} · ${batch.quantity} ud · ${fechaCorta(batch.expiry_date)}`,
+      }))),
+      error: (error: HttpErrorResponse) => this.notify.error(apiMessage(error, 'No se pudieron cargar los lotes.')),
     });
   }
 
-  loadMovimientos(): void {
-    this.loading.set(true);
-    this.error.set(null);
-
-    this.stockSvc.getAll().subscribe({
-      next: (data) => {
-        this.movimientos.set(data);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('Error al cargar el historial de movimientos.');
-        this.loading.set(false);
-      }
-    });
-  }
-
-  openCreateForProduct(fila?: FilaInventario): void {
-    this.form = this.emptyForm();
-    const elegida = fila ?? this.filasInventario()[0];
-    if (elegida) {
-      this.form.producto_id = elegida.producto_id;
-      this.form.variante_id = elegida.variante_id;
-      this.seleccion = elegida.key;
-    }
-    this.formError.set(null);
-    this.showModal.set(true);
-  }
-
-  onSeleccion(key: string): void {
-    this.seleccion = key;
-    const fila = this.filasInventario().find(f => f.key === key);
-    this.form.producto_id = fila?.producto_id ?? 0;
-    this.form.variante_id = fila?.variante_id ?? null;
-    if (this.form.producto_id) this.formError.set(null);
-  }
-
-  onCantidad(valor: number): void {
-    this.form.cantidad = Number(valor);
-    if (this.form.cantidad > 0) this.formError.set(null);
-  }
-
-  closeModal(): void {
-    this.showModal.set(false);
-    this.savingModal.set(false);
-    this.formError.set(null);
-  }
-
-  save(): void {
-    if (!this.form.producto_id || this.form.producto_id === 0) {
-      this.formError.set('Selecciona un producto válido.');
+  recibir(): void {
+    const item = this.catalogo.find((row) => row.variant_id === this.ingreso.variant_id);
+    if (!item || this.ingreso.quantity < 1) {
+      this.notify.warn('Elige una variante y una cantidad.');
       return;
     }
-
-    if (this.form.cantidad <= 0) {
-      this.formError.set('La cantidad debe ser mayor a 0.');
-      return;
-    }
-
-    this.savingModal.set(true);
-    this.formError.set(null);
-
-    this.stockSvc.create(this.form).subscribe({
-      next: () => {
-        this.notify.success('Stock actualizado.');
-        this.closeModal();
-        this.loadMovimientos();
-        this.loadProductos();
-      },
-      error: (err) => {
-        this.formError.set(err?.error?.message || 'Error al registrar el movimiento.');
-        this.savingModal.set(false);
-      }
+    this.saving.set(true);
+    this.svc.receive({
+      producto_id: item.id,
+      variant_id: item.variant_id,
+      quantity: this.ingreso.quantity,
+      cost: this.ingreso.cost,
+      batch_code: this.ingreso.batch_code || null,
+      expiry_date: this.ingreso.expiry_date || null,
+    }).subscribe({
+      next: () => this.listo('Ingreso registrado.', () => this.ingresoOpen.set(false)),
+      error: (error: HttpErrorResponse) => this.fallo(error, 'No se pudo registrar el ingreso.'),
     });
   }
 
-  cambiarTab(tab: 'inventario' | 'kardex'): void {
-    this.tabActiva.set(tab);
-  }
-
-  onBusqueda(valor: string): void {
-    this.busquedaTexto.set(valor);
-  }
-
-  onFiltroProducto(id: number | null): void {
-    this.filterProductoId.set(id);
-  }
-
-  onFiltroTipo(tipo: 'todos' | 'entrada' | 'salida' | 'ajuste'): void {
-    this.filterTipo.set(tipo);
-  }
-
-  setNivel(nivel: 'todos' | 'bajo' | 'agotado'): void {
-    this.filtroNivel.set(nivel);
-  }
-
-  getProductoNombre(id: number): string {
-    return this.productos().find(p => p.id === id)?.nombre ?? `Producto #${id}`;
-  }
-
-  presentacionDe(m: MovimientoStock): string {
-    return m.variante?.presentation || '—';
-  }
-
-  private filasDe(p: Producto): FilaInventario[] {
-    const presentaciones = p.presentaciones ?? [];
-    if (!presentaciones.length) {
-      return [{
-        key: `${p.id}-0`,
-        producto_id: p.id,
-        variante_id: null,
-        codigo: p.codigo || `#${p.id}`,
-        nombre: p.nombre,
-        presentacion: '—',
-        categoria: p.categoria || 'General',
-        precio_venta: Number(p.precio_venta) || 0,
-        stock: Number(p.stock_disponible ?? p.stock_actual) || 0,
-        stock_minimo: Number(p.stock_minimo) || 0,
-      }];
+  ajustar(): void {
+    if (!this.ajuste.batch_id || !this.ajuste.reason.trim() || this.ajuste.quantity < 1) {
+      this.notify.warn('Elige el lote, la cantidad y el motivo.');
+      return;
     }
-
-    return presentaciones.map(v => ({
-      key: `${p.id}-${v.id}`,
-      producto_id: p.id,
-      variante_id: v.id,
-      codigo: v.sku || p.codigo || `#${p.id}`,
-      nombre: p.nombre,
-      presentacion: v.presentacion || '—',
-      categoria: p.categoria || 'General',
-      precio_venta: Number(p.precio_venta) || 0,
-      stock: Number(v.stock) || 0,
-      stock_minimo: Number(p.stock_minimo) || 0,
-    }));
+    this.saving.set(true);
+    this.svc.adjust({
+      batch_id: this.ajuste.batch_id,
+      direction: this.ajuste.direction,
+      quantity: this.ajuste.quantity,
+      reason: this.ajuste.reason.trim(),
+    }).subscribe({
+      next: () => this.listo('Ajuste registrado.', () => this.ajusteOpen.set(false)),
+      error: (error: HttpErrorResponse) => this.fallo(error, 'No se pudo ajustar el stock.'),
+    });
   }
 
-  private emptyForm(): MovimientoForm {
-    return {
-      producto_id: 0,
-      variante_id: null,
-      tipo: 'entrada',
-      cantidad: 1,
-      motivo: '',
-    };
+  abrirCaja(): void {
+    if (!this.caja.batch_id || this.caja.boxes < 1) {
+      this.notify.warn('Elige el lote y cuántas cajas abrir.');
+      return;
+    }
+    this.saving.set(true);
+    this.svc.openBox({ batch_id: this.caja.batch_id, boxes: this.caja.boxes }).subscribe({
+      next: () => this.listo('Caja abierta.', () => this.cajaOpen.set(false)),
+      error: (error: HttpErrorResponse) => this.fallo(error, 'No se pudo abrir la caja.'),
+    });
+  }
+
+  verKardex(row: StockRow): void {
+    this.svc.kardex(row.variant.id).subscribe({
+      next: (lines) => { this.kardex.set(lines); this.kardexOpen.set(true); },
+      error: (error: HttpErrorResponse) => this.notify.error(apiMessage(error, 'No se pudo abrir el kardex.')),
+    });
+  }
+
+  fecha(value: string | null): string { return fechaCorta(value); }
+
+  private listo(message: string, close: () => void): void {
+    this.saving.set(false);
+    close();
+    this.notify.success(message);
+    this.list.load();
+  }
+
+  private fallo(error: HttpErrorResponse, fallback: string): void {
+    this.saving.set(false);
+    this.notify.error(apiMessage(error, fallback));
   }
 }

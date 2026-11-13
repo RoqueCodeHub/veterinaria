@@ -1,0 +1,17 @@
+<div class="admin-shell">
+  <aside class="admin-sidebar">
+    <div class="admin-panel">
+      <div class="admin-brand"><span class="admin-brand-mark">A</span><div><p class="admin-brand-name">Ali-Vet</p><p class="admin-brand-caption">Portal del tutor</p></div></div>
+      @if (user) {
+        <nav class="admin-nav">
+          <a class="admin-nav-link" routerLink="/portal" routerLinkActive="is-active" [routerLinkActiveOptions]="{ exact: true }">Inicio</a>
+        </nav>
+        <div class="admin-user">
+          <div><p class="admin-user-name">{{ user.name }}</p><p class="admin-user-email">{{ user.email }}</p></div>
+          <p-button icon="pi pi-sign-out" [text]="true" (onClick)="logout()" ariaLabel="Salir" />
+        </div>
+      }
+    </div>
+  </aside>
+  <div class="admin-main"><main class="admin-content"><router-outlet /></main></div>
+</div>

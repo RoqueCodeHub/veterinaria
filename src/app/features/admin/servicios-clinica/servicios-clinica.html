@@ -1,0 +1,62 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Servicios</h1>
+      <p>Consultas, baños y otros servicios que se agendan o cobran.</p>
+    </div>
+    @if (auth.can('clinic.manage')) {
+      <button type="button" class="list-primary" (click)="abrir()"><i class="pi pi-plus"></i> Nuevo servicio</button>
+    }
+  </header>
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Activos</small><strong>{{ list.count('activos') }}</strong></article>
+    <article><small>Inactivos</small><strong>{{ list.count('inactivos') }}</strong></article>
+    <article><small>Peluquería</small><strong>{{ list.count('peluqueria') }}</strong></article>
+  </div>
+  <div class="list-tools">
+    <label class="list-search">
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="Buscar servicio" [value]="list.q()" (input)="buscar($event)" />
+    </label>
+  </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="5" itemLabel="servicios" emptyIcon="pi pi-heart" emptyTitle="Sin servicios" emptyText="Crea el primer servicio clínico.">
+    <ng-template #head><tr><th>Servicio</th><th>Duración</th><th>Precio</th><th>Estado</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.name }}</span><span class="list-muted">{{ row.code }}</span></td>
+        <td>{{ row.duration_minutes || '—' }} min</td>
+        <td>{{ soles(row.sale_price) }}</td>
+        <td><span class="list-state" [class.is-off]="!row.activo">{{ row.activo ? 'Activo' : 'Inactivo' }}</span></td>
+        <td class="list-actions">
+          @if (auth.can('clinic.manage')) {
+            <button type="button" class="list-icon" aria-label="Editar" (click)="abrir(row)"><i class="pi pi-pencil"></i></button>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+  <p-dialog [header]="editing() ? 'Editar servicio' : 'Nuevo servicio'" [visible]="modal()" (visibleChange)="modal.set($event)" [modal]="true" [style]="{ width: '30rem' }">
+    @if (!editing()) {
+      <label class="field" [class.is-invalid]="errors()['code']">Código
+        <input pInputText [(ngModel)]="form.code" (ngModelChange)="limpiar('code')" />
+        <small class="field-error">{{ errors()['code'] }}</small>
+      </label>
+    }
+    <label class="field" [class.is-invalid]="errors()['name']">Nombre
+      <input pInputText [(ngModel)]="form.name" (ngModelChange)="limpiar('name')" />
+      <small class="field-error">{{ errors()['name'] }}</small>
+    </label>
+    <label class="field">Duración (min) <input pInputText type="number" [(ngModel)]="form.duration_minutes" /></label>
+    <label class="field" [class.is-invalid]="errors()['sale_price']">Precio
+      <input pInputText type="number" [(ngModel)]="form.sale_price" (ngModelChange)="limpiar('sale_price')" />
+      <small class="field-error">{{ errors()['sale_price'] }}</small>
+    </label>
+    <label class="field">Rol <p-select [options]="roles" optionLabel="label" optionValue="value" [(ngModel)]="form.staff_role" appendTo="body" /></label>
+    <label class="field"><p-checkbox [(ngModel)]="form.activo" [binary]="true" /> Activo</label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(false)" />
+      <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="guardar()" />
+    </div>
+  </p-dialog>
+</section>

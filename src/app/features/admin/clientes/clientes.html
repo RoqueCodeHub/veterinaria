@@ -1,126 +1,79 @@
-<div class="list-page view-fill">
+<section class="list-page view-fill">
   <header class="list-header">
     <div>
-      <h1>Directorio de Clientes</h1>
-      <p>Propietarios y datos de contacto</p>
+      <h1>Clientes</h1>
+      <p>Directorio de tutores, contacto y acceso al portal.</p>
     </div>
-    <button type="button" class="list-primary" (click)="openCreate()">
-      <i class="pi pi-plus" aria-hidden="true"></i>
-      Nuevo cliente
-    </button>
+    @if (auth.can('customers.create')) {
+      <button type="button" class="list-primary" (click)="abrir()"><i class="pi pi-plus"></i> Nuevo cliente</button>
+    }
   </header>
-
-  @if (error() && !showModal()) { <p class="list-error">{{ error() }}</p> }
-  <section class="list-kpis">
-    <article><small>Total</small><strong>{{ metricas().total }}</strong></article>
-    <article><small>Activos</small><strong>{{ metricas().activos }}</strong></article>
-    <article><small>Inactivos</small><strong>{{ metricas().inactivos }}</strong></article>
-    <article><small>Con documento</small><strong>{{ metricas().documentados }}</strong></article>
-  </section>
-
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Activos</small><strong>{{ list.count('activos') }}</strong></article>
+    <article><small>Inactivos</small><strong>{{ list.count('inactivos') }}</strong></article>
+    <article><small>Con documento</small><strong>{{ list.count('documentados') }}</strong></article>
+  </div>
   <div class="list-tools">
     <label class="list-search">
-      <i class="pi pi-search" aria-hidden="true"></i>
-      <input type="search" placeholder="Buscar por nombre, documento, correo o teléfono" [ngModel]="busquedaTexto()" (ngModelChange)="busquedaTexto.set($event)" />
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="Buscar cliente" [value]="list.q()" (input)="buscar($event)" />
     </label>
-    <p-select [options]="opcionesDocumento" optionLabel="label" optionValue="value" [ngModel]="filtroTipoDoc()" (ngModelChange)="filtroTipoDoc.set($event)" appendTo="body" />
-    <p-select [options]="estadosFiltro" optionLabel="label" optionValue="value" [ngModel]="filtroEstado()" (ngModelChange)="setFiltroEstado($event)" appendTo="body" />
+    <p-select [options]="estados" optionLabel="label" optionValue="value" [(ngModel)]="estado" (ngModelChange)="filtrar()" appendTo="body" />
   </div>
-
-  @if (loading()) {
-    <p class="list-note">Cargando lista de clientes...</p>
-  } @else {
-    <app-admin-table
-      [rows]="clientesFiltrados()"
-      [pageSize]="12"
-      [columns]="8"
-      itemLabel="clientes"
-      emptyIcon="pi pi-users"
-      emptyTitle="Sin clientes"
-      emptyText="No se encontraron clientes en la base de datos."
-      [resetKey]="busquedaTexto() + '|' + filtroTipoDoc() + '|' + filtroEstado()"
-    >
-      <ng-template #head>
-        <tr>
-          <th>#</th><th>Cliente</th><th>Documento</th><th>Teléfono</th><th>Email</th><th>Dirección</th><th>Estado</th><th></th>
-        </tr>
-      </ng-template>
-      <ng-template #row let-c>
-        <tr>
-          <td class="list-id">#{{ c.id }}</td>
-          <td>
-            <div class="list-name">{{ c.nombre_completo || (c.nombres + ' ' + (c.apellidos || '')) }}</div>
-            @if (c.observaciones) { <div class="client-note" [title]="c.observaciones">{{ c.observaciones }}</div> }
-          </td>
-          <td>{{ etiquetaDocumento(c) }}</td>
-          <td>
-            @if (c.telefono) {
-              <a class="wa-tag" [href]="whatsappUrl(c.telefono)" target="_blank" rel="noopener noreferrer">
-                <i class="pi pi-whatsapp" aria-hidden="true"></i>
-                {{ telefonoVisible(c.telefono) }}
-              </a>
-            } @else { — }
-          </td>
-          <td>{{ c.email || '—' }}</td>
-          <td>{{ c.direccion || '—' }}</td>
-          <td><span class="list-state" [class.is-off]="!c.activo">{{ c.activo ? 'Activo' : 'Inactivo' }}</span></td>
-          <td class="list-actions">
-            <button type="button" class="list-icon" (click)="openEdit(c)" aria-label="Editar cliente"><i class="pi pi-pencil" aria-hidden="true"></i></button>
-            <button type="button" class="list-icon is-danger" (click)="confirmDelete(c.id)" aria-label="Eliminar cliente"><i class="pi pi-trash" aria-hidden="true"></i></button>
-          </td>
-        </tr>
-      </ng-template>
-    </app-admin-table>
-  }
-</div>
-
-<p-dialog [header]="editingId() ? 'Editar cliente' : 'Nuevo cliente'" [visible]="showModal()" (visibleChange)="$event ? showModal.set(true) : closeModal()" [modal]="true" [style]="{ width: '40rem' }">
-  <form class="grid gap-6 md:grid-cols-2" (ngSubmit)="save()">
-    <label class="field flex flex-col gap-1" [class.is-invalid]="!!errorDe('nombres')">
-      Nombres *
-      <input pInputText class="w-full" [ngModel]="form.nombres" (ngModelChange)="onNombres($event)" name="nombres" />
-      <span class="field-error">{{ errorDe('nombres') }}</span>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="5" itemLabel="clientes" emptyIcon="pi pi-users" emptyTitle="Sin clientes" emptyText="No hay clientes con esa búsqueda.">
+    <ng-template #head><tr><th>Cliente</th><th>Documento</th><th>Teléfono</th><th>Estado</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td>
+          <span class="list-name">{{ row.name }}</span>
+          <span class="client-note" [title]="row.notes || ''">{{ row.notes || 'Sin notas' }}</span>
+        </td>
+        <td>{{ row.document_type || 'DOC' }} {{ row.document_number || '—' }}</td>
+        <td>
+          @if (wa(row.phone); as link) { <a class="wa-tag" [href]="link" target="_blank" rel="noopener">{{ row.phone }}</a> }
+          @else { — }
+        </td>
+        <td><span class="list-state" [class.is-off]="!row.activo">{{ row.activo ? 'Activo' : 'Inactivo' }}</span></td>
+        <td class="list-actions">
+          @if (auth.can('customers.update')) {
+            <button type="button" class="list-icon" aria-label="Editar" (click)="abrir(row)"><i class="pi pi-pencil"></i></button>
+            <button type="button" class="list-icon" aria-label="Portal" (click)="portal.set(row); acceso = { email: '', password: '' }"><i class="pi pi-user"></i></button>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+  <p-dialog [header]="editing() ? 'Editar cliente' : 'Nuevo cliente'" [visible]="modal()" (visibleChange)="modal.set($event)" [modal]="true" [style]="{ width: '32rem' }">
+    <label class="field" [class.is-invalid]="errors()['name']">Nombre
+      <input pInputText [(ngModel)]="form.name" (ngModelChange)="limpiar('name')" />
+      <small class="field-error">{{ errors()['name'] }}</small>
     </label>
-    <label class="field flex flex-col gap-1" [class.is-invalid]="!!errorDe('apellidos')">
-      Apellidos *
-      <input pInputText class="w-full" [ngModel]="form.apellidos" (ngModelChange)="onApellidos($event)" name="apellidos" />
-      <span class="field-error">{{ errorDe('apellidos') }}</span>
+    <label class="field">Documento
+      <p-select [options]="documentos" optionLabel="label" optionValue="value" [(ngModel)]="form.document_type" appendTo="body" />
     </label>
-    <label class="flex flex-col gap-1">Tipo de documento
-      <p-select [options]="tiposDocumento" optionLabel="label" optionValue="value" [ngModel]="form.tipo_documento" (ngModelChange)="onTipo($event)" name="tipo_documento" appendTo="body" />
+    <label class="field" [class.is-invalid]="errors()['document_number']">Número
+      <input pInputText [(ngModel)]="form.document_number" (ngModelChange)="limpiar('document_number')" />
+      <small class="field-error">{{ errors()['document_number'] }}</small>
     </label>
-    <label class="field flex flex-col gap-1" [class.is-invalid]="!!errorDe('numero_documento')">
-      Número de documento
-      <input pInputText class="w-full" [ngModel]="form.numero_documento" (ngModelChange)="onDocumento($event)" name="numero_documento" [placeholder]="placeholderDocumento()" [attr.maxlength]="maxDocumento()" />
-      <span class="field-error">{{ errorDe('numero_documento') }}</span>
+    <label class="field" [class.is-invalid]="errors()['phone']">Teléfono
+      <input pInputText [(ngModel)]="form.phone" (ngModelChange)="limpiar('phone')" maxlength="9" />
+      <small class="field-error">{{ errors()['phone'] }}</small>
     </label>
-    <label class="field flex flex-col gap-1" [class.is-invalid]="!!errorDe('telefono')">
-      Teléfono
-      <input pInputText class="w-full" inputmode="numeric" maxlength="9" [ngModel]="form.telefono" (ngModelChange)="onTelefono($event)" name="telefono" placeholder="9 dígitos" />
-      <span class="field-error">{{ errorDe('telefono') }}</span>
-    </label>
-    <label class="field flex flex-col gap-1" [class.is-invalid]="!!errorDe('email')">
-      Correo
-      <input pInputText class="w-full" type="email" [ngModel]="form.email" (ngModelChange)="onEmail($event)" name="email" placeholder="nombre@correo.com" />
-      <span class="field-error">{{ errorDe('email') }}</span>
-    </label>
-    <label class="flex flex-col gap-1 md:col-span-2">Dirección<input pInputText class="w-full" [(ngModel)]="form.direccion" name="direccion" /></label>
-    <label class="flex flex-col gap-1 md:col-span-2">Observaciones<textarea pTextarea class="w-full" rows="2" [(ngModel)]="form.observaciones" name="observaciones"></textarea></label>
-    <div class="flex items-center gap-2 md:col-span-2">
-      <p-checkbox [(ngModel)]="form.activo" name="activo" [binary]="true" inputId="cli-activo" />
-      <label for="cli-activo">Cliente activo</label>
+    <label class="field">Notas <input pInputText [(ngModel)]="form.notes" /></label>
+    <label class="field"><p-checkbox [(ngModel)]="form.activo" [binary]="true" /> Activo</label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(false)" />
+      <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="guardar()" />
     </div>
-    <div class="md:col-span-2 flex justify-end gap-2">
-      <p-button type="button" label="Cancelar" [outlined]="true" (onClick)="closeModal()" />
-      <p-button type="submit" [label]="savingModal() ? 'Guardando...' : 'Guardar'" [disabled]="savingModal()" />
+  </p-dialog>
+  <p-dialog header="Acceso al portal" [visible]="portal() !== null" (visibleChange)="portal.set($event ? portal() : null)" [modal]="true" [style]="{ width: '28rem' }">
+    <p>{{ portal()?.name }}</p>
+    <label class="field">Correo <input pInputText [(ngModel)]="acceso.email" /></label>
+    <label class="field">Contraseña <input pInputText type="password" [(ngModel)]="acceso.password" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="portal.set(null)" />
+      <p-button label="Crear acceso" icon="pi pi-check" (onClick)="darAcceso()" />
     </div>
-  </form>
-</p-dialog>
-
-<p-dialog header="Confirmar eliminación" [visible]="deleteConfirmId() !== null" (visibleChange)="!$event && cancelDelete()" [modal]="true" [style]="{ width: '28rem' }">
-  <p>¿Estás seguro de eliminar este cliente?</p>
-  <div class="flex justify-end gap-2">
-    <p-button label="Cancelar" [outlined]="true" (onClick)="cancelDelete()" />
-    <p-button label="Eliminar" severity="danger" icon="pi pi-trash" (onClick)="doDelete()" />
-  </div>
-</p-dialog>
+  </p-dialog>
+</section>

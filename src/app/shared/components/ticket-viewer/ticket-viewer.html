@@ -1,10 +1,8 @@
-<p-dialog header="Boleta de venta" [visible]="visible()" (visibleChange)="visible.set($event)" [modal]="true" [style]="{ width: '34rem' }" [contentStyle]="{ padding: '0' }">
-  @if (url(); as src) {
-    <iframe class="ticket-frame" [src]="src" title="Boleta de venta"></iframe>
-  } @else {
-    <p class="ticket-wait">{{ cargando() ? 'Preparando el ticket...' : 'No se pudo mostrar el ticket.' }}</p>
+<p-dialog header="Ticket" [visible]="visible()" (visibleChange)="visible.set($event)" [modal]="true" [style]="{ width: '32rem' }">
+  @if (cargando()) {
+    <p class="ticket-wait">Preparando el ticket...</p>
+  } @else if (url(); as src) {
+    <iframe class="ticket-frame" [src]="src" title="Ticket"></iframe>
   }
-  <div class="ticket-actions">
-    <ng-content />
-  </div>
+  <div class="ticket-actions"><ng-content /></div>
 </p-dialog>

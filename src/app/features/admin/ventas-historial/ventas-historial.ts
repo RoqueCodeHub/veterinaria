@@ -1,221 +1,138 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
+import { HttpErrorResponse } from '@angular/common/http';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Button } from 'primeng/button';
 import { Dialog } from 'primeng/dialog';
 import { InputText } from 'primeng/inputtext';
 import { Select } from 'primeng/select';
-import { Textarea } from 'primeng/textarea';
-import { VentasService, Venta } from '../../../core/services/ventas.service';
+import { apiMessage } from '../../../core/api/api-message';
+import { PagedList } from '../../../core/api/paged-list';
+import { Sale } from '../../../core/api/models';
+import { AuthService } from '../../../core/auth/auth';
+import { SalesService } from '../../../core/services/commerce.service';
+import { fechaCorta, soles, whatsapp } from '../../../core/ui/format';
 import { NotifyService } from '../../../core/ui/notify';
 import { AdminTable } from '../../../shared/components/admin-table/admin-table';
 import { TicketViewer } from '../../../shared/components/ticket-viewer/ticket-viewer';
 
+interface LineaDevolucion {
+  sale_item_id: number;
+  description: string;
+  max: number;
+  quantity: number;
+  selected: boolean;
+}
+
 @Component({
   selector: 'app-ventas-historial',
   standalone: true,
-  imports: [CommonModule, FormsModule, DatePipe, DecimalPipe, Button, Dialog, InputText, Select, Textarea, AdminTable, TicketViewer],
+  imports: [FormsModule, Button, Dialog, InputText, Select, AdminTable, TicketViewer],
   templateUrl: './ventas-historial.html',
+  changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class VentasHistorialComponent implements OnInit {
-  private ventasService = inject(VentasService);
-  private notify = inject(NotifyService);
-
-  // Estados principales
-  ventas = signal<Venta[]>([]);
-  loading = signal(false);
-  error = signal<string | null>(null);
-  // Filtros. Son campos normales para que ngModel vuelva a pintar la tabla.
-  busqueda = '';
-  filtroRangoFecha: 'hoy' | 'semana' | 'mes' | 'todos' = 'todos';
-  filtroEstado: 'todos' | 'completada' | 'anulada' | 'pendiente' = 'todos';
-  readonly rangosFecha = [
-    { label: 'Todos', value: 'todos' },
-    { label: 'Hoy', value: 'hoy' },
-    { label: 'Semana', value: 'semana' },
-    { label: 'Mes', value: 'mes' },
-  ];
+  private readonly svc = inject(SalesService);
+  private readonly notify = inject(NotifyService);
+  readonly auth = inject(AuthService);
+  readonly list = new PagedList<Sale>(
+    (query) => this.svc.list(query),
+    (error) => this.notify.error(apiMessage(error as HttpErrorResponse, 'No se pudo cargar el historial.')),
+  );
+  readonly detalle = signal<Sale | null>(null);
+  readonly anular = signal(false);
+  readonly devolver = signal(false);
+  readonly ticketId = signal<number | null>(null);
+  readonly ticketOpen = signal(false);
+  estado = '';
+  fecha = '';
+  motivo = '';
+  lineas: LineaDevolucion[] = [];
   readonly estados = [
-    { label: 'Todos', value: 'todos' },
-    { label: 'Completada', value: 'completada' },
-    { label: 'Pendiente', value: 'pendiente' },
-    { label: 'Anulada', value: 'anulada' },
+    { label: 'Todos los estados', value: '' },
+    { label: 'Pendiente', value: 'pending' },
+    { label: 'Completada', value: 'completed' },
+    { label: 'Anulada', value: 'voided' },
   ];
-  // Modales
-  ventaSeleccionada = signal<Venta | null>(null);
-  mostrarModalDetalle = signal(false);
-  visorTicket = signal(false);
-  ticketId = signal<number | null>(null);
-  mostrarWhatsapp = signal(false);
-  telefonoWhatsapp = '';
-  errorWhatsapp = signal<string | null>(null);
-  mostrarAnulacion = signal(false);
-  motivoAnulacion = '';
-  errorAnulacion = signal<string | null>(null);
-  anulando = signal(false);
 
-  metricas(): { cantidad: number; totalSoles: number; promedio: number; anuladas: number } {
-    const list = this.ventasFiltradas();
-    const completadas = list.filter(v => this.esCompletada(v));
-    const totalSoles = completadas.reduce((acc, v) => acc + this.totalDe(v), 0);
-    return {
-      cantidad: completadas.length,
-      totalSoles,
-      promedio: completadas.length > 0 ? totalSoles / completadas.length : 0,
-      anuladas: list.filter(v => this.esAnulada(v)).length,
-    };
+  ngOnInit(): void { this.list.load(1); }
+
+  buscar(event: Event): void { this.list.search((event.target as HTMLInputElement).value); }
+
+  filtrar(): void {
+    this.list.extra = { status: this.estado || undefined, fecha: this.fecha || undefined };
+    this.list.load(1);
   }
 
-  ventasFiltradas(): Venta[] {
-    const query = this.busqueda.toLowerCase().trim();
-    return this.ventas().filter(v => {
-      if (this.filtroEstado === 'completada' && !this.esCompletada(v)) return false;
-      if (this.filtroEstado === 'anulada' && !this.esAnulada(v)) return false;
-      if (this.filtroEstado === 'pendiente' && !this.esPendiente(v)) return false;
-      if (!this.dentroDelRango(v.fecha)) return false;
-      if (!query) return true;
-      const comprobante = `${v.series ?? ''}-${v.number ?? ''}`.toLowerCase();
-      return v.id.toString().includes(query)
-        || (v.cliente?.nombre_completo || '').toLowerCase().includes(query)
-        || comprobante.includes(query);
+  ver(row: Sale): void {
+    this.svc.show(row.id).subscribe({
+      next: (sale) => this.detalle.set(sale),
+      error: (error: HttpErrorResponse) => this.notify.error(apiMessage(error, 'No se pudo abrir la venta.')),
     });
   }
 
-  esCompletada(venta: Venta): boolean {
-    return ['completada', 'activa', 'completed'].includes(this.estadoDe(venta));
+  imprimir(row: Sale): void {
+    this.ticketId.set(row.id);
+    this.ticketOpen.set(true);
   }
 
-  esAnulada(venta: Venta): boolean {
-    return ['anulada', 'voided'].includes(this.estadoDe(venta));
+  abrirDevolucion(): void {
+    const sale = this.detalle();
+    if (!sale) return;
+    this.lineas = (sale.items ?? []).map((item) => ({
+      sale_item_id: item.id,
+      description: item.description,
+      max: item.quantity,
+      quantity: item.quantity,
+      selected: false,
+    }));
+    this.motivo = '';
+    this.devolver.set(true);
   }
 
-  esPendiente(venta: Venta): boolean {
-    return ['pendiente', 'pending'].includes(this.estadoDe(venta));
-  }
-
-  etiquetaEstado(venta: Venta): string {
-    if (this.esCompletada(venta)) return 'Completada';
-    if (this.esAnulada(venta)) return 'Anulada';
-    if (this.esPendiente(venta)) return 'Pendiente';
-    return venta.estado || venta.status || '—';
-  }
-
-  metodoDe(venta: Venta): string {
-    return venta.payments?.[0]?.method || venta.metodo_pago || 'efectivo';
-  }
-
-  cajeroDe(venta: Venta): string {
-    return venta.trabajador?.nombre_completo || venta.user?.name || '—';
-  }
-
-  totalDe(venta: Venta): number {
-    return parseFloat(String(venta.total)) || 0;
-  }
-
-  ngOnInit(): void {
-    this.cargarHistorial();
-  }
-
-  cargarHistorial(): void {
-    this.loading.set(true);
-    this.error.set(null);
-
-    // Consulta de ventas filtradas
-    this.ventasService.getAll().subscribe({
-      next: (data) => {
-        this.ventas.set(data);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.error.set('No se pudo cargar el historial de ventas.');
-        this.loading.set(false);
-      }
-    });
-  }
-
-  // Acciones de Vista
-  verDetalle(venta: Venta): void {
-    this.ventaSeleccionada.set(venta);
-    this.mostrarModalDetalle.set(true);
-  }
-
-  cerrarModalDetalle(): void {
-    this.mostrarModalDetalle.set(false);
-  }
-
-  abrirTicket(venta: Venta): void {
-    this.ticketId.set(venta.id);
-    this.visorTicket.set(true);
-  }
-
-  abrirWhatsapp(venta: Venta): void {
-    this.ventaSeleccionada.set(venta);
-    this.telefonoWhatsapp = '';
-    this.errorWhatsapp.set(null);
-    this.mostrarWhatsapp.set(true);
-  }
-
-  confirmarWhatsapp(): void {
-    const venta = this.ventaSeleccionada();
-    const digitos = this.telefonoWhatsapp.replace(/\D/g, '');
-    if (!/^9\d{8}$/.test(digitos)) {
-      this.errorWhatsapp.set('Ingresa un celular de 9 dígitos que empiece con 9.');
+  confirmarAnular(): void {
+    const sale = this.detalle();
+    if (!sale || this.motivo.trim().length < 5) {
+      this.notify.warn('El motivo debe tener al menos 5 caracteres.');
       return;
     }
-    if (!venta) return;
-    const total = this.totalDe(venta).toFixed(2);
-    const cliente = venta.cliente?.nombre_completo || 'cliente';
-    const mensaje = `Hola ${cliente}, tu comprobante en Veterinaria Ali-Vet.\nTicket #${venta.id}\nTotal: S/ ${total}\nGracias por tu preferencia.`;
-    window.open(`https://api.whatsapp.com/send?phone=51${digitos}&text=${encodeURIComponent(mensaje)}`, '_blank', 'noopener');
-    this.mostrarWhatsapp.set(false);
-    this.notify.success(`Resumen del ticket #${venta.id} listo para WhatsApp.`);
-  }
-
-  abrirAnulacion(venta: Venta): void {
-    this.ventaSeleccionada.set(venta);
-    this.motivoAnulacion = '';
-    this.errorAnulacion.set(null);
-    this.mostrarAnulacion.set(true);
-  }
-
-  confirmarAnulacion(): void {
-    const venta = this.ventaSeleccionada();
-    const motivo = this.motivoAnulacion.trim();
-    if (!venta) return;
-    if (motivo.length < 3) {
-      this.errorAnulacion.set('Indica el motivo de la anulación.');
-      return;
-    }
-    this.anulando.set(true);
-    this.ventasService.anular(venta.id, motivo).subscribe({
-      next: (res) => {
-        this.anulando.set(false);
-        this.mostrarAnulacion.set(false);
-        this.mostrarModalDetalle.set(false);
-        this.notify.success(res?.message || `Venta #${venta.id} anulada.`);
-        this.cargarHistorial();
+    this.svc.void(sale.id, this.motivo.trim()).subscribe({
+      next: () => {
+        this.notify.success('Venta anulada.');
+        this.anular.set(false);
+        this.detalle.set(null);
+        this.motivo = '';
+        this.list.load();
       },
-      error: (err) => {
-        this.anulando.set(false);
-        this.notify.error(err?.error?.message || 'No se pudo anular la venta.');
-      },
+      error: (error: HttpErrorResponse) => this.notify.error(apiMessage(error, 'No se pudo anular la venta.')),
     });
   }
 
-  private estadoDe(venta: Venta): string {
-    return String(venta.estado || venta.status || '').toLowerCase();
+  confirmarDevolucion(): void {
+    const sale = this.detalle();
+    const items = this.lineas.filter((line) => line.selected && line.quantity > 0 && line.quantity <= line.max);
+    if (!sale || items.length === 0 || this.motivo.trim().length < 5) {
+      this.notify.warn('Elige líneas, cantidades válidas y un motivo.');
+      return;
+    }
+    this.svc.returnSale(sale.id, {
+      reason: this.motivo.trim(),
+      refund_method: 'efectivo',
+      items: items.map((line) => ({ sale_item_id: line.sale_item_id, quantity: Number(line.quantity) })),
+    }).subscribe({
+      next: () => {
+        this.notify.success('Devolución registrada.');
+        this.devolver.set(false);
+        this.detalle.set(null);
+        this.list.load();
+      },
+      error: (error: HttpErrorResponse) => this.notify.error(apiMessage(error, 'No se pudo registrar la devolución.')),
+    });
   }
 
-  private dentroDelRango(fecha: string | null | undefined): boolean {
-    if (this.filtroRangoFecha === 'todos') return true;
-    if (!fecha) return false;
-    const date = new Date(fecha);
-    if (Number.isNaN(date.getTime())) return false;
-    const inicio = new Date();
-    inicio.setHours(0, 0, 0, 0);
-    if (this.filtroRangoFecha === 'semana') inicio.setDate(inicio.getDate() - 6);
-    if (this.filtroRangoFecha === 'mes') inicio.setDate(inicio.getDate() - 29);
-    return date >= inicio;
+  wa(sale: Sale): string | null {
+    return whatsapp(null) && sale.cliente ? `https://wa.me/?text=${encodeURIComponent('Ticket ' + sale.document + ' por ' + soles(sale.total))}` : `https://wa.me/?text=${encodeURIComponent('Ticket ' + sale.document)}`;
   }
 
+  soles(value: string | number | null | undefined): string { return soles(value); }
+  fechaCorta(value: string | null): string { return fechaCorta(value); }
 }

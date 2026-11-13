@@ -1,0 +1,48 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Marcas</h1>
+      <p>Laboratorios y fabricantes del catálogo.</p>
+    </div>
+    @if (auth.can('products.create')) {
+      <button type="button" class="list-primary" (click)="abrir()"><i class="pi pi-plus"></i> Nueva marca</button>
+    }
+  </header>
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Activas</small><strong>{{ list.count('activas') }}</strong></article>
+    <article><small>Inactivas</small><strong>{{ list.count('inactivas') }}</strong></article>
+    <article><small>Con productos</small><strong>{{ list.count('con_productos') }}</strong></article>
+  </div>
+  <div class="list-tools">
+    <label class="list-search">
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="Buscar marca" [value]="list.q()" (input)="buscar($event)" />
+    </label>
+  </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="3" itemLabel="marcas" emptyIcon="pi pi-tag" emptyTitle="Sin marcas" emptyText="Todavía no hay marcas registradas.">
+    <ng-template #head><tr><th>Marca</th><th>Estado</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.nombre }}</span></td>
+        <td><span class="list-state" [class.is-off]="!row.activo">{{ row.activo ? 'Activa' : 'Inactiva' }}</span></td>
+        <td class="list-actions">
+          @if (auth.can('products.update')) {
+            <button type="button" class="list-icon" aria-label="Editar" (click)="abrir(row)"><i class="pi pi-pencil"></i></button>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+  <p-dialog [header]="editing() ? 'Editar marca' : 'Nueva marca'" [visible]="modal()" (visibleChange)="modal.set($event)" [modal]="true" [style]="{ width: '28rem' }">
+    <label class="field" [class.is-invalid]="errors()['nombre']">Nombre
+      <input pInputText [(ngModel)]="form.nombre" (ngModelChange)="limpiar()" />
+      <small class="field-error">{{ errors()['nombre'] }}</small>
+    </label>
+    <label class="field"><p-checkbox [(ngModel)]="form.activo" [binary]="true" /> Activa</label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(false)" />
+      <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="guardar()" />
+    </div>
+  </p-dialog>
+</section>

@@ -1,0 +1,76 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Citas</h1>
+      <p>Agenda del día, atención, insumos y cobro.</p>
+    </div>
+    @if (auth.can('clinic.manage')) {
+      <button type="button" class="list-primary" (click)="modal.set(true)"><i class="pi pi-plus"></i> Agendar</button>
+    }
+  </header>
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Pendientes</small><strong>{{ list.count('pendientes') }}</strong></article>
+    <article><small>Atendidas</small><strong>{{ list.count('atendidas') }}</strong></article>
+    <article><small>Canceladas</small><strong>{{ list.count('canceladas') }}</strong></article>
+  </div>
+  <div class="list-tools">
+    <input pInputText type="date" [(ngModel)]="fecha" (ngModelChange)="filtrar()" />
+    <p-select [options]="estados" optionLabel="label" optionValue="value" [(ngModel)]="estado" (ngModelChange)="filtrar()" appendTo="body" />
+  </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="5" itemLabel="citas" emptyIcon="pi pi-calendar" emptyTitle="Sin citas" emptyText="No hay citas con ese filtro.">
+    <ng-template #head><tr><th>Cuándo</th><th>Paciente</th><th>Servicio</th><th>Estado</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td>{{ fechaHora(row.scheduled_at) }}</td>
+        <td><span class="list-name">{{ row.mascota }}</span><span class="list-muted">{{ row.cliente }}</span></td>
+        <td>{{ row.servicio }}</td>
+        <td><span class="list-state" [class.is-off]="row.status === 'cancelada'" [class.is-warn]="row.status === 'pendiente'">{{ row.status }}</span></td>
+        <td class="list-actions">
+          @if (row.status === 'pendiente' && auth.can('clinic.attend')) {
+            <button type="button" class="list-icon" aria-label="Atender" (click)="abrir(row, 'atender')"><i class="pi pi-check"></i></button>
+            <button type="button" class="list-icon" aria-label="Insumo" (click)="abrir(row, 'insumo')"><i class="pi pi-box"></i></button>
+            <button type="button" class="list-icon" aria-label="Cobrar" (click)="abrir(row, 'cobrar')"><i class="pi pi-wallet"></i></button>
+            <button type="button" class="list-icon is-danger" aria-label="Cancelar" (click)="cancelar.set(row)"><i class="pi pi-ban"></i></button>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+
+  <p-dialog header="Agendar cita" [visible]="modal()" (visibleChange)="modal.set($event)" [modal]="true" [style]="{ width: '32rem' }">
+    <label class="field">Mascota <app-remote-select [search]="buscarMascotas" [(value)]="agenda.pet_id" placeholder="Buscar mascota" /></label>
+    <label class="field">Servicio
+      <p-select [options]="servicios()" optionLabel="name" optionValue="id" [(ngModel)]="agenda.clinic_service_id" appendTo="body" placeholder="Elige un servicio" />
+    </label>
+    <label class="field">Personal
+      <p-select [options]="personal()" optionLabel="label" optionValue="value" [(ngModel)]="agenda.staff_user_id" appendTo="body" placeholder="Elige quién atiende" />
+    </label>
+    <label class="field">Fecha y hora <input pInputText type="datetime-local" [(ngModel)]="agenda.scheduled_at" /></label>
+    <label class="field">Notas <input pInputText [(ngModel)]="agenda.notes" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(false)" />
+      <p-button label="Agendar" icon="pi pi-check" [loading]="saving()" (onClick)="agendar()" />
+    </div>
+  </p-dialog>
+
+  <p-dialog [header]="accion() === 'atender' ? 'Atender' : accion() === 'insumo' ? 'Descontar insumo' : 'Cobrar cita'" [visible]="accion() !== null" (visibleChange)="accion.set($event ? accion() : null)" [modal]="true" [style]="{ width: '30rem' }">
+    @if (accion() === 'atender') {
+      <label class="field">Diagnóstico <input pInputText [(ngModel)]="nota.diagnostico" /></label>
+      <label class="field">Tratamiento <input pInputText [(ngModel)]="nota.tratamiento" /></label>
+      <p-button label="Guardar atención" icon="pi pi-check" (onClick)="atender()" />
+    }
+    @if (accion() === 'insumo') {
+      <label class="field">Insumo <app-remote-select [search]="buscarVariantes" [(value)]="insumo.variant_id" placeholder="Buscar producto" /></label>
+      <label class="field">Cantidad <input pInputText type="number" [(ngModel)]="insumo.quantity" /></label>
+      <p-button label="Descontar" icon="pi pi-check" (onClick)="descontar()" />
+    }
+    @if (accion() === 'cobrar') {
+      <p>Precio {{ soles(cita()?.sale_price) }}</p>
+      <label class="field">Método <p-select [options]="metodos" optionLabel="label" optionValue="value" [(ngModel)]="cobro.method" appendTo="body" /></label>
+      <label class="field">Monto <input pInputText type="number" [(ngModel)]="cobro.amount" /></label>
+      <p-button label="Cobrar" icon="pi pi-wallet" (onClick)="cobrar()" />
+    }
+  </p-dialog>
+  <app-confirm-dialog [open]="cancelar() !== null" (openChange)="cancelar.set($event ? cancelar() : null)" title="Cancelar cita" [message]="'¿Cancelar la cita de ' + (cancelar()?.mascota || 'la mascota') + '?'" confirmLabel="Cancelar cita" icon="pi pi-ban" (confirmed)="confirmarCancelar()" />
+</section>

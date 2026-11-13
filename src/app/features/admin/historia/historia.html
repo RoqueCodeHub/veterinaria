@@ -1,0 +1,84 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Historia clínica</h1>
+      <p>Notas, vacunas y desparasitaciones de cada paciente.</p>
+    </div>
+  </header>
+  <div class="list-tools">
+    <app-remote-select [search]="buscarMascotas" [value]="petId()" (valueChange)="elegir($event)" placeholder="Buscar mascota" />
+    <div class="list-switch">
+      <button type="button" [class.is-on]="tab() === 'notas'" (click)="tab.set('notas')">Notas</button>
+      <button type="button" [class.is-on]="tab() === 'vacunas'" (click)="tab.set('vacunas')">Vacunas</button>
+      <button type="button" [class.is-on]="tab() === 'desparasitaciones'" (click)="tab.set('desparasitaciones')">Desparasitaciones</button>
+    </div>
+    @if (petId() && auth.can('clinic.manage')) {
+      <button type="button" class="list-primary" (click)="modal.set(tab() === 'notas' ? 'nota' : tab() === 'vacunas' ? 'vacuna' : 'desparasitacion')">
+        <i class="pi pi-plus"></i> Registrar
+      </button>
+    }
+  </div>
+
+  @if (tab() === 'notas') {
+    <app-admin-table [rows]="notas()" [columns]="4" itemLabel="notas" emptyIcon="pi pi-file" emptyTitle="Sin notas" emptyText="Elige una mascota para ver su historia.">
+      <ng-template #head><tr><th>Fecha</th><th>Diagnóstico</th><th>Tratamiento</th><th></th></tr></ng-template>
+      <ng-template #row let-row>
+        <tr>
+          <td>{{ fecha(row.created_at) }}</td>
+          <td>{{ row.diagnostico || '—' }}</td>
+          <td>{{ row.tratamiento || row.notes || '—' }}</td>
+          <td class="list-actions">
+            <label class="list-icon" aria-label="Adjuntar"><i class="pi pi-paperclip"></i><input type="file" hidden (change)="adjuntar(row, $event)" /></label>
+            @for (file of row.attachments || []; track file.id) {
+              <button type="button" class="list-icon" [attr.aria-label]="'Descargar ' + file.original_name" (click)="descargar(row, file.id, file.original_name)"><i class="pi pi-download"></i></button>
+            }
+          </td>
+        </tr>
+      </ng-template>
+    </app-admin-table>
+  }
+  @if (tab() === 'vacunas') {
+    <app-admin-table [rows]="vacunas()" [columns]="3" itemLabel="vacunas" emptyIcon="pi pi-shield" emptyTitle="Sin vacunas" emptyText="Esta mascota no tiene vacunas registradas.">
+      <ng-template #head><tr><th>Vacuna</th><th>Aplicada</th><th>Próxima</th></tr></ng-template>
+      <ng-template #row let-row>
+        <tr><td>{{ row.vaccine_name }}</td><td>{{ fecha(row.applied_at) }}</td><td>{{ fecha(row.next_due_at) }}</td></tr>
+      </ng-template>
+    </app-admin-table>
+  }
+  @if (tab() === 'desparasitaciones') {
+    <app-admin-table [rows]="desparasitaciones()" [columns]="3" itemLabel="registros" emptyIcon="pi pi-bolt" emptyTitle="Sin desparasitaciones" emptyText="Esta mascota no tiene desparasitaciones.">
+      <ng-template #head><tr><th>Producto</th><th>Aplicada</th><th>Próxima</th></tr></ng-template>
+      <ng-template #row let-row>
+        <tr><td>{{ row.product_name }}</td><td>{{ fecha(row.applied_at) }}</td><td>{{ fecha(row.next_due_at) }}</td></tr>
+      </ng-template>
+    </app-admin-table>
+  }
+
+  <p-dialog header="Nueva nota" [visible]="modal() === 'nota'" (visibleChange)="modal.set($event ? 'nota' : null)" [modal]="true" [style]="{ width: '30rem' }">
+    <label class="field">Diagnóstico <input pInputText [(ngModel)]="nota.diagnostico" /></label>
+    <label class="field">Tratamiento <input pInputText [(ngModel)]="nota.tratamiento" /></label>
+    <label class="field">Notas <input pInputText [(ngModel)]="nota.notes" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(null)" />
+      <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarNota()" />
+    </div>
+  </p-dialog>
+  <p-dialog header="Nueva vacuna" [visible]="modal() === 'vacuna'" (visibleChange)="modal.set($event ? 'vacuna' : null)" [modal]="true" [style]="{ width: '30rem' }">
+    <label class="field">Vacuna <input pInputText [(ngModel)]="vacuna.vaccine_name" /></label>
+    <label class="field">Aplicada <input pInputText type="date" [(ngModel)]="vacuna.applied_at" /></label>
+    <label class="field">Próxima <input pInputText type="date" [(ngModel)]="vacuna.next_due_at" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(null)" />
+      <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarVacuna()" />
+    </div>
+  </p-dialog>
+  <p-dialog header="Nueva desparasitación" [visible]="modal() === 'desparasitacion'" (visibleChange)="modal.set($event ? 'desparasitacion' : null)" [modal]="true" [style]="{ width: '30rem' }">
+    <label class="field">Producto <input pInputText [(ngModel)]="desparasitacion.product_name" /></label>
+    <label class="field">Aplicada <input pInputText type="date" [(ngModel)]="desparasitacion.applied_at" /></label>
+    <label class="field">Próxima <input pInputText type="date" [(ngModel)]="desparasitacion.next_due_at" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(null)" />
+      <p-button label="Guardar" icon="pi pi-check" (onClick)="guardarDesparasitacion()" />
+    </div>
+  </p-dialog>
+</section>

@@ -1,0 +1,64 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Mascotas</h1>
+      <p>Pacientes, tutores y ficha básica.</p>
+    </div>
+    @if (auth.can('customers.create')) {
+      <button type="button" class="list-primary" (click)="abrir()"><i class="pi pi-plus"></i> Nueva mascota</button>
+    }
+  </header>
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Con foto</small><strong>{{ list.count('con_foto') }}</strong></article>
+    <article><small>Con especie</small><strong>{{ list.count('con_especie') }}</strong></article>
+    <article><small>Sin especie</small><strong>{{ list.count('sin_especie') }}</strong></article>
+  </div>
+  <div class="list-tools">
+    <label class="list-search">
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="Buscar mascota" [value]="list.q()" (input)="buscar($event)" />
+    </label>
+    <p-select [options]="especies" optionLabel="label" optionValue="value" [(ngModel)]="especie" (ngModelChange)="filtrar()" appendTo="body" />
+  </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="5" itemLabel="mascotas" emptyIcon="pi pi-heart" emptyTitle="Sin mascotas" emptyText="No hay pacientes con ese filtro.">
+    <ng-template #head><tr><th>Mascota</th><th>Especie</th><th>Tutor</th><th>Peso</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.nombre }}</span><span class="list-muted">{{ row.raza }}</span></td>
+        <td><span class="list-chip">{{ row.especie || 'Sin especie' }}</span></td>
+        <td>{{ row.cliente?.name || '—' }}</td>
+        <td>{{ row.peso || '—' }}</td>
+        <td class="list-actions">
+          @if (auth.can('customers.update')) {
+            <button type="button" class="list-icon" aria-label="Editar" (click)="abrir(row)"><i class="pi pi-pencil"></i></button>
+            <label class="list-icon" aria-label="Subir foto"><i class="pi pi-camera"></i><input type="file" accept="image/*" hidden (change)="foto(row, $event)" /></label>
+            <button type="button" class="list-icon" aria-label="Descargar foto" (click)="descargar(row)"><i class="pi pi-download"></i></button>
+            <button type="button" class="list-icon is-danger" aria-label="Eliminar" (click)="quitar.set(row)"><i class="pi pi-trash"></i></button>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+  <p-dialog [header]="editing() ? 'Editar mascota' : 'Nueva mascota'" [visible]="modal()" (visibleChange)="modal.set($event)" [modal]="true" [style]="{ width: '32rem' }">
+    <label class="field" [class.is-invalid]="errors()['nombre']">Nombre
+      <input pInputText [(ngModel)]="form.nombre" (ngModelChange)="limpiar('nombre')" />
+      <small class="field-error">{{ errors()['nombre'] }}</small>
+    </label>
+    <label class="field" [class.is-invalid]="errors()['cliente_id']">Tutor
+      <app-remote-select [search]="buscarTutores" [(value)]="form.cliente_id" (valueChange)="limpiar('cliente_id')" placeholder="Buscar tutor" />
+      <small class="field-error">{{ errors()['cliente_id'] }}</small>
+    </label>
+    <label class="field">Especie <p-select [options]="especies" optionLabel="label" optionValue="value" [(ngModel)]="form.especie" appendTo="body" /></label>
+    <label class="field">Raza <input pInputText [(ngModel)]="form.raza" /></label>
+    <label class="field">Sexo <input pInputText [(ngModel)]="form.sexo" /></label>
+    <label class="field">Nacimiento <input pInputText type="date" [(ngModel)]="form.fecha_nacimiento" /></label>
+    <label class="field">Peso <input pInputText type="number" [(ngModel)]="form.peso" /></label>
+    <label class="field">Alergias <input pInputText [(ngModel)]="form.alergias" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(false)" />
+      <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="guardar()" />
+    </div>
+  </p-dialog>
+  <app-confirm-dialog [open]="quitar() !== null" (openChange)="quitar.set($event ? quitar() : null)" title="Eliminar mascota" [message]="'¿Eliminar a ' + (quitar()?.nombre || '') + '?'" confirmLabel="Eliminar" icon="pi pi-trash" (confirmed)="confirmar()" />
+</section>

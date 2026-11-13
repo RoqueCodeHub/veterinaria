@@ -1,0 +1,47 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Recordatorios</h1>
+      <p>Avisos a clientes y al equipo, listos para WhatsApp o para descartar.</p>
+    </div>
+  </header>
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Pendientes</small><strong>{{ list.count('pendientes') }}</strong></article>
+    <article><small>Clientes</small><strong>{{ list.count('clientes') }}</strong></article>
+    <article><small>Internos</small><strong>{{ list.count('internos') }}</strong></article>
+  </div>
+  <div class="list-tools">
+    <label class="list-search">
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="Buscar recordatorio" [value]="list.q()" (input)="buscar($event)" />
+    </label>
+    <p-select [options]="tipos" optionLabel="label" optionValue="value" [(ngModel)]="tipo" (ngModelChange)="filtrar()" appendTo="body" />
+    <p-select [options]="audiencias" optionLabel="label" optionValue="value" [(ngModel)]="audiencia" (ngModelChange)="filtrar()" appendTo="body" />
+  </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="5" itemLabel="recordatorios" emptyIcon="pi pi-bell" emptyTitle="Sin recordatorios" emptyText="No hay avisos con esos filtros.">
+    <ng-template #head>
+      <tr><th>Aviso</th><th>Tipo</th><th>Vence</th><th>Estado</th><th></th></tr>
+    </ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td>
+          <span class="list-name">{{ row.title }}</span>
+          <span class="list-muted">{{ row.cliente || row.audience }}</span>
+        </td>
+        <td><span class="list-chip">{{ row.type }}</span></td>
+        <td>{{ fecha(row.due_at) }}</td>
+        <td><span class="list-state" [class.is-off]="row.status === 'dismissed'">{{ row.status }}</span></td>
+        <td class="list-actions">
+          @if (row.whatsapp_url) {
+            <a class="list-icon" [href]="row.whatsapp_url" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="pi pi-whatsapp"></i></a>
+          }
+          @if (row.status === 'pending') {
+            <button type="button" class="list-icon is-danger" aria-label="Descartar" (click)="descartar.set(row)"><i class="pi pi-ban"></i></button>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+  <app-confirm-dialog [open]="descartar() !== null" (openChange)="descartar.set($event ? descartar() : null)" title="Descartar recordatorio" [message]="'¿Descartar «' + (descartar()?.title || '') + '»?'" confirmLabel="Descartar" icon="pi pi-ban" (confirmed)="confirmar()" />
+</section>

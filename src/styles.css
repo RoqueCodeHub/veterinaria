@@ -8,6 +8,8 @@
   --color-accent: #087850;
   --color-canvas: #f8f8f0;
   --color-sage: #e0f0e8;
+  --color-sage-100: #c9e6d8;
+  --color-sage-200: #a3d4be;
   --color-card: #ffffff;
   --color-muted: #406858;
   --color-danger: #dc2626;
@@ -127,7 +129,7 @@ html:has(app-login) {
   height: 2.25rem;
   place-items: center;
   border-radius: 0.75rem;
-  background: var(--p-primary-color, #10b981);
+  background: var(--p-primary-color, var(--color-primary));
   color: var(--p-primary-contrast-color, #fff);
   font-weight: 700;
 }
@@ -312,9 +314,59 @@ html:has(app-login) {
   padding-right: 0.2rem;
 }
 
+.prod-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.85rem 0.75rem;
+}
+
+.prod-section .field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.prod-section .field.is-wide {
+  grid-column: 1 / -1;
+}
+
+.prod-section .field input,
+.prod-section .field .p-inputtext,
+.prod-section .field app-remote-select,
+.prod-section .field .p-select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.prod-section .field app-remote-select {
+  display: block;
+}
+
+.prod-section .field.is-check {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  align-self: end;
+  min-height: 2.55rem;
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
 .prod-section h3 {
   margin: 0 0 0.75rem;
   font-size: 0.95rem;
+}
+
+@media (max-width: 720px) {
+  .prod-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .prod-section + .prod-section {
@@ -354,8 +406,8 @@ html:has(app-login) {
 }
 
 .especie.is-on {
-  border-color: #0f9f6e;
-  background: #0f9f6e;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
   color: #fff;
 }
 
@@ -379,8 +431,8 @@ html:has(app-login) {
   margin-bottom: 0.55rem;
   place-items: center;
   border-radius: 999px;
-  background: #e8f8f1;
-  color: #0f9f6e;
+  background: var(--color-sage);
+  color: var(--color-accent);
 }
 
 .empty-state-icon .pi {
@@ -437,16 +489,38 @@ html:has(app-login) {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  padding: 0.55rem 0.9rem;
-  border-radius: 0.75rem;
-  background: #0f9f6e;
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: var(--color-primary);
   color: #fff;
   font-weight: 600;
   white-space: nowrap;
+  transition: background-color 180ms ease, box-shadow 180ms ease;
+}
+
+.list-primary:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+.list-primary:focus-visible,
+.list-icon:focus-visible,
+.list-link:focus-visible,
+.list-switch button:focus-visible,
+.dash-primary:focus-visible,
+.dash-chip:focus-visible,
+.cat-primary:focus-visible,
+.rep-export:focus-visible,
+.rep-cta:focus-visible,
+.caja-charge:focus-visible,
+.pos-charge:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .list-primary:disabled {
   background: #cbd5e1;
+  color: #475569;
   cursor: default;
 }
 
@@ -477,7 +551,7 @@ html:has(app-login) {
 }
 
 .list-kpis strong.is-compact { font-size: 1.15rem; }
-.list-kpis .is-green { color: #0f9f6e; }
+.list-kpis .is-green { color: var(--color-accent); }
 .list-kpis .is-red { color: #b91c1c; }
 
 .list-tools {
@@ -526,6 +600,22 @@ html:has(app-login) {
   margin-left: auto;
 }
 
+.list-tools.alertas-tools {
+  justify-content: flex-end;
+}
+
+.list-tools.alertas-tools > .list-switch {
+  margin-left: 0;
+}
+
+.list-tools.alertas-tools .alertas-plazo.p-select {
+  width: 16.5rem;
+  border: 1px solid #e6eeea;
+  border-radius: 0.8rem;
+  background: #fff;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.04);
+}
+
 .list-switch button {
   padding: 0.4rem 0.8rem;
   border-radius: 0.65rem;
@@ -544,7 +634,14 @@ html:has(app-login) {
 .list-muted { color: #64748b; }
 
 .list-name {
+  display: block;
   font-weight: 600;
+}
+
+td .list-muted {
+  display: block;
+  margin-top: 0.1rem;
+  font-size: 0.82rem;
 }
 
 .client-note {
@@ -565,8 +662,8 @@ html:has(app-login) {
   gap: 0.3rem;
   padding: 0.12rem 0.55rem 0.12rem 0.4rem;
   border-radius: 999px;
-  background: #dcfce7;
-  color: #15803d;
+  background: var(--color-sage);
+  color: var(--color-accent);
   font-size: 0.78rem;
   font-weight: 600;
   text-decoration: none;
@@ -588,8 +685,8 @@ html:has(app-login) {
   margin: 0.1rem 0.2rem 0.1rem 0;
   padding: 0.12rem 0.5rem;
   border-radius: 999px;
-  background: #d1fae5;
-  color: #047857;
+  background: var(--color-sage);
+  color: var(--color-accent);
   font-size: 0.75rem;
   font-weight: 600;
 }
@@ -606,7 +703,7 @@ html:has(app-login) {
   place-items: center;
   border-radius: 0.45rem;
   background: transparent;
-  color: #0f9f6e;
+  color: var(--color-accent);
 }
 
 .list-link {
@@ -681,7 +778,7 @@ tr.is-selected td { background: #f4fbf7; }
   gap: 0.35rem;
   padding: 0.5rem 0.35rem;
 }
-.caja-pay.is-on { border-color: #b7e4d2; background: #e8f8f1; color: #047857; font-weight: 700; }
+.caja-pay.is-on { border-color: var(--color-sage-200); background: var(--color-sage); color: var(--color-primary); font-weight: 700; }
 .caja-soles {
   display: inline-flex;
   align-items: center;
@@ -696,7 +793,7 @@ tr.is-selected td { background: #f4fbf7; }
 .caja-bills { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .caja-bills button { padding: 0.28rem 0.6rem; font-size: 0.78rem; font-weight: 600; }
 .caja-vuelto { margin: 0; color: #b45309; font-weight: 700; }
-.caja-vuelto.is-ok { color: #0f9f6e; }
+.caja-vuelto.is-ok { color: var(--color-accent); }
 .caja-charge, .caja-void {
   width: 100%;
   padding: 0.75rem 1rem;
@@ -704,7 +801,8 @@ tr.is-selected td { background: #f4fbf7; }
   font-weight: 700;
   cursor: pointer;
 }
-.caja-charge { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: 0; background: #0f9f6e; color: #fff; }
+.caja-charge { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; border: 0; border-radius: 999px; background: var(--color-primary); color: #fff; transition: background-color 180ms ease; }
+.caja-charge:hover:not(:disabled) { background: var(--color-primary-hover); }
 .caja-charge:disabled, .caja-void:disabled { cursor: default; opacity: 0.55; }
 .caja-void { border: 0; background: transparent; color: #ef4444; }
 .caja-empty {
@@ -805,7 +903,7 @@ tr.is-selected td { background: #f4fbf7; }
 }
 
 .view-pager button.is-on {
-  background: #0f9f6e;
+  background: var(--color-primary);
   color: #fff;
   font-weight: 600;
 }
@@ -1137,7 +1235,7 @@ a.p-button.alivet-pill:hover {
   width: 0.45rem;
   height: 0.45rem;
   border-radius: 999px;
-  background: #0f9f6e;
+  background: var(--color-accent);
 }
 
 .pos-dot.is-bad { background: #ef4444; }
@@ -1202,8 +1300,8 @@ a.p-button.alivet-pill:hover {
 }
 
 .pos-chip.is-on {
-  border-color: #083828;
-  background: #083828;
+  border-color: var(--color-primary);
+  background: var(--color-primary);
   color: #fff;
   font-weight: 600;
 }
@@ -1256,11 +1354,11 @@ a.p-button.alivet-pill:hover {
   height: 2.3rem;
   place-items: center;
   border-radius: 0.7rem;
-  background: #e8f8f1;
-  color: #0f9f6e;
+  background: var(--color-sage);
+  color: var(--color-accent);
 }
 
-.pos-tile.is-violet { background: #f3e8ff; color: #7c3aed; }
+.pos-tile.is-sage { background: var(--color-sage); color: var(--color-primary); }
 .pos-tile.is-rose { background: #ffe4e6; color: #e11d48; }
 .pos-tile.is-amber { background: #fef3c7; color: #d97706; }
 
@@ -1270,7 +1368,7 @@ a.p-button.alivet-pill:hover {
   right: 0.75rem;
   padding: 0.05rem 0.4rem;
   border-radius: 999px;
-  background: #0f9f6e;
+  background: var(--color-primary);
   color: #fff;
   font-size: 0.72rem;
   font-weight: 700;
@@ -1286,21 +1384,21 @@ a.p-button.alivet-pill:hover {
   margin-top: auto;
 }
 
-.pos-price { color: #0f9f6e; font-weight: 700; }
+.pos-price { color: var(--color-accent); font-weight: 700; }
 .pos-card:disabled .pos-price { color: #94a3b8; }
 
 .pos-stock {
   padding: 0.08rem 0.45rem;
   border-radius: 999px;
-  background: #e8f8f1;
-  color: #047857;
+  background: var(--color-sage);
+  color: var(--color-accent);
   font-size: 0.72rem;
   font-weight: 700;
 }
 
 .pos-stock.is-off { background: #fee2e2; color: #b91c1c; }
 .pos-stock.is-warn { background: #ffedd5; color: #c2410c; }
-.pos-stock.is-service { background: #f3e8ff; color: #7c3aed; }
+.pos-stock.is-service { background: var(--color-sage); color: var(--color-primary); }
 
 .pos-summary {
   display: flex;
@@ -1373,7 +1471,7 @@ a.p-button.alivet-pill:hover {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #0f9f6e;
+  color: var(--color-accent);
   font-weight: 600;
 }
 
@@ -1384,12 +1482,12 @@ a.p-button.alivet-pill:hover {
   padding: 0.25rem 0.65rem;
   border: 0;
   border-radius: 999px;
-  background: #e8f8f1;
-  color: #047857;
+  background: var(--color-sage);
+  color: var(--color-primary);
   font-weight: 700;
 }
 
-.pos-pet.is-on { background: #0f9f6e; color: #fff; }
+.pos-pet.is-on { background: var(--color-primary); color: #fff; }
 
 .pos-line {
   align-items: flex-start;
@@ -1440,9 +1538,9 @@ a.p-button.alivet-pill:hover {
 }
 
 .pos-pay.is-on {
-  border-color: #b7e4d2;
-  background: #e8f8f1;
-  color: #047857;
+  border-color: var(--color-sage-200);
+  background: var(--color-sage);
+  color: var(--color-primary);
   font-weight: 700;
 }
 
@@ -1470,7 +1568,7 @@ a.p-button.alivet-pill:hover {
 }
 
 .pos-cash > span { white-space: nowrap; }
-.pos-cash .is-ok { color: #0f9f6e; font-weight: 700; }
+.pos-cash .is-ok { color: var(--color-accent); font-weight: 700; }
 
 .pos-charge,
 .pos-hold {
@@ -1486,15 +1584,20 @@ a.p-button.alivet-pill:hover {
 
 .pos-charge {
   border: 0;
-  background: #0f9f6e;
+  border-radius: 999px;
+  background: var(--color-primary);
   color: #fff;
+  transition: background-color 180ms ease;
 }
+
+.pos-charge:hover:not(:disabled) { background: var(--color-primary-hover); }
 
 .pos-charge:disabled,
 .pos-hold:disabled { opacity: 0.55; }
 
 .pos-hold {
   border: 1px solid #e6eeea;
+  border-radius: 999px;
   background: #fff;
   color: #334155;
 }

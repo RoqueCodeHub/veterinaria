@@ -1,193 +1,96 @@
-<div class="list-page stk view-fill">
+<section class="list-page view-fill">
   <header class="list-header">
     <div>
-      <h1>Gestión de inventario y stock</h1>
-      <p>Control de existencias, alertas de stock mínimo e historial Kardex</p>
+      <h1>Stock</h1>
+      <p>Existencias por variante, ingresos, ajustes y kardex.</p>
     </div>
-    <button type="button" class="list-primary" (click)="openCreateForProduct()">
-      <i class="pi pi-plus" aria-hidden="true"></i>
-      Registrar movimiento
-    </button>
+    <div class="flex gap-2">
+      @if (auth.can('inventory.adjust')) {
+        <button type="button" class="list-primary" (click)="ingresoOpen.set(true)"><i class="pi pi-plus"></i> Ingreso</button>
+      }
+    </div>
   </header>
-
-  @if (error() && !showModal()) { <p class="list-error">{{ error() }}</p> }
-  <section class="list-kpis">
-    <article>
-      <small>Productos en catálogo</small>
-      <strong>{{ metricas().totalProductos }}</strong>
-    </article>
-    <article>
-      <small>Ingresos registrados</small>
-      <strong class="is-green">+{{ metricas().totalEntradas }} u.</strong>
-    </article>
-    <article>
-      <small>Salidas / mermas</small>
-      <strong class="is-red">−{{ metricas().totalSalidas }} u.</strong>
-    </article>
-    <article>
-      <small>Alertas de stock</small>
-      <strong class="is-compact is-green">{{ metricas().conStockBajo }} bajo · {{ metricas().agotados }} agotados</strong>
-    </article>
-  </section>
-
+  <div class="list-kpis">
+    <article><small>Variantes</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Bajo mínimo</small><strong>{{ list.count('bajos') }}</strong></article>
+    <article><small>Sin stock</small><strong>{{ list.count('sin_stock') }}</strong></article>
+    <article><small>Por vencer</small><strong>{{ list.count('por_vencer') }}</strong></article>
+  </div>
   <div class="list-tools">
     <label class="list-search">
-      <i class="pi pi-search" aria-hidden="true"></i>
-      <input type="search" placeholder="Buscar por nombre, presentación, categoría o código..." [ngModel]="busquedaTexto()" (ngModelChange)="onBusqueda($event)" />
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="Buscar producto o SKU" [value]="list.q()" (input)="buscar($event)" />
     </label>
-    @if (tabActiva() === 'inventario') {
-      <div class="list-switch">
-        <button type="button" [class.is-on]="filtroNivel() === 'todos'" (click)="setNivel('todos')">Todos</button>
-        <button type="button" [class.is-on]="filtroNivel() === 'bajo'" (click)="setNivel('bajo')">Bajo</button>
-        <button type="button" [class.is-on]="filtroNivel() === 'agotado'" (click)="setNivel('agotado')">Agotado</button>
-      </div>
-    } @else {
-      <p-select [options]="productos()" optionLabel="nombre" optionValue="id" [ngModel]="filterProductoId()" (ngModelChange)="onFiltroProducto($event)" placeholder="Todos los productos" [showClear]="true" appendTo="body" />
-      <p-select [options]="tiposMovimiento" optionLabel="label" optionValue="value" [ngModel]="filterTipo()" (ngModelChange)="onFiltroTipo($event)" appendTo="body" />
-    }
     <div class="list-switch">
-      @for (pestana of pestanas; track pestana.value) {
-        <button type="button" [class.is-on]="tabActiva() === pestana.value" (click)="cambiarTab(pestana.value)">
-          {{ pestana.label }}
-        </button>
-      }
+      <button type="button" [class.is-on]="!soloBajo" (click)="soloBajo = false; filtrar()">Todo</button>
+      <button type="button" [class.is-on]="soloBajo" (click)="soloBajo = true; filtrar()">Stock bajo</button>
     </div>
+    @if (auth.can('inventory.adjust')) {
+      <button type="button" class="list-link" (click)="ajusteOpen.set(true)">Ajuste</button>
+      <button type="button" class="list-link" (click)="cajaOpen.set(true)">Abrir caja</button>
+    }
   </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="5" itemLabel="variantes" emptyIcon="pi pi-box" emptyTitle="Sin stock" emptyText="No hay variantes con ese filtro.">
+    <ng-template #head><tr><th>Producto</th><th>SKU</th><th>Existencia</th><th>Mínimo</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.variant.producto?.nombre || 'Producto' }}</span><span class="list-muted">{{ row.variant.presentation }}</span></td>
+        <td>{{ row.variant.sku || '—' }}</td>
+        <td><span class="list-state" [class.is-warn]="row.low_stock" [class.is-off]="row.on_hand === 0">{{ row.on_hand }}</span></td>
+        <td>{{ row.min_stock }}</td>
+        <td class="list-actions">
+          <button type="button" class="list-icon" aria-label="Kardex" (click)="verKardex(row)"><i class="pi pi-eye"></i></button>
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
 
-  @if (tabActiva() === 'inventario') {
-    <section class="stk-card">
-      @if (filasInventario().length === 0) {
-        <div class="empty-state">
-          <span class="empty-state-icon"><i class="pi pi-box" aria-hidden="true"></i></span>
-          <strong>Aún no hay productos en el inventario</strong>
-          <p>Registra tu primer ingreso para empezar a controlar existencias y alertas de stock mínimo.</p>
-          <button type="button" class="list-primary" (click)="openCreateForProduct()">
-            <i class="pi pi-plus" aria-hidden="true"></i>
-            Registrar movimiento
-          </button>
-        </div>
-      } @else {
-        <app-admin-table
-          [rows]="productosFiltrados()"
-          [pageSize]="12"
-          [columns]="8"
-          itemLabel="productos"
-          emptyIcon="pi pi-box"
-          emptyTitle="Sin productos"
-          emptyText="Ningún producto coincide con ese filtro."
-          [resetKey]="busquedaTexto() + filtroNivel()"
-        >
-          <ng-template #head>
-            <tr>
-              <th>Código</th>
-              <th>Producto</th>
-              <th>Presentación</th>
-              <th>Categoría</th>
-              <th>P. venta</th>
-              <th>Stock</th>
-              <th>Estado</th>
-              <th></th>
-            </tr>
-          </ng-template>
-          <ng-template #row let-p>
-              <tr>
-                <td class="list-id">{{ p.codigo }}</td>
-                <td class="list-name">{{ p.nombre }}</td>
-                <td>{{ p.presentacion }}</td>
-                <td>{{ p.categoria }}</td>
-                <td>S/ {{ p.precio_venta | number:'1.2-2' }}</td>
-                <td>{{ p.stock }}</td>
-                <td>
-                  @if (p.stock <= 0) {
-                    <span class="list-state is-off">Agotado</span>
-                  } @else if (p.stock <= (p.stock_minimo || 5)) {
-                    <span class="list-state is-warn">Stock bajo</span>
-                  } @else {
-                    <span class="list-state">Disponible</span>
-                  }
-                </td>
-                <td class="list-actions">
-                  <button type="button" class="list-link" (click)="openCreateForProduct(p)">Ajustar</button>
-                </td>
-              </tr>
-          </ng-template>
-        </app-admin-table>
-      }
-    </section>
-  } @else if (loading()) {
-    <p class="list-note">Cargando historial de movimientos...</p>
-  } @else {
-    <section class="stk-card">
-      @if (movimientosFiltrados().length === 0) {
-        <div class="empty-state">
-          <span class="empty-state-icon"><i class="pi pi-list" aria-hidden="true"></i></span>
-          <strong>Aún no hay movimientos en el Kardex</strong>
-          <p>Los ingresos y las salidas que registres aparecerán en este historial.</p>
-        </div>
-      } @else {
-        <app-admin-table
-          [rows]="movimientosFiltrados()"
-          [pageSize]="12"
-          [columns]="10"
-          itemLabel="movimientos"
-          emptyIcon="pi pi-list"
-          emptyTitle="Sin movimientos"
-          emptyText="Ningún movimiento coincide con ese filtro."
-          [resetKey]="busquedaTexto() + (filterProductoId() ?? '') + filterTipo()"
-        >
-          <ng-template #head>
-            <tr>
-              <th>#</th>
-              <th>Producto</th>
-              <th>Presentación</th>
-              <th>Tipo</th>
-              <th>Cant.</th>
-              <th>Stock ant.</th>
-              <th>Stock nuevo</th>
-              <th>Responsable</th>
-              <th>Motivo</th>
-              <th>Fecha</th>
-            </tr>
-          </ng-template>
-          <ng-template #row let-m>
-              <tr>
-                <td class="list-id">#{{ m.id }}</td>
-                <td class="list-name">{{ m.producto?.nombre ?? getProductoNombre(m.producto_id) }}</td>
-                <td>{{ presentacionDe(m) }}</td>
-                <td>
-                  <span class="list-state" [class.is-off]="m.tipo !== 'entrada'">{{ m.tipo === 'entrada' ? 'Entrada' : 'Salida' }}</span>
-                </td>
-                <td>{{ m.tipo === 'entrada' ? '+' : '-' }}{{ m.cantidad }}</td>
-                <td>{{ m.stock_anterior }}</td>
-                <td>{{ m.stock_nuevo }}</td>
-                <td>{{ m.user?.name || 'Administrador' }}</td>
-                <td>{{ m.motivo || 'Ajuste manual' }}</td>
-                <td>{{ m.created_at | date:'dd/MM/yyyy HH:mm' }}</td>
-              </tr>
-          </ng-template>
-        </app-admin-table>
-      }
-    </section>
-  }
-</div>
+  <p-dialog header="Ingreso de stock" [visible]="ingresoOpen()" (visibleChange)="ingresoOpen.set($event)" [modal]="true" [style]="{ width: '32rem' }">
+    <label class="field">Variante <app-remote-select [search]="buscarVariantes" [(value)]="ingreso.variant_id" placeholder="Buscar variante" /></label>
+    <label class="field">Cantidad <input pInputText type="number" [(ngModel)]="ingreso.quantity" /></label>
+    <label class="field">Costo <input pInputText type="number" [(ngModel)]="ingreso.cost" /></label>
+    <label class="field">Lote <input pInputText [(ngModel)]="ingreso.batch_code" /></label>
+    <label class="field">Vencimiento <input pInputText type="date" [(ngModel)]="ingreso.expiry_date" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="ingresoOpen.set(false)" />
+      <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="recibir()" />
+    </div>
+  </p-dialog>
 
-<p-dialog header="Registrar movimiento de stock" [visible]="showModal()" (visibleChange)="$event ? showModal.set(true) : closeModal()" [modal]="true" [style]="{ width: '36rem' }">
-  <form class="flex flex-col gap-6" (ngSubmit)="save()">
-    <label class="field flex flex-col gap-1" [class.is-invalid]="!!formError()">
-      Producto y presentación *
-      <p-select [options]="filasInventario()" optionLabel="nombre" optionValue="key" [ngModel]="seleccion" (ngModelChange)="onSeleccion($event)" name="seleccion" placeholder="Selecciona un producto" appendTo="body" />
-      <span class="field-error">{{ formError() }}</span>
-    </label>
-    <div class="grid gap-3 md:grid-cols-2">
-      <label class="flex flex-col gap-1">Tipo *
-        <p-select [options]="tiposRegistro" optionLabel="label" optionValue="value" [(ngModel)]="form.tipo" name="tipo" appendTo="body" />
-      </label>
-      <label class="flex flex-col gap-1">Cantidad *<input pInputText class="w-full" type="number" [ngModel]="form.cantidad" (ngModelChange)="onCantidad($event)" name="cantidad" min="1" /></label>
+  <p-dialog header="Ajuste de stock" [visible]="ajusteOpen()" (visibleChange)="ajusteOpen.set($event)" [modal]="true" [style]="{ width: '32rem' }">
+    <label class="field">Variante <app-remote-select [search]="buscarVariantes" [(value)]="ajuste.variant_id" (valueChange)="cargarLotes($event)" placeholder="Buscar variante" /></label>
+    <label class="field">Lote <p-select [options]="lotes()" optionLabel="label" optionValue="id" [(ngModel)]="ajuste.batch_id" appendTo="body" placeholder="Elige un lote" /></label>
+    <label class="field">Dirección <p-select [options]="direcciones" optionLabel="label" optionValue="value" [(ngModel)]="ajuste.direction" appendTo="body" /></label>
+    <label class="field">Cantidad <input pInputText type="number" [(ngModel)]="ajuste.quantity" /></label>
+    <label class="field">Motivo <input pInputText [(ngModel)]="ajuste.reason" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="ajusteOpen.set(false)" />
+      <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="ajustar()" />
     </div>
-    <label class="flex flex-col gap-1">Motivo<input pInputText class="w-full" [(ngModel)]="form.motivo" name="motivo" placeholder="Compra, rotura, vencimiento..." /></label>
-    <div class="flex justify-end gap-2">
-      <p-button type="button" label="Cancelar" [outlined]="true" (onClick)="closeModal()" />
-      <p-button type="submit" [label]="savingModal() ? 'Guardando...' : 'Registrar'" [disabled]="savingModal() || !form.producto_id" />
+  </p-dialog>
+
+  <p-dialog header="Abrir caja" [visible]="cajaOpen()" (visibleChange)="cajaOpen.set($event)" [modal]="true" [style]="{ width: '32rem' }">
+    <label class="field">Variante <app-remote-select [search]="buscarVariantes" [(value)]="caja.variant_id" (valueChange)="cargarLotes($event)" placeholder="Buscar variante" /></label>
+    <label class="field">Lote <p-select [options]="lotes()" optionLabel="label" optionValue="id" [(ngModel)]="caja.batch_id" appendTo="body" placeholder="Elige un lote" /></label>
+    <label class="field">Cajas <input pInputText type="number" [(ngModel)]="caja.boxes" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="cajaOpen.set(false)" />
+      <p-button label="Abrir" icon="pi pi-check" [loading]="saving()" (onClick)="abrirCaja()" />
     </div>
-  </form>
-</p-dialog>
+  </p-dialog>
+
+  <p-dialog header="Kardex" [visible]="kardexOpen()" (visibleChange)="kardexOpen.set($event)" [modal]="true" [style]="{ width: '40rem' }">
+    <app-admin-table [rows]="kardex()" [columns]="5" itemLabel="movimientos" emptyIcon="pi pi-list" emptyTitle="Sin movimientos" emptyText="Esta variante todavía no tiene kardex.">
+      <ng-template #head><tr><th>Fecha</th><th>Movimiento</th><th>Cantidad</th><th>Saldo</th><th>Motivo</th></tr></ng-template>
+      <ng-template #row let-row>
+        <tr>
+          <td>{{ fecha(row.fecha) }}</td>
+          <td>{{ row.movimiento }}</td>
+          <td>{{ row.cantidad }}</td>
+          <td>{{ row.saldo }}</td>
+          <td>{{ row.motivo || row.lote || '—' }}</td>
+        </tr>
+      </ng-template>
+    </app-admin-table>
+  </p-dialog>
+</section>

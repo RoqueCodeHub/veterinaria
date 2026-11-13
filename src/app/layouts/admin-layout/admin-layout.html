@@ -49,12 +49,32 @@
     </nav>
 
     <div class="admin-user">
-      <p-avatar [label]="(user?.nombre ?? 'A').charAt(0).toUpperCase()" shape="circle" />
+      <p-avatar [label]="(user?.name ?? 'A').charAt(0).toUpperCase()" shape="circle" />
       <div class="admin-user-text">
-        <p class="admin-user-name">{{ user?.nombre ?? 'Administrador' }}</p>
+        <p class="admin-user-name">{{ user?.name ?? 'Administrador' }}</p>
         <p class="admin-user-email">{{ user?.email }}</p>
       </div>
+      <p-button icon="pi pi-key" [text]="true" [rounded]="true" (onClick)="openPassword()" ariaLabel="Cambiar contraseña" />
       <p-button icon="pi pi-sign-out" [text]="true" [rounded]="true" (onClick)="logout()" ariaLabel="Cerrar sesión" />
     </div>
   </div>
 </ng-template>
+
+<p-dialog header="Cambiar contraseña" [visible]="passwordOpen()" (visibleChange)="passwordOpen.set($event)" [modal]="true" [style]="{ width: '26rem' }">
+  <form class="grid gap-3" (ngSubmit)="savePassword()">
+    @if (passwordError()) { <p class="list-error">{{ passwordError() }}</p> }
+    <label class="flex flex-col gap-1">Contraseña actual
+      <input pInputText type="password" [(ngModel)]="passwordForm.current" name="current" />
+    </label>
+    <label class="flex flex-col gap-1">Nueva contraseña
+      <input pInputText type="password" [(ngModel)]="passwordForm.next" name="next" />
+    </label>
+    <label class="flex flex-col gap-1">Confirmar
+      <input pInputText type="password" [(ngModel)]="passwordForm.confirm" name="confirm" />
+    </label>
+    <div class="flex justify-end gap-2">
+      <p-button type="button" label="Cancelar" [outlined]="true" (onClick)="passwordOpen.set(false)" />
+      <p-button type="submit" label="Guardar" [disabled]="savingPassword()" />
+    </div>
+  </form>
+</p-dialog>

@@ -1,0 +1,39 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Por pagar</h1>
+      <p>Compras confirmadas que todavía tienen saldo.</p>
+    </div>
+  </header>
+  <div class="list-kpis">
+    <article><small>Documentos</small><strong>{{ list.count('documentos') }}</strong></article>
+    <article><small>Saldo</small><strong class="is-compact">{{ soles(list.count('saldo')) }}</strong></article>
+    <article><small>Vencidos</small><strong>{{ list.count('vencidos') }}</strong></article>
+    <article><small>Vigentes</small><strong>{{ list.count('vigentes') }}</strong></article>
+  </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="5" itemLabel="documentos" emptyIcon="pi pi-wallet" emptyTitle="Sin deudas" emptyText="No hay compras con saldo pendiente.">
+    <ng-template #head><tr><th>Proveedor</th><th>Vence</th><th>Saldo</th><th>Estado</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.supplier?.name }}</span><span class="list-muted">{{ row.comprobante }}</span></td>
+        <td>{{ fecha(row.due_date) }}</td>
+        <td>{{ soles(row.balance) }}</td>
+        <td><span class="list-state" [class.is-warn]="vencido(row)">{{ vencido(row) ? 'Vencido' : 'Vigente' }}</span></td>
+        <td class="list-actions">
+          @if (auth.can('purchases.create')) {
+            <button type="button" class="list-icon" aria-label="Pagar" (click)="abrir(row)"><i class="pi pi-wallet"></i></button>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+  <p-dialog header="Registrar pago" [visible]="pago() !== null" (visibleChange)="pago.set($event ? pago() : null)" [modal]="true" [style]="{ width: '28rem' }">
+    <p>Saldo {{ soles(pago()?.balance) }}</p>
+    <label class="field">Monto <input pInputText type="number" [(ngModel)]="amount" /></label>
+    <label class="field">Método <p-select [options]="metodos" optionLabel="label" optionValue="value" [(ngModel)]="method" appendTo="body" /></label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="pago.set(null)" />
+      <p-button label="Pagar" icon="pi pi-check" [loading]="saving()" (onClick)="guardar()" />
+    </div>
+  </p-dialog>
+</section>

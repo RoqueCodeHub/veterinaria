@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, model, signal } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Dialog } from 'primeng/dialog';
-import { VentasService } from '../../../core/services/ventas.service';
+import { SalesService } from '../../../core/services/commerce.service';
 import { NotifyService } from '../../../core/ui/notify';
 
 @Component({
@@ -13,15 +13,13 @@ import { NotifyService } from '../../../core/ui/notify';
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class TicketViewer {
-  private ventas = inject(VentasService);
-  private sanitizer = inject(DomSanitizer);
-  private notify = inject(NotifyService);
-
+  private readonly ventas = inject(SalesService);
+  private readonly notify = inject(NotifyService);
+  private readonly sanitizer = inject(DomSanitizer);
   readonly visible = model(false);
   readonly ventaId = input<number | null>(null);
   readonly url = signal<SafeResourceUrl | null>(null);
   readonly cargando = signal(false);
-
   private objectUrl: string | null = null;
   private cargado: number | null = null;
 
@@ -38,16 +36,12 @@ export class TicketViewer {
     });
   }
 
-  cerrar(): void {
-    this.visible.set(false);
-  }
-
   private cargar(id: number): void {
     this.cargado = id;
     this.cargando.set(true);
     this.ventas.ticket(id).subscribe({
       next: (blob) => {
-        this.liberar(false);
+        this.revocar();
         this.objectUrl = URL.createObjectURL(blob);
         this.url.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.objectUrl));
         this.cargando.set(false);
@@ -61,10 +55,14 @@ export class TicketViewer {
     });
   }
 
-  private liberar(resetCarga = true): void {
+  private liberar(): void {
+    this.cargado = null;
+    this.revocar();
+    this.url.set(null);
+  }
+
+  private revocar(): void {
     if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
     this.objectUrl = null;
-    this.url.set(null);
-    if (resetCarga) this.cargado = null;
   }
 }

@@ -1,0 +1,65 @@
+<section class="list-page view-fill">
+  <header class="list-header">
+    <div>
+      <h1>Usuarios</h1>
+      <p>Cuentas del equipo, roles y acceso al panel.</p>
+    </div>
+    @if (auth.can('users.create')) {
+      <button type="button" class="list-primary" (click)="abrir()"><i class="pi pi-plus"></i> Nuevo usuario</button>
+    }
+  </header>
+  <div class="list-kpis">
+    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article><small>Activos</small><strong>{{ list.count('activos') }}</strong></article>
+    <article><small>Inactivos</small><strong>{{ list.count('inactivos') }}</strong></article>
+    <article><small>Recientes</small><strong>{{ list.count('recientes') }}</strong></article>
+  </div>
+  <div class="list-tools">
+    <label class="list-search">
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="Buscar nombre o correo" [value]="list.q()" (input)="buscar($event)" />
+    </label>
+  </div>
+  <app-admin-table [rows]="list.rows()" paging="server" [totalItems]="list.total()" [serverPage]="list.page()" [pageSize]="20" (pageChange)="list.load($event)" [columns]="4" itemLabel="usuarios" emptyIcon="pi pi-users" emptyTitle="Sin usuarios" emptyText="No hay cuentas con esa búsqueda.">
+    <ng-template #head><tr><th>Usuario</th><th>Roles</th><th>Estado</th><th></th></tr></ng-template>
+    <ng-template #row let-row>
+      <tr>
+        <td><span class="list-name">{{ row.name }}</span><span class="list-muted">{{ row.email }}</span></td>
+        <td>
+          @for (rol of row.roles; track rol) { <span class="list-chip">{{ rol }}</span> }
+        </td>
+        <td><span class="list-state" [class.is-off]="!row.is_active">{{ row.is_active ? 'Activo' : 'Inactivo' }}</span></td>
+        <td class="list-actions">
+          @if (auth.can('users.update')) {
+            <button type="button" class="list-icon" aria-label="Editar" (click)="abrir(row)"><i class="pi pi-pencil"></i></button>
+            <button type="button" class="list-icon" [class.is-danger]="row.is_active" [attr.aria-label]="row.is_active ? 'Desactivar' : 'Activar'" (click)="confirmar.set(row)"><i class="pi" [class.pi-ban]="row.is_active" [class.pi-check]="!row.is_active"></i></button>
+          }
+        </td>
+      </tr>
+    </ng-template>
+  </app-admin-table>
+  <p-dialog [header]="editing() ? 'Editar usuario' : 'Nuevo usuario'" [visible]="modal()" (visibleChange)="modal.set($event)" [modal]="true" [style]="{ width: '32rem' }">
+    <label class="field" [class.is-invalid]="errors()['name']">Nombre
+      <input pInputText [(ngModel)]="form.name" (ngModelChange)="limpiar('name')" />
+      <small class="field-error">{{ errors()['name'] }}</small>
+    </label>
+    <label class="field" [class.is-invalid]="errors()['email']">Correo
+      <input pInputText [(ngModel)]="form.email" (ngModelChange)="limpiar('email')" />
+      <small class="field-error">{{ errors()['email'] }}</small>
+    </label>
+    <label class="field" [class.is-invalid]="errors()['password']">Contraseña
+      <input pInputText type="password" [(ngModel)]="form.password" (ngModelChange)="limpiar('password')" />
+      <small class="field-error">{{ errors()['password'] }}</small>
+    </label>
+    <label class="field" [class.is-invalid]="errors()['roles']">Roles
+      <p-multiSelect [options]="roles()" optionLabel="label" optionValue="value" [(ngModel)]="form.roles" (ngModelChange)="limpiar('roles')" appendTo="body" placeholder="Elige roles" />
+      <small class="field-error">{{ errors()['roles'] }}</small>
+    </label>
+    <label class="field"><p-checkbox [(ngModel)]="form.is_active" [binary]="true" /> Activo</label>
+    <div class="prod-form-actions">
+      <p-button label="Cancelar" [outlined]="true" (onClick)="modal.set(false)" />
+      <p-button label="Guardar" icon="pi pi-check" [loading]="saving()" (onClick)="guardar()" />
+    </div>
+  </p-dialog>
+  <app-confirm-dialog [open]="confirmar() !== null" (openChange)="confirmar.set($event ? confirmar() : null)" [title]="confirmar()?.is_active ? 'Desactivar usuario' : 'Activar usuario'" [message]="(confirmar()?.is_active ? '¿Desactivar a ' : '¿Activar a ') + (confirmar()?.name || '') + '?'" [confirmLabel]="confirmar()?.is_active ? 'Desactivar' : 'Activar'" [severity]="confirmar()?.is_active ? 'danger' : 'success'" (confirmed)="aplicarEstado()" />
+</section>
