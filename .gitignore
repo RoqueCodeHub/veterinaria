@@ -44,3 +44,11 @@ __screenshots__/
 Thumbs.db
 
 /design-system
+
+# Include the AliVet style inventory and residual archive in Git
+!/design-system/
+!/design-system/alivet/
+/design-system/alivet/*
+!/design-system/alivet/STYLE-SOURCES.md
+!/design-system/alivet/residual/
+!/design-system/alivet/residual/**
