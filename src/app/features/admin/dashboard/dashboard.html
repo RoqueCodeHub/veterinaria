@@ -39,12 +39,12 @@
   } @else if (reporte(); as data) {
   @if (data.role === 'admin') {
     <section class="dash-kpis">
-      <a class="dash-kpi admin-card" routerLink="/admin/ventas-historial">
+      <a class="dash-kpi dash-kpi-highlight admin-card" routerLink="/admin/ventas-historial">
         <span class="dash-kpi-icon is-green"><i class="pi pi-wallet"></i></span>
         <span>
           <small>Ingresos de hoy</small>
           <strong>{{ soles(data.today.total) }}</strong>
-          <em>{{ data.today.count || 0 }} órdenes procesadas hoy</em>
+          <em>{{ data.today.count || 0 }} órdenes · {{ comparacionHoy() }}</em>
         </span>
       </a>
       <a class="dash-kpi admin-card" routerLink="/admin/productos">
@@ -77,7 +77,7 @@
       <a class="admin-card" routerLink="/admin/reportes">
         <small>Esta semana</small>
         <strong>{{ soles(data.week?.total) }}</strong>
-        <em>{{ data.week?.count || 0 }} ventas cobradas</em>
+        <em>{{ data.week?.count || 0 }} ventas · {{ comparacionSemana() }}</em>
       </a>
       <a class="admin-card" routerLink="/admin/reportes">
         <small>Este mes</small>
@@ -117,11 +117,11 @@
             <p-chart type="doughnut" [data]="ordenesDonut()" [options]="donutOptions" />
             <strong>{{ ordenesSemana() }}</strong>
           </div>
-          <ul class="dash-donut-legend">
-            <li><i class="is-green"></i>Cobradas · {{ cobradasSemana() }}</li>
-            <li><i class="is-amber"></i>Pendientes · {{ pendientesSemana() }}</li>
-            <li><i class="is-red"></i>Anuladas · {{ anuladasSemana() }}</li>
-          </ul>
+        </div>
+        <div class="dash-order-breakdown">
+          <div class="is-paid"><span><i></i>Cobradas</span><strong>{{ cobradasSemana() }}</strong><small>{{ porcentaje(cobradasSemana(), ordenesSemana()) | number:'1.0-0' }}%</small></div>
+          <div class="is-pending"><span><i></i>Pendientes</span><strong>{{ pendientesSemana() }}</strong><small>{{ porcentaje(pendientesSemana(), ordenesSemana()) | number:'1.0-0' }}%</small></div>
+          <div class="is-voided"><span><i></i>Anuladas</span><strong>{{ anuladasSemana() }}</strong><small>{{ porcentaje(anuladasSemana(), ordenesSemana()) | number:'1.0-0' }}%</small></div>
         </div>
         @if (ordenesSemana() === 0) {
           <p class="dash-empty">Aún no hay órdenes esta semana. <a routerLink="/admin/pos">Registrar una venta →</a></p>
@@ -129,34 +129,157 @@
       </article>
     </section>
 
-    <section class="dash-bottom">
+    <section class="dash-detail-grid">
       <article class="dash-card admin-card">
-        <h2>Ingreso de hoy</h2>
-        <p class="dash-money">{{ soles(data.today.total) }}</p>
-        <p class="dash-note">{{ comparacionHoy() }}</p>
-      </article>
-      <article class="dash-card admin-card">
-        <h2>Movimiento · 7 días</h2>
-        <table class="dash-table">
-          <thead>
-            <tr><th>Día</th><th>Órdenes</th><th>Variación</th></tr>
-          </thead>
-          <tbody>
-            @for (dia of semana(); track dia.clave) {
-              <tr>
-                <td>{{ dia.label }}</td>
-                <td>{{ dia.ordenes }}</td>
-                <td>
-                  @if (dia.variacion == null) {
-                    —
-                  } @else {
-                    {{ dia.variacion >= 0 ? '+' : '' }}{{ dia.variacion | number:'1.0-0' }}%
-                  }
-                </td>
-              </tr>
+        <div class="dash-card-head"><h2>Productos más vendidos</h2><a routerLink="/admin/productos">Ver productos</a></div>
+        @if (productosDestacados().length) {
+          <div class="dash-ranking">
+            @for (producto of productosDestacados(); track producto.variant_id; let i = $index) {
+              <div class="dash-ranking-row">
+                <span class="dash-rank">{{ i + 1 }}</span>
+                <span class="dash-ranking-name"><strong>{{ producto.description || 'Producto sin nombre' }}</strong><small>{{ producto.quantity || 0 }} unidades</small></span>
+                <strong class="dash-ranking-value">{{ soles(producto.total) }}</strong>
+              </div>
             }
-          </tbody>
-        </table>
+          </div>
+        } @else { <p class="dash-empty">Aún no hay productos vendidos en este periodo.</p> }
+      </article>
+
+      <article class="dash-card admin-card">
+        <div class="dash-card-head"><h2>Medios de pago</h2><i class="pi pi-wallet dash-card-icon"></i></div>
+        @if (mediosPago().length) {
+          <div class="dash-bars">
+            @for (medio of mediosPago(); track medio.method) {
+              <div class="dash-bar-row">
+                <div class="dash-bar-label"><span>{{ medio.method }}</span><strong>{{ soles(medio.total) }}</strong></div>
+                <div class="dash-bar-track"><span [style.width.%]="medio.porcentaje"></span></div>
+                <small>{{ medio.porcentaje | number:'1.0-0' }}%</small>
+              </div>
+            }
+          </div>
+        } @else { <p class="dash-empty">No hay pagos registrados en este periodo.</p> }
+      </article>
+
+      <article class="dash-card admin-card">
+        <div class="dash-card-head"><h2>Ingresos por día</h2><i class="pi pi-chart-line dash-card-icon"></i></div>
+        @if (data.sales_by_day?.length) {
+          <div class="dash-chart dash-chart-small"><p-chart type="line" [data]="ventasPeriodoChart()" [options]="smallChartOptions" /></div>
+          <p class="dash-note">Últimos 30 días</p>
+          @if (ultimaActividadDia(); as ultimo) {
+            <p class="dash-chart-summary">{{ ultimo.sales_count }} ventas · {{ ultimo.items_sold || 0 }} unidades · Utilidad {{ soles(ultimo.profit) }}</p>
+          }
+        } @else { <p class="dash-empty">No hay ingresos diarios para mostrar.</p> }
+      </article>
+
+      <article class="dash-card admin-card">
+        <div class="dash-card-head"><h2>Productos vendidos por día</h2><i class="pi pi-chart-line dash-card-icon"></i></div>
+        @if (data.products_by_day?.length) {
+          <div class="dash-chart dash-chart-small"><p-chart type="line" [data]="ventaProductosChart()" [options]="smallChartOptions" /></div>
+          <p class="dash-chart-summary">{{ soles(totalProductosDia()) }} en productos · unidades vendidas por fecha</p>
+        } @else { <p class="dash-empty">No hay ventas de productos en este periodo.</p> }
+      </article>
+
+      <article class="dash-card admin-card">
+        <div class="dash-card-head"><h2>Utilidad del periodo</h2><a routerLink="/admin/reportes">Ver reportes</a></div>
+        <p class="dash-profit-total">{{ soles(data.profit?.profit) }}</p>
+        <div class="dash-metric-list">
+          <div><span>Ventas</span><strong>{{ soles(data.profit?.sales_total) }}</strong></div>
+          <div><span>Costo de productos</span><strong>{{ soles(data.profit?.cost) }}</strong></div>
+          <div><span>Devoluciones</span><strong>{{ soles(data.profit?.refund_total) }}</strong></div>
+          <div><span>Operaciones</span><strong>{{ data.profit?.sales_count || 0 }}</strong></div>
+        </div>
+      </article>
+
+      <article class="dash-card admin-card">
+        <div class="dash-card-head"><h2>Ventas por categoría</h2><a routerLink="/admin/reportes">Ver reportes</a></div>
+        @if (categoriasDestacadas().length) {
+          <div class="dash-bars">
+            @for (categoria of categoriasDestacadas(); track categoria.categoria; let i = $index) {
+              <div class="dash-bar-row">
+                <div class="dash-bar-label"><span>{{ categoria.categoria || 'Sin categoría' }}</span><strong>{{ soles(categoria.total) }}</strong></div>
+                <div class="dash-bar-track"><span [class.is-secondary]="i > 0" [style.width.%]="porcentaje(categoria.total, categoriaMaxima())"></span></div>
+                <small>{{ categoria.quantity || 0 }} uds.</small>
+              </div>
+            }
+          </div>
+        } @else { <p class="dash-empty">No hay ventas agrupadas por categoría.</p> }
+      </article>
+
+      <article class="dash-card admin-card">
+        <div class="dash-card-head"><h2>Actividad por hora</h2><i class="pi pi-clock dash-card-icon"></i></div>
+        @if (ventasPorHora().length) {
+          <div class="dash-hours">
+            @for (hora of ventasPorHora(); track hora.hour) {
+              <div class="dash-hour-row"><span>{{ hora.hour | number:'2.0-0' }}:00</span><span class="dash-hour-track"><i [style.width.%]="porcentaje(hora.total, ventasHoraMaxima())"></i></span><span>{{ hora.sales_count || 0 }} ventas</span><strong>{{ soles(hora.total) }}</strong></div>
+            }
+          </div>
+        } @else { <p class="dash-empty">No hay actividad por hora para mostrar.</p> }
+      </article>
+
+      <article class="dash-card admin-card">
+        <div class="dash-card-head"><h2>Ventas por cajero</h2><i class="pi pi-users dash-card-icon"></i></div>
+        @if (cajerosDestacados().length) {
+          <div class="dash-ranking">
+            @for (cajero of cajerosDestacados(); track cajero.user_id; let i = $index) {
+              <div class="dash-ranking-row"><span class="dash-rank">{{ i + 1 }}</span><span class="dash-ranking-name"><strong>{{ cajero.cajero || 'Usuario' }}</strong><small>{{ cajero.sales_count || 0 }} ventas</small></span><strong class="dash-ranking-value">{{ soles(cajero.total) }}</strong></div>
+            }
+          </div>
+        } @else { <p class="dash-empty">No hay ventas asociadas a cajeros.</p> }
+      </article>
+
+      <article class="dash-card admin-card">
+        <div class="dash-card-head"><h2>Baja rotación</h2><a routerLink="/admin/stock">Revisar stock</a></div>
+        @if (productosBajaRotacion().length) {
+          <div class="dash-ranking">
+            @for (producto of productosBajaRotacion(); track producto.variant_id) {
+              <div class="dash-ranking-row"><span class="dash-stock-dot"></span><span class="dash-ranking-name"><strong>{{ producto.producto || 'Producto sin nombre' }}</strong><small>{{ producto.sku || 'Sin SKU' }}</small></span><strong class="dash-ranking-value">{{ producto.on_hand || 0 }} uds.</strong></div>
+            }
+          </div>
+        } @else { <p class="dash-empty">No hay productos de baja rotación.</p> }
+      </article>
+
+      <article class="dash-card admin-card dash-expiry-card">
+        <div class="dash-card-head"><h2>Control de vencimientos</h2><a routerLink="/admin/stock">Ver inventario</a></div>
+        @if (data.expiring) {
+          <div class="dash-expiry-grid">
+            @for (grupo of vencimientos(); track grupo.clave) {
+              <div class="dash-expiry-item" [class.is-danger]="grupo.clave === 'vencido' && grupo.lotes > 0">
+                <small>{{ grupo.label }}</small><strong>{{ grupo.lotes }}</strong><span>{{ grupo.unidades }} unidades</span>
+              </div>
+            }
+          </div>
+          @if (!hayVencimientos()) {
+            <p class="dash-empty">No hay lotes vencidos o próximos a vencer.</p>
+          } @else {
+            <div class="dash-expiry-list">
+              @for (lote of lotesCriticos(); track lote.batch_id) {
+                <div><strong>{{ lote.producto || lote.sku || 'Lote sin nombre' }}</strong><small>{{ lote.expiry_date | date:'dd/MM/yyyy':'UTC' }} · {{ lote.quantity || 0 }} unidades</small></div>
+              }
+            </div>
+          }
+          @if (hayLotesVencidos()) { <p class="dash-expiry-note">Revisa primero los lotes que ya vencieron.</p> }
+        } @else { <p class="dash-empty">El backend no envió información de vencimientos.</p> }
+      </article>
+    </section>
+
+    <section class="dash-bottom">
+      <article class="dash-card admin-card dash-wide-card">
+        <div class="dash-card-head"><h2>Movimiento · 7 días</h2><span class="dash-note">Órdenes y variación diaria</span></div>
+        <div class="dash-table-wrap">
+          <table class="dash-table">
+            <thead>
+              <tr><th>Día</th><th>Órdenes</th><th>Cobradas</th><th>Pendientes</th><th>Anuladas</th><th>Variación</th></tr>
+            </thead>
+            <tbody>
+              @for (dia of semana(); track dia.clave) {
+                <tr>
+                  <td>{{ dia.label }}</td><td>{{ dia.ordenes }}</td><td>{{ dia.cobradas }}</td><td>{{ dia.pendientes }}</td><td>{{ dia.anuladas }}</td>
+                  <td>@if (dia.variacion == null) { — } @else { {{ dia.variacion >= 0 ? '+' : '' }}{{ dia.variacion | number:'1.0-0' }}% }</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
       </article>
     </section>
   } @else {

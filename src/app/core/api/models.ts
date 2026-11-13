@@ -476,6 +476,62 @@ export interface DashboardComparison {
   percent: number;
 }
 
+export interface DashboardProductSummary {
+  variant_id: number;
+  description?: string;
+  quantity?: number;
+  total?: number;
+}
+
+export interface DashboardCategorySummary {
+  categoria?: string;
+  quantity?: number;
+  total: number;
+}
+
+export interface DashboardCashierSummary {
+  user_id: number;
+  cajero?: string;
+  sales_count?: number;
+  total?: number;
+}
+
+export interface DashboardPaymentSummary {
+  method: string;
+  total: number;
+}
+
+export interface DashboardHourSummary {
+  hour: number;
+  sales_count?: number;
+  total?: number;
+}
+
+export interface DashboardSlowMover {
+  variant_id: number;
+  sku?: string;
+  producto?: string;
+  on_hand?: number;
+}
+
+export interface DashboardExpiringBatch {
+  batch_id: number;
+  batch_code?: string;
+  expiry_date?: string;
+  quantity?: number;
+  variant_id?: number;
+  sku?: string;
+  producto?: string;
+  presentation?: string;
+}
+
+export interface DashboardExpiringSummary {
+  vencido?: DashboardExpiringBatch[];
+  vence_30?: DashboardExpiringBatch[];
+  vence_60?: DashboardExpiringBatch[];
+  vence_90?: DashboardExpiringBatch[];
+}
+
 export interface DashboardReport {
   role: string;
   today: { count: number; total: number };
@@ -483,11 +539,16 @@ export interface DashboardReport {
   month?: { count: number; total: number };
   comparison?: { today?: DashboardComparison; week?: DashboardComparison; month?: DashboardComparison };
   sales_by_day?: { date: string; sales_count: number; total: number; profit?: number; items_sold?: number }[];
-  by_payment?: { method: string; total: number }[];
-  top_products?: { description?: string; quantity?: number; total?: number }[];
-  by_category?: { categoria?: string; total: number }[];
-  profit?: { sales_total?: number; cost?: number; profit?: number; sales_count?: number };
+  products_by_day?: { date: string; quantity: number; total: number }[];
+  by_payment?: DashboardPaymentSummary[];
+  top_products?: DashboardProductSummary[];
+  by_category?: DashboardCategorySummary[];
+  by_cashier?: DashboardCashierSummary[];
+  by_hour?: DashboardHourSummary[];
+  profit?: { sales_total?: number; cost?: number; refund_total?: number; profit?: number; sales_count?: number };
   inventory_value?: { units?: number; value?: number };
+  slow_movers?: DashboardSlowMover[];
+  expiring?: DashboardExpiringSummary;
   cash?: CashSession | null;
   board?: { active_products: number; customers: number; low_stock: number };
   week_days?: { date: string; total: number; completed: number; pending: number; voided: number }[];

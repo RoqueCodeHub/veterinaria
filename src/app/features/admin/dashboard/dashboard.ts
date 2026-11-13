@@ -62,6 +62,14 @@ export class Dashboard implements OnInit {
     plugins: { legend: { display: false } },
   };
 
+  readonly smallChartOptions = {
+    ...this.chartOptions,
+    scales: {
+      x: { grid: { display: false }, ticks: { color: '#94a3b8', maxTicksLimit: 7 } },
+      y: { display: false, beginAtZero: true },
+    },
+  };
+
   private readonly ejemploIngresos = [120, 180, 150, 260, 210, 320, 280];
   private readonly ejemploOrdenes = [4, 6, 5, 8, 6, 11, 9];
   private readonly dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
@@ -98,6 +106,77 @@ export class Dashboard implements OnInit {
   readonly cobradasSemana = computed(() => this.semana().reduce((sum, dia) => sum + dia.cobradas, 0));
   readonly pendientesSemana = computed(() => this.semana().reduce((sum, dia) => sum + dia.pendientes, 0));
   readonly anuladasSemana = computed(() => this.semana().reduce((sum, dia) => sum + dia.anuladas, 0));
+
+  readonly productosDestacados = computed(() => this.reporte()?.top_products?.slice(0, 5) ?? []);
+  readonly categoriasDestacadas = computed(() => this.reporte()?.by_category?.slice(0, 5) ?? []);
+  readonly cajerosDestacados = computed(() => this.reporte()?.by_cashier?.slice(0, 5) ?? []);
+  readonly productosBajaRotacion = computed(() => this.reporte()?.slow_movers?.slice(0, 5) ?? []);
+  readonly mediosPago = computed(() => {
+    const filas = this.reporte()?.by_payment ?? [];
+    const total = filas.reduce((sum, fila) => sum + fila.total, 0);
+    return filas.map((fila) => ({ ...fila, porcentaje: total > 0 ? (fila.total / total) * 100 : 0 }));
+  });
+  readonly ventasPorHora = computed(() => [...(this.reporte()?.by_hour ?? [])].sort((a, b) => a.hour - b.hour));
+  readonly ventasHoraMaxima = computed(() => Math.max(0, ...this.ventasPorHora().map((fila) => fila.total ?? 0)));
+  readonly categoriaMaxima = computed(() => Math.max(0, ...this.categoriasDestacadas().map((fila) => fila.total)));
+  readonly vencimientos = computed(() => {
+    const resumen = this.reporte()?.expiring;
+    return [
+      { clave: 'vencido', label: 'Vencidos', filas: resumen?.vencido ?? [] },
+      { clave: 'vence_30', label: 'En 30 días', filas: resumen?.vence_30 ?? [] },
+      { clave: 'vence_60', label: 'En 60 días', filas: resumen?.vence_60 ?? [] },
+      { clave: 'vence_90', label: 'En 90 días', filas: resumen?.vence_90 ?? [] },
+    ].map((grupo) => ({
+      ...grupo,
+      lotes: grupo.filas.length,
+      unidades: grupo.filas.reduce((sum, fila) => sum + (fila.quantity ?? 0), 0),
+    }));
+  });
+  readonly hayVencimientos = computed(() => this.vencimientos().some((grupo) => grupo.lotes > 0));
+  readonly hayLotesVencidos = computed(() => (this.reporte()?.expiring?.vencido?.length ?? 0) > 0);
+  readonly lotesCriticos = computed(() => {
+    const resumen = this.reporte()?.expiring;
+    return [...(resumen?.vencido ?? []), ...(resumen?.vence_30 ?? [])]
+      .sort((a, b) => (a.expiry_date ?? '').localeCompare(b.expiry_date ?? ''))
+      .slice(0, 3);
+  });
+  readonly ultimaActividadDia = computed(() => {
+    const filas = this.reporte()?.sales_by_day ?? [];
+    return filas[filas.length - 1] ?? null;
+  });
+  readonly totalProductosDia = computed(() => (this.reporte()?.products_by_day ?? []).reduce((sum, fila) => sum + fila.total, 0));
+  readonly ventaProductosChart = computed(() => {
+    const rows = this.reporte()?.products_by_day ?? [];
+    return {
+      labels: rows.map((row) => this.fechaCorta(row.date)),
+      datasets: [{
+        label: 'Unidades vendidas',
+        data: rows.map((row) => row.quantity),
+        borderColor: ALIVET_COLORS.accent,
+        backgroundColor: 'rgba(8, 120, 80, 0.14)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 2,
+        pointBackgroundColor: ALIVET_COLORS.accent,
+      }],
+    };
+  });
+  readonly ventasPeriodoChart = computed(() => {
+    const rows = (this.reporte()?.sales_by_day ?? []).slice(-30);
+    return {
+      labels: rows.map((row) => this.fechaCorta(row.date)),
+      datasets: [{
+        label: 'Ingresos',
+        data: rows.map((row) => row.total),
+        borderColor: ALIVET_COLORS.accent,
+        backgroundColor: 'rgba(8, 120, 80, 0.14)',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 1,
+        pointBackgroundColor: ALIVET_COLORS.accent,
+      }],
+    };
+  });
 
   readonly ingresosChart = computed(() => {
     const dias = this.semana();
@@ -176,6 +255,15 @@ export class Dashboard implements OnInit {
     return soles(value);
   }
 
+  porcentaje(value: number | null | undefined, maximo: number): number {
+    return maximo > 0 ? Math.min(100, Math.max(0, ((value ?? 0) / maximo) * 100)) : 0;
+  }
+
+  fechaCorta(value: string): string {
+    const fecha = new Date(`${value}T12:00:00`);
+    return Number.isNaN(fecha.getTime()) ? value : `${fecha.getDate()}/${fecha.getMonth() + 1}`;
+  }
+
   comparacionMes(): string {
     const reporte = this.reporte();
     const row = reporte?.comparison?.month;
@@ -185,14 +273,23 @@ export class Dashboard implements OnInit {
     return `${signo}${row.percent}% vs el mes pasado`;
   }
 
+  comparacionSemana(): string {
+    const row = this.reporte()?.comparison?.week;
+    if (!row || row.previous === 0) return 'Sin comparación previa';
+    if (row.percent === 0) return 'Sin variación frente a la semana pasada';
+    const signo = row.percent > 0 ? '+' : '';
+    return `${signo}${row.percent}% vs la semana pasada`;
+  }
+
   comparacionHoy(): string {
-    const ordenes = this.reporte()?.today.count ?? 0;
     const row = this.reporte()?.comparison?.today;
-    if (!row || row.previous === 0 || row.percent === 0) return `${ordenes} órdenes · igual que ayer`;
+    if (!row) return 'Sin comparación con ayer';
+    if (row.previous === 0) return row.diff > 0 ? 'Sin ventas ayer' : 'Sin movimiento frente a ayer';
+    if (row.percent === 0) return 'Sin variación frente a ayer';
     if (Math.abs(row.percent) >= 300) {
-      return `${ordenes} órdenes · ${row.percent > 0 ? 'muy por encima de ayer' : 'muy por debajo de ayer'}`;
+      return `${row.diff > 0 ? '+' : '−'}${this.soles(Math.abs(row.diff))} frente a ayer`;
     }
-    const signo = row.percent >= 0 ? '+' : '';
-    return `${ordenes} órdenes · ${signo}${row.percent}% frente a ayer`;
+    const signo = row.percent > 0 ? '+' : '';
+    return `${signo}${row.percent}% frente a ayer`;
   }
 }
