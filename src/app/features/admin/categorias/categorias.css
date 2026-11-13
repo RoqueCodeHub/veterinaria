@@ -157,6 +157,16 @@ tr.is-parent td {
   font-weight: 600;
 }
 
+.cat-tree-row > td { transition: background-color 140ms ease; }
+.cat-tree-row.is-parent > td { background: color-mix(in srgb, var(--color-sage) 48%, white); }
+.cat-tree-row.is-parent .cat-name { color: var(--color-primary); font-weight: 750; }
+.cat-tree-row.is-child .cat-name { color: var(--color-muted); font-weight: 500; }
+.cat-tree-count { display: inline-flex; align-items: center; gap: 0.25rem; white-space: nowrap; }
+.cat-tree-count { margin-left: 0.15rem; padding: 0.08rem 0.42rem; border-radius: 999px; background: #eee7ff; color: #7042a4; font-size: 0.66rem; font-weight: 700; }
+.cat-tree-branch { display: inline-block; width: 0.7rem; height: 0.7rem; flex: 0 0 auto; margin: 0 0.25rem 0 0.05rem; border-bottom: 1.5px solid var(--color-sage-200); border-left: 1.5px solid var(--color-sage-200); border-bottom-left-radius: 0.3rem; }
+
+.cat-tree-row.is-parent:hover > td { background: color-mix(in srgb, var(--color-sage) 48%, white); }
+
 .cat-toggle,
 .cat-icon {
   display: inline-grid;
@@ -217,4 +227,8 @@ tr.is-parent td {
 @media (max-width: 900px) {
   .cat-kpis,
   .cat-tools { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .cat-tree-count { display: none; }
 }

@@ -29,14 +29,22 @@
     <app-admin-table [rows]="arbol()" [columns]="4" itemLabel="categorías" emptyIcon="pi pi-sitemap" emptyTitle="Sin categorías" emptyText="Crea la primera categoría del catálogo.">
       <ng-template #head><tr><th>Categoría</th><th>Padre</th><th>Estado</th><th></th></tr></ng-template>
       <ng-template #row let-row>
-        <tr>
+        <tr class="cat-tree-row" [class.is-parent]="profundidad(row) === 0" [class.is-child]="profundidad(row) > 0">
           <td [style.padding-left.rem]="1 + profundidad(row) * 1.1">
             @if (tieneHijos(row.id)) {
-              <button type="button" class="cat-toggle" (click)="toggle(row.id)" [attr.aria-label]="abiertos().has(row.id) ? 'Contraer' : 'Expandir'">
+              <button type="button" class="cat-toggle" (click)="toggle(row.id)" [attr.aria-expanded]="abiertos().has(row.id)" [attr.aria-label]="(abiertos().has(row.id) ? 'Contraer ' : 'Expandir ') + row.nombre">
                 <i class="pi" [class.pi-chevron-down]="abiertos().has(row.id)" [class.pi-chevron-right]="!abiertos().has(row.id)"></i>
               </button>
             }
+            @if (profundidad(row) > 0) {
+              <span class="cat-tree-branch" aria-hidden="true"></span>
+            }
             <span class="cat-name">{{ row.nombre }}</span>
+            @if (profundidad(row) === 0) {
+              @if (cantidadHijos(row.id)) {
+                <span class="cat-tree-count">{{ cantidadHijos(row.id) }} sub</span>
+              }
+            }
           </td>
           <td>{{ row.parent?.nombre || '—' }}</td>
           <td><span class="cat-state" [class.is-off]="!row.activo">{{ row.activo ? 'Activa' : 'Inactiva' }}</span></td>

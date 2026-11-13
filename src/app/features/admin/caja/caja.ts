@@ -38,7 +38,15 @@ export class Caja implements OnInit {
   readonly ticketId = signal<number | null>(null);
   readonly ticketOpen = signal(false);
   readonly saving = signal(false);
+  readonly fechaApertura = new Intl.DateTimeFormat('es-PE', {
+    day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Lima',
+  }).format(new Date());
   apertura = 0;
+  readonly montosRapidos = [0, 50, 100, 200];
+  readonly denominaciones = [200, 100, 50, 20, 10, 5, 2, 1, 0.5];
+  conteoBilletes: Record<number, number> = Object.fromEntries(this.denominaciones.map((valor) => [valor, 0]));
+  readonly denominacionesCierre = [200, 100, 50, 20, 10, 5, 2, 1, 0.5, 0.2, 0.1];
+  conteoCierre: Record<number, number> = Object.fromEntries(this.denominacionesCierre.map((valor) => [valor, 0]));
   conteo = 0;
   notas = '';
   motivo = '';
@@ -96,6 +104,13 @@ export class Caja implements OnInit {
     });
   }
 
+  iniciarCierre(): void {
+    this.conteo = 0;
+    this.notas = '';
+    this.conteoCierre = Object.fromEntries(this.denominacionesCierre.map((valor) => [valor, 0]));
+    this.cerrarCaja.set(true);
+  }
+
   elegir(row: Sale): void {
     this.sales.show(row.id).subscribe({
       next: (sale) => {
@@ -147,6 +162,38 @@ export class Caja implements OnInit {
   }
 
   sumar(valor: number): void { this.recibido = Number(this.recibido) + valor; }
+
+  elegirMontoApertura(valor: number): void { this.apertura = valor; }
+
+  cambiarConteo(valor: number, cambio: number): void {
+    this.conteoBilletes = {
+      ...this.conteoBilletes,
+      [valor]: Math.max(0, (this.conteoBilletes[valor] ?? 0) + cambio),
+    };
+  }
+
+  totalConteoApertura(): number {
+    return this.denominaciones.reduce((total, valor) => total + valor * (this.conteoBilletes[valor] ?? 0), 0);
+  }
+
+  usarConteoApertura(): void { this.apertura = this.totalConteoApertura(); }
+
+  cambiarConteoCierre(valor: number, cambio: number): void {
+    this.conteoCierre = {
+      ...this.conteoCierre,
+      [valor]: Math.max(0, (this.conteoCierre[valor] ?? 0) + cambio),
+    };
+  }
+
+  totalConteoCierre(): number {
+    return this.denominacionesCierre.reduce((total, valor) => total + valor * (this.conteoCierre[valor] ?? 0), 0);
+  }
+
+  usarConteoCierre(): void { this.conteo = this.totalConteoCierre(); }
+
+  diferenciaCierre(): number {
+    return Number(this.conteo) - Number(this.session()?.expected_amount ?? 0);
+  }
 
   vuelto(): number {
     const total = Number(this.seleccion()?.balance ?? this.seleccion()?.total ?? 0);

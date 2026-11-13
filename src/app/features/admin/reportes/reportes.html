@@ -2,17 +2,18 @@
   <header class="rep-header">
     <div>
       <h1>Reportes</h1>
-      <p>Ventas, margen e inventario del periodo elegido.</p>
+      <p>Indicadores financieros, inventario y consumo de clientes.</p>
     </div>
     @if (auth.can('reports.view_all')) {
-      <div class="flex items-center gap-2">
-        <p-select [options]="formatos" optionLabel="label" optionValue="value" [ngModel]="formato()" (ngModelChange)="formato.set($event)" appendTo="body" />
-        <button type="button" class="rep-export" (click)="exportar()"><i class="pi pi-download"></i> Exportar</button>
+      <div class="rep-export-tools">
+        <p-select [options]="formatos" optionLabel="label" optionValue="value" [ngModel]="formato()" (ngModelChange)="formato.set($event)" appendTo="body" aria-label="Formato de exportación" />
+        <button type="button" class="rep-export" (click)="exportar()"><i class="pi pi-download" aria-hidden="true"></i> Exportar</button>
       </div>
     }
   </header>
-  <div class="rep-filters admin-control-row">
-    <div class="rep-switch admin-segmented">
+
+  <div class="rep-filters">
+    <div class="rep-switch admin-segmented" aria-label="Periodo del reporte">
       <button type="button" [class.is-on]="rangoActivo() === 'hoy'" [attr.aria-pressed]="rangoActivo() === 'hoy'" (click)="rango('hoy')">Hoy</button>
       <button type="button" [class.is-on]="rangoActivo() === 'semana'" [attr.aria-pressed]="rangoActivo() === 'semana'" (click)="rango('semana')">7 días</button>
       <button type="button" [class.is-on]="rangoActivo() === 'mes'" [attr.aria-pressed]="rangoActivo() === 'mes'" (click)="rango('mes')">Este mes</button>
@@ -20,7 +21,9 @@
     <label class="rep-date admin-control">Desde <input type="date" [ngModel]="from()" (ngModelChange)="from.set($event); rangoActivo.set(null); cargar()" /></label>
     <label class="rep-date admin-control">Hasta <input type="date" [ngModel]="to()" (ngModelChange)="to.set($event); rangoActivo.set(null); cargar()" /></label>
   </div>
-  <div class="rep-switch rep-tabs admin-segmented">
+
+  <nav class="rep-tabs admin-segmented" aria-label="Tipo de reporte">
+    <button type="button" [class.is-on]="tab() === 'resumen'" [attr.aria-pressed]="tab() === 'resumen'" (click)="tab.set('resumen'); cargar()">Resumen</button>
     <button type="button" [class.is-on]="tab() === 'dia'" [attr.aria-pressed]="tab() === 'dia'" (click)="tab.set('dia'); cargar()">Por día</button>
     <button type="button" [class.is-on]="tab() === 'productos'" [attr.aria-pressed]="tab() === 'productos'" (click)="tab.set('productos'); cargar()">Productos</button>
     <button type="button" [class.is-on]="tab() === 'categoria'" [attr.aria-pressed]="tab() === 'categoria'" (click)="tab.set('categoria'); cargar()">Categoría</button>
@@ -28,53 +31,116 @@
     <button type="button" [class.is-on]="tab() === 'utilidad'" [attr.aria-pressed]="tab() === 'utilidad'" (click)="tab.set('utilidad'); cargar()">Utilidad</button>
     <button type="button" [class.is-on]="tab() === 'lentos'" [attr.aria-pressed]="tab() === 'lentos'" (click)="tab.set('lentos'); cargar()">Baja rotación</button>
     <button type="button" [class.is-on]="tab() === 'inventario'" [attr.aria-pressed]="tab() === 'inventario'" (click)="tab.set('inventario'); cargar()">Inventario</button>
-  </div>
+  </nav>
+
+  @if (loading()) {
+    <p class="rep-status" role="status"><i class="pi pi-spin pi-spinner" aria-hidden="true"></i> Actualizando reporte…</p>
+  }
+
+  @if (tab() === 'resumen' && summary(); as data) {
+    <section class="rep-kpis">
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-green"><i class="pi pi-wallet" aria-hidden="true"></i></span><div><small>Ingresos</small><strong>S/ {{ ingresosResumen() | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-violet"><i class="pi pi-chart-line" aria-hidden="true"></i></span><div><small>Ganancia estimada</small><strong>S/ {{ data.profit?.profit ?? 0 | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-blue"><i class="pi pi-receipt" aria-hidden="true"></i></span><div><small>Ticket promedio</small><strong>S/ {{ ticketPromedio() | number:'1.2-2' }}</strong></div></article>
+    </section>
+
+    <section class="rep-charts">
+      <article class="rep-card admin-card rep-graph-card">
+        <header class="rep-card-head"><h2>Ingresos del periodo</h2><span class="rep-period">{{ from() }} — {{ to() }}</span></header>
+        @if (chart(); as grafico) {
+          @if (grafico.labels.length) {
+            <div class="rep-graph"><p-chart type="line" [data]="grafico" [options]="chartOptions" ariaLabel="Ingresos por día" /></div>
+          } @else {
+            <div class="rep-chart-empty"><i class="pi pi-chart-line" aria-hidden="true"></i><strong>Sin ventas en este periodo</strong><span>Cuando registres ventas, aquí aparecerán los ingresos diarios.</span></div>
+          }
+        }
+      </article>
+
+      <article class="rep-card admin-card rep-graph-card">
+        <header class="rep-card-head"><h2>Métodos de pago</h2><span class="rep-period">{{ data.by_payment?.length ?? 0 }} métodos</span></header>
+        @if (paymentChart(); as pagos) {
+          <div class="rep-payment-content">
+            <div class="rep-payment-donut"><p-chart type="doughnut" [data]="pagos" [options]="paymentChartOptions" ariaLabel="Ingresos por método de pago" /></div>
+            <ul class="rep-payment-legend">
+              @for (metodo of data.by_payment ?? []; track metodo.method; let i = $index) {
+                <li><span><i [style.background]="colorGrafica(i)"></i>{{ etiquetaMetodo(metodo.method) }}</span><strong>{{ porcentajePago(metodo.total) | number:'1.0-0' }}%</strong><small>S/ {{ metodo.total | number:'1.2-2' }}</small></li>
+              }
+            </ul>
+          </div>
+        } @else {
+          <div class="rep-chart-empty"><i class="pi pi-chart-pie" aria-hidden="true"></i><strong>Sin pagos registrados</strong><span>El desglose aparecerá cuando existan ventas cobradas.</span></div>
+        }
+      </article>
+    </section>
+
+    @if (data.top_products?.length) {
+      <article class="rep-card admin-card rep-top-card">
+        <header class="rep-card-head"><div><h2>Productos más vendidos</h2><p>Unidades e ingresos del periodo.</p></div><button type="button" class="rep-inline-link" (click)="tab.set('productos'); cargar()">Ver reporte <i class="pi pi-arrow-right" aria-hidden="true"></i></button></header>
+        <div class="rep-top-list">
+          @for (producto of data.top_products; track producto.variant_id; let i = $index) {
+            <div class="rep-top-row"><span class="rep-top-rank">{{ i + 1 }}</span><strong>{{ producto.description || 'Producto' }}</strong><span>{{ producto.quantity ?? 0 }} u.</span><b>S/ {{ producto.total ?? 0 | number:'1.2-2' }}</b></div>
+          }
+        </div>
+      </article>
+    }
+    @if (!data.sales_by_day?.length) {
+      <article class="rep-card admin-card rep-empty-state">
+        <div><strong>Sin ventas en este periodo</strong><p>Cuando registres ventas, aquí verás tus ingresos y los métodos de pago más usados.</p></div>
+        <a class="rep-cta" routerLink="/admin/pos">Registrar una venta</a>
+      </article>
+    }
+  }
 
   @if (profit(); as data) {
     <section class="rep-kpis">
-      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-green"><i class="pi pi-wallet"></i></span><div><small>Ventas</small><strong>S/ {{ data.sales_total | number:'1.2-2' }}</strong></div></article>
-      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-accent"><i class="pi pi-box"></i></span><div><small>Costo</small><strong>S/ {{ data.cost | number:'1.2-2' }}</strong></div></article>
-      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-amber"><i class="pi pi-undo"></i></span><div><small>Devoluciones</small><strong>S/ {{ data.refund_total | number:'1.2-2' }}</strong></div></article>
-      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-sage"><i class="pi pi-chart-line"></i></span><div><small>Utilidad</small><strong>S/ {{ data.profit | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-green"><i class="pi pi-wallet" aria-hidden="true"></i></span><div><small>Ventas</small><strong>S/ {{ data.sales_total | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-accent"><i class="pi pi-box" aria-hidden="true"></i></span><div><small>Costo</small><strong>S/ {{ data.cost | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-amber"><i class="pi pi-undo" aria-hidden="true"></i></span><div><small>Devoluciones</small><strong>S/ {{ data.refund_total | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-violet"><i class="pi pi-chart-line" aria-hidden="true"></i></span><div><small>Utilidad</small><strong>S/ {{ data.profit | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-blue"><i class="pi pi-receipt" aria-hidden="true"></i></span><div><small>Ventas cobradas</small><strong>{{ data.sales_count }}</strong></div></article>
     </section>
   }
   @if (inventory(); as data) {
     <section class="rep-kpis">
-      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-accent"><i class="pi pi-box"></i></span><div><small>Unidades</small><strong>{{ data.units }}</strong></div></article>
-      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-green"><i class="pi pi-wallet"></i></span><div><small>Valor</small><strong>S/ {{ data.value | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-accent"><i class="pi pi-box" aria-hidden="true"></i></span><div><small>Unidades</small><strong>{{ data.units | number }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-green"><i class="pi pi-wallet" aria-hidden="true"></i></span><div><small>Valor del inventario</small><strong>S/ {{ data.value | number:'1.2-2' }}</strong></div></article>
     </section>
   }
-  @if (chart(); as grafico) {
-    <article class="rep-card admin-card rep-chart">
-      <p-chart [type]="tab() === 'categoria' ? 'doughnut' : 'bar'" [data]="grafico" />
+
+  @if (tab() !== 'resumen' && chart(); as grafico) {
+    <article class="rep-card admin-card rep-graph-card rep-graph-single">
+      <header class="rep-card-head"><h2>{{ tab() === 'dia' ? 'Ingresos por día' : tab() === 'productos' ? 'Unidades por producto' : tab() === 'categoria' ? 'Ventas por categoría' : 'Ingresos por cajero' }}</h2></header>
+      <div class="rep-graph"><p-chart [type]="chartType()" [data]="grafico" [options]="chartType() === 'doughnut' ? paymentChartOptions : tab() === 'productos' ? countChartOptions : tab() === 'cajero' ? revenueRankChartOptions : chartOptions" /></div>
     </article>
   }
-  @if (rows().length) {
+
+  @if (rows().length && tab() !== 'resumen') {
     <div class="rep-card admin-card rep-table-wrap">
-    <table class="rep-table">
-      <thead>
-        <tr>
+      <table class="rep-table">
+        <thead><tr>
           @if (tab() === 'dia') { <th>Fecha</th><th>Ventas</th><th>Total</th> }
-          @if (tab() === 'productos') { <th>Producto</th><th>Cantidad</th><th>Total</th> }
-          @if (tab() === 'categoria') { <th>Categoría</th><th>Cantidad</th><th>Total</th> }
+          @if (tab() === 'productos') { <th>Producto</th><th>Unidades</th><th>Ingresos</th> }
+          @if (tab() === 'categoria') { <th>Categoría</th><th>Unidades</th><th>Ingresos</th> }
           @if (tab() === 'cajero') { <th>Cajero</th><th>Ventas</th><th>Total</th> }
           @if (tab() === 'lentos') { <th>Producto</th><th>SKU</th><th>Existencia</th> }
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of rows(); track $index) {
-          <tr>
-            @if (tab() === 'dia') { <td>{{ row['date'] }}</td><td>{{ row['sales_count'] }}</td><td>S/ {{ row['total'] }}</td> }
-            @if (tab() === 'productos') { <td>{{ row['description'] }}</td><td>{{ row['quantity'] }}</td><td>S/ {{ row['total'] }}</td> }
-            @if (tab() === 'categoria') { <td>{{ row['categoria'] }}</td><td>{{ row['quantity'] }}</td><td>S/ {{ row['total'] }}</td> }
-            @if (tab() === 'cajero') { <td>{{ row['cajero'] }}</td><td>{{ row['sales_count'] }}</td><td>S/ {{ row['total'] }}</td> }
-            @if (tab() === 'lentos') { <td>{{ row['nombre'] || row['description'] }}</td><td>{{ row['sku'] }}</td><td>{{ row['on_hand'] }}</td> }
-          </tr>
-        }
-      </tbody>
-    </table>
+        </tr></thead>
+        <tbody>
+          @for (row of rows(); track $index) {
+            <tr>
+              @if (tab() === 'dia') { <td>{{ row['date'] }}</td><td>{{ valorNumerico(row['sales_count']) | number }}</td><td>S/ {{ valorNumerico(row['total']) | number:'1.2-2' }}</td> }
+              @if (tab() === 'productos') { <td>{{ row['description'] }}</td><td>{{ valorNumerico(row['quantity']) | number }}</td><td>S/ {{ valorNumerico(row['total']) | number:'1.2-2' }}</td> }
+              @if (tab() === 'categoria') { <td>{{ row['categoria'] }}</td><td>{{ valorNumerico(row['quantity']) | number }}</td><td>S/ {{ valorNumerico(row['total']) | number:'1.2-2' }}</td> }
+              @if (tab() === 'cajero') { <td>{{ row['cajero'] }}</td><td>{{ valorNumerico(row['sales_count']) | number }}</td><td>S/ {{ valorNumerico(row['total']) | number:'1.2-2' }}</td> }
+              @if (tab() === 'lentos') { <td>{{ row['nombre'] || row['description'] }}</td><td>{{ row['sku'] }}</td><td>{{ valorNumerico(row['on_hand']) | number }}</td> }
+            </tr>
+          }
+        </tbody>
+      </table>
     </div>
-  } @else if (!loading() && tab() !== 'utilidad' && tab() !== 'inventario') {
-    <p>No hay datos en este rango.</p>
+  } @else if (!loading() && tab() !== 'utilidad' && tab() !== 'inventario' && tab() !== 'resumen') {
+    <article class="rep-card admin-card rep-empty-state">
+      <div><strong>No hay datos en este periodo</strong><p>Prueba otro rango de fechas o vuelve cuando haya actividad registrada.</p></div>
+      <button type="button" class="rep-cta" (click)="tab.set('resumen'); cargar()">Ver resumen</button>
+    </article>
   }
 </div>

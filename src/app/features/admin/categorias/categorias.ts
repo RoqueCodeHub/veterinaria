@@ -121,6 +121,10 @@ export class Categorias implements OnInit {
     return this.todas().some((row) => row.parent_id === id);
   }
 
+  cantidadHijos(id: number): number {
+    return this.todas().filter((row) => row.parent_id === id).length;
+  }
+
   profundidad(row: Category): number {
     const byId = new Map(this.todas().map((item) => [item.id, item]));
     let depth = 0;

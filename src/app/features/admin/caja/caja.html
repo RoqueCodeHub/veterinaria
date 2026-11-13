@@ -1,4 +1,4 @@
-<section class="list-page view-fill">
+<section class="list-page view-fill caja-view">
   <header class="list-header">
     <div>
       <h1>Caja</h1>
@@ -9,7 +9,7 @@
         <button type="button" class="list-primary" (click)="abrirCaja.set(true)"><i class="pi pi-lock-open"></i> Abrir caja</button>
       }
       @if (session()?.open && auth.can('cash.close')) {
-        <button type="button" class="list-primary" (click)="cerrarCaja.set(true)"><i class="pi pi-lock"></i> Cerrar turno</button>
+        <button type="button" class="list-primary" (click)="iniciarCierre()"><i class="pi pi-lock"></i> Cerrar turno</button>
       }
     </div>
   </header>
@@ -25,41 +25,61 @@
         </tr>
       </ng-template>
     </app-admin-table>
-    <aside class="list-panel caja-panel admin-card">
+    <aside class="list-panel caja-panel pos-summary">
       @if (seleccion(); as venta) {
-        <div class="caja-head">
-          <div>
-            <h2>{{ venta.document }}</h2>
-            <p class="caja-client">{{ venta.cliente || 'Cliente varios' }}</p>
+        <div class="pos-summary-body">
+          <div class="pos-summary-head">
+            <h2>Resumen de venta</h2>
+            <span class="pos-count">{{ (venta.items || []).length }} {{ (venta.items || []).length === 1 ? 'ítem' : 'ítems' }}</span>
           </div>
-          <strong>{{ soles(venta.total) }}</strong>
-        </div>
-        <div class="caja-lines">
-          @for (item of venta.items || []; track item.id) {
-            <div class="caja-line">
-              <div><strong>{{ item.description }}</strong><p>{{ item.quantity }} × {{ soles(item.unit_price) }}</p></div>
-              <span>{{ soles(item.line_total) }}</span>
+          <div class="caja-head">
+            <div>
+              <h3>{{ venta.document }}</h3>
+              <p class="caja-client">{{ venta.cliente || 'Cliente varios' }}</p>
             </div>
-          }
-        </div>
-        <div class="admin-choice-grid">
-          @for (opcion of metodos; track opcion.id) {
-            <button type="button" [class.is-on]="metodo === opcion.id" [attr.aria-pressed]="metodo === opcion.id" (click)="metodo = opcion.id">{{ opcion.label }}</button>
-          }
-        </div>
-        @if (metodo === 'efectivo') {
-          <label class="caja-soles admin-control">Recibido <input type="number" [(ngModel)]="recibido" /></label>
-          <div class="caja-bills">
-            @for (billete of billetes; track billete) {
-              <button type="button" (click)="sumar(billete)">{{ billete }}</button>
+            <strong>{{ soles(venta.balance) }}</strong>
+          </div>
+          <div class="caja-lines">
+            @for (item of venta.items || []; track item.id) {
+              <div class="caja-line">
+                <div><strong>{{ item.description }}</strong><p>{{ item.quantity }} × {{ soles(item.unit_price) }}</p></div>
+                <span>{{ soles(item.line_total) }}</span>
+              </div>
             }
           </div>
-          <p class="caja-vuelto" [class.is-ok]="vuelto() === 0">Vuelto {{ soles(vuelto()) }}</p>
-        }
-        <button type="button" class="caja-charge" [disabled]="saving()" (click)="cobrar()"><i class="pi pi-check"></i> Cobrar ahora</button>
-        @if (auth.can('sales.void')) {
-          <button type="button" class="caja-void" (click)="anular.set(true)">Anular venta</button>
-        }
+        </div>
+        <footer class="pos-summary-foot">
+          <section class="pos-totals">
+            <p class="pos-money pos-total"><span>Total a cobrar</span><strong>{{ soles(venta.balance) }}</strong></p>
+          </section>
+          <div>
+            <p class="m-0 mb-2">Método de pago</p>
+            <div class="pos-pays">
+              @for (opcion of metodos; track opcion.id) {
+                <button type="button" class="pos-pay" [class.is-on]="metodo === opcion.id" [attr.aria-pressed]="metodo === opcion.id" (click)="metodo = opcion.id">
+                  <i class="pi pi-wallet" aria-hidden="true"></i>{{ opcion.label }}
+                </button>
+              }
+            </div>
+          </div>
+          @if (metodo === 'efectivo') {
+            <div class="pos-cash">
+              <label>Recibido
+                <span class="pos-soles"><span>S/</span><input type="number" [(ngModel)]="recibido" /></span>
+              </label>
+              <span [class.is-ok]="vuelto() > 0">Vuelto {{ soles(vuelto()) }}</span>
+            </div>
+            <div class="caja-bills">
+              @for (billete of billetes; track billete) {
+                <button type="button" (click)="sumar(billete)">{{ billete }}</button>
+              }
+            </div>
+          }
+          <button type="button" class="pos-charge" [disabled]="saving()" (click)="cobrar()"><i class="pi pi-check"></i> Cobrar ahora · {{ soles(venta.balance) }}</button>
+          @if (auth.can('sales.void')) {
+            <button type="button" class="pos-clear" (click)="anular.set(true)">Anular venta</button>
+          }
+        </footer>
       } @else {
         <div class="caja-empty">
           <span class="empty-state-icon"><i class="pi pi-wallet"></i></span>
@@ -70,20 +90,110 @@
     </aside>
   </div>
 
-  <p-dialog header="Abrir caja" [visible]="abrirCaja()" (visibleChange)="abrirCaja.set($event)" [modal]="true" [style]="{ width: '24rem' }">
-    <label class="field">Monto de apertura <input pInputText type="number" [(ngModel)]="apertura" /></label>
-    <div class="prod-form-actions">
-      <p-button label="Cancelar" [outlined]="true" (onClick)="abrirCaja.set(false)" />
-      <p-button label="Abrir" icon="pi pi-check" [loading]="saving()" (onClick)="abrir()" />
+  <p-dialog [visible]="abrirCaja()" (visibleChange)="abrirCaja.set($event)" [modal]="true" [style]="{ width: '38rem' }" styleClass="caja-open-dialog">
+    <ng-template #header>
+      <div class="caja-open-heading">
+        <span class="caja-open-icon"><i class="pi pi-lock-open" aria-hidden="true"></i></span>
+        <div>
+          <h2>Abrir caja</h2>
+          <p>Indica el efectivo con el que empiezas el turno.</p>
+        </div>
+      </div>
+    </ng-template>
+    <div class="caja-open-form">
+      <div class="caja-open-meta">
+        <div><span>Cajero</span><strong>{{ auth.getUser()?.name || 'Usuario actual' }}</strong></div>
+        <div><span>Fecha</span><strong>{{ fechaApertura }}</strong></div>
+      </div>
+      <label class="caja-open-amount">Monto de apertura
+        <span class="caja-open-input">
+          <span>S/</span>
+          <input pInputText type="number" min="0" step="0.01" [(ngModel)]="apertura" aria-label="Monto de apertura" />
+        </span>
+      </label>
+      <div class="caja-open-presets" aria-label="Montos rápidos">
+        @for (monto of montosRapidos; track monto) {
+          <button type="button" [class.is-on]="apertura === monto" [attr.aria-pressed]="apertura === monto" (click)="elegirMontoApertura(monto)">S/ {{ monto }}</button>
+        }
+      </div>
+      <details class="caja-count-details">
+        <summary><i class="pi pi-chevron-right" aria-hidden="true"></i> Contar por billetes y monedas</summary>
+        <div class="caja-count-list">
+          @for (valor of denominaciones; track valor) {
+            <div class="caja-count-row">
+              <strong>S/ {{ valor }}</strong>
+              <div>
+                <button type="button" [attr.aria-label]="'Quitar una unidad de S/ ' + valor" [disabled]="!conteoBilletes[valor]" (click)="cambiarConteo(valor, -1)"><i class="pi pi-minus" aria-hidden="true"></i></button>
+                <span>{{ conteoBilletes[valor] || 0 }}</span>
+                <button type="button" [attr.aria-label]="'Agregar una unidad de S/ ' + valor" (click)="cambiarConteo(valor, 1)"><i class="pi pi-plus" aria-hidden="true"></i></button>
+              </div>
+            </div>
+          }
+          <div class="caja-count-total"><span>Total contado</span><strong>{{ soles(totalConteoApertura()) }}</strong></div>
+          <button type="button" class="caja-count-use" (click)="usarConteoApertura()">Usar este monto</button>
+        </div>
+      </details>
+      <p class="caja-open-note">Este monto será el fondo inicial y se usará para cuadrar la caja al cerrar el turno.</p>
+      <div class="prod-form-actions">
+        <p-button label="Cancelar" [outlined]="true" (onClick)="abrirCaja.set(false)" />
+        <p-button label="Abrir caja" icon="pi pi-check" [loading]="saving()" (onClick)="abrir()" />
+      </div>
     </div>
   </p-dialog>
-  <p-dialog header="Cerrar turno" [visible]="cerrarCaja()" (visibleChange)="cerrarCaja.set($event)" [modal]="true" [style]="{ width: '24rem' }">
-    <label class="field">Efectivo contado <input pInputText type="number" [(ngModel)]="conteo" /></label>
-    <label class="field">Notas <input pInputText [(ngModel)]="notas" /></label>
-    <div class="prod-form-actions">
-      <p-button label="Cancelar" [outlined]="true" (onClick)="cerrarCaja.set(false)" />
-      <p-button label="Cerrar" icon="pi pi-check" [loading]="saving()" (onClick)="cerrar()" />
+  <p-dialog [visible]="cerrarCaja()" (visibleChange)="cerrarCaja.set($event)" [modal]="true" [style]="{ width: '72rem' }" styleClass="caja-close-dialog">
+    <ng-template #header>
+      <div class="caja-close-heading">
+        <h2>Arqueo y cierre de turno</h2>
+        <p>Cuenta el efectivo de la caja y compáralo con lo esperado.</p>
+      </div>
+    </ng-template>
+    <div class="caja-close-form">
+      <div class="caja-close-grid">
+        <section class="caja-close-summary">
+          <h3>Resumen del turno</h3>
+          <div class="caja-close-row"><span>Fondo inicial</span><strong>{{ soles(session()?.opening_amount) }}</strong></div>
+          <div class="caja-close-expected"><span>Efectivo esperado en caja</span><strong>{{ soles(session()?.expected_amount) }}</strong></div>
+        </section>
+        <section class="caja-close-count">
+          <h3>Conteo de efectivo</h3>
+          <label class="caja-close-amount">Efectivo real contado
+            <span class="caja-open-input">
+              <span>S/</span>
+              <input pInputText type="number" min="0" step="0.01" [(ngModel)]="conteo" aria-label="Efectivo real contado" />
+            </span>
+          </label>
+          <div class="caja-close-difference" [class.is-balanced]="diferenciaCierre() === 0" [class.is-short]="diferenciaCierre() < 0" [class.is-over]="diferenciaCierre() > 0">
+            <span>Diferencia</span>
+            <strong>{{ soles(diferenciaCierre()) }}</strong>
+            <span class="caja-close-status">{{ diferenciaCierre() === 0 ? 'Caja cuadrada' : diferenciaCierre() < 0 ? 'Faltante' : 'Sobrante' }}</span>
+          </div>
+          <div class="caja-close-denom-heading">
+            <h3>Contar por denominación</h3>
+            <button type="button" (click)="usarConteoCierre()">Usar total · {{ soles(totalConteoCierre()) }}</button>
+          </div>
+          <div class="caja-close-denoms">
+            @for (valor of denominacionesCierre; track valor) {
+              <div class="caja-close-denom" [class.is-on]="conteoCierre[valor] > 0">
+                <button type="button" class="caja-close-denom-add" (click)="cambiarConteoCierre(valor, 1)" [attr.aria-label]="'Agregar denominación S/ ' + valor">
+                  <span>S/ {{ valor }}</span><strong>× {{ conteoCierre[valor] || 0 }}</strong>
+                </button>
+                <button type="button" class="caja-close-denom-remove" [disabled]="!conteoCierre[valor]" (click)="cambiarConteoCierre(valor, -1)" [attr.aria-label]="'Quitar denominación S/ ' + valor"><i class="pi pi-minus" aria-hidden="true"></i></button>
+              </div>
+            }
+          </div>
+        </section>
+      </div>
+      <label class="caja-close-notes">Observaciones <span>(opcional)</span>
+        <textarea pInputText rows="3" [(ngModel)]="notas" placeholder="Ej.: faltante por vuelto, sobrante o incidencias del turno..."></textarea>
+      </label>
+      <p class="caja-close-warning"><i class="pi pi-info-circle" aria-hidden="true"></i> Al confirmar, el turno se cierra y no podrás registrar más cobros hasta abrir uno nuevo.</p>
     </div>
+    <ng-template #footer>
+      <div class="caja-close-footer">
+        <p-button label="Cancelar" [outlined]="true" (onClick)="cerrarCaja.set(false)" />
+        <p-button label="Confirmar cierre" icon="pi pi-lock" [loading]="saving()" (onClick)="cerrar()" />
+      </div>
+    </ng-template>
   </p-dialog>
   <p-dialog header="Anular venta" [visible]="anular()" (visibleChange)="anular.set($event)" [modal]="true" [style]="{ width: '28rem' }">
     <label class="field">Motivo <input pInputText [(ngModel)]="motivo" /></label>

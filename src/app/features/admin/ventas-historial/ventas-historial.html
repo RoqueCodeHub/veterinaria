@@ -31,7 +31,7 @@
           <span class="list-state" [class.is-off]="row.status === 'voided'" [class.is-warn]="row.status === 'pending'">{{ row.status === 'completed' ? 'Completada' : row.status === 'voided' ? 'Anulada' : 'Pendiente' }}</span>
           <button type="button" class="list-icon" aria-label="Ver" (click)="ver(row)"><i class="pi pi-eye"></i></button>
           <button type="button" class="list-icon" aria-label="Imprimir" (click)="imprimir(row)"><i class="pi pi-print"></i></button>
-          <a class="list-icon" [href]="wa(row)" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="pi pi-whatsapp"></i></a>
+          <a class="list-icon list-icon-link" [href]="wa(row)" target="_blank" rel="noopener" aria-label="WhatsApp"><i class="pi pi-whatsapp"></i></a>
         </td>
       </tr>
     </ng-template>

@@ -28,7 +28,7 @@
         <td>{{ row.ruc || '—' }}</td>
         <td>
           @if (wa(row.phone); as link) {
-            <a class="wa-tag" [href]="link" target="_blank" rel="noopener">{{ row.phone }}</a>
+            <a class="wa-tag" [href]="link" target="_blank" rel="noopener"><i class="pi pi-whatsapp" aria-hidden="true"></i>{{ row.phone }}</a>
           } @else { — }
         </td>
         <td><span class="list-state" [class.is-off]="!row.activo">{{ row.activo ? 'Activo' : 'Inactivo' }}</span></td>
