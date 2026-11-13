@@ -721,6 +721,7 @@ html:has(app-login) {
   flex-direction: column;
   gap: 0.3rem;
   min-width: 0;
+  margin: 0;
   color: #64748b;
   font-size: 0.78rem;
   font-weight: 600;
@@ -1258,6 +1259,63 @@ tr.is-selected td { background: #f4fbf7; }
 
 .field {
   position: relative;
+}
+
+/* Shared form rhythm for PrimeNG dialogs. Product dialogs may provide their
+   own grid, while simpler CRUD dialogs get the same stacked field pattern. */
+p-dialog .p-dialog-content .field {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  min-width: 0;
+  margin: 0 0 1rem;
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+p-dialog .p-dialog-content .field:has(p-checkbox) {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 1.5rem;
+  color: var(--color-primary);
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+p-dialog .p-dialog-content .field > input,
+p-dialog .p-dialog-content .field > textarea,
+p-dialog .p-dialog-content .field > .p-inputtext,
+p-dialog .p-dialog-content .field > p-select,
+p-dialog .p-dialog-content .field > app-remote-select {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+p-dialog .p-dialog-content .field > app-remote-select {
+  display: block;
+}
+
+p-dialog .p-dialog-content .field > .field-error {
+  position: static;
+  display: block;
+  min-height: 0;
+  white-space: normal;
+}
+
+p-dialog .p-dialog-content .field > .field-error:empty {
+  display: none;
+}
+
+p-dialog .p-dialog-content > .prod-form-actions {
+  margin-top: 0.25rem;
+}
+
+p-dialog .p-dialog {
+  max-width: calc(100vw - 2rem);
 }
 
 .field-error {

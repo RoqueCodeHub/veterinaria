@@ -58,18 +58,27 @@
     @if (accion() === 'atender') {
       <label class="field">Diagnóstico <input pInputText [(ngModel)]="nota.diagnostico" /></label>
       <label class="field">Tratamiento <input pInputText [(ngModel)]="nota.tratamiento" /></label>
-      <p-button label="Guardar atención" icon="pi pi-check" (onClick)="atender()" />
+      <div class="prod-form-actions">
+        <p-button label="Cancelar" [outlined]="true" (onClick)="accion.set(null)" />
+        <p-button label="Guardar atención" icon="pi pi-check" (onClick)="atender()" />
+      </div>
     }
     @if (accion() === 'insumo') {
       <label class="field">Insumo <app-remote-select [search]="buscarVariantes" [(value)]="insumo.variant_id" placeholder="Buscar producto" /></label>
       <label class="field">Cantidad <input pInputText type="number" [(ngModel)]="insumo.quantity" /></label>
-      <p-button label="Descontar" icon="pi pi-check" (onClick)="descontar()" />
+      <div class="prod-form-actions">
+        <p-button label="Cancelar" [outlined]="true" (onClick)="accion.set(null)" />
+        <p-button label="Descontar" icon="pi pi-check" (onClick)="descontar()" />
+      </div>
     }
     @if (accion() === 'cobrar') {
       <p>Precio {{ soles(cita()?.sale_price) }}</p>
       <label class="field">Método <p-select [options]="metodos" optionLabel="label" optionValue="value" [(ngModel)]="cobro.method" appendTo="body" /></label>
       <label class="field">Monto <input pInputText type="number" [(ngModel)]="cobro.amount" /></label>
-      <p-button label="Cobrar" icon="pi pi-wallet" (onClick)="cobrar()" />
+      <div class="prod-form-actions">
+        <p-button label="Cancelar" [outlined]="true" (onClick)="accion.set(null)" />
+        <p-button label="Cobrar" icon="pi pi-wallet" (onClick)="cobrar()" />
+      </div>
     }
   </p-dialog>
   <app-confirm-dialog [open]="cancelar() !== null" (openChange)="cancelar.set($event ? cancelar() : null)" title="Cancelar cita" [message]="'¿Cancelar la cita de ' + (cancelar()?.mascota || 'la mascota') + '?'" confirmLabel="Cancelar cita" icon="pi pi-ban" (confirmed)="confirmarCancelar()" />
