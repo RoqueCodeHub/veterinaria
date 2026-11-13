@@ -1,6 +1,6 @@
 <p-toast position="top-right" />
 
-<div class="admin-shell">
+<div class="admin-shell" [class.is-collapsed]="sidebarCollapsed()">
   <aside class="admin-sidebar">
     <ng-container *ngTemplateOutlet="panel"></ng-container>
   </aside>
@@ -16,49 +16,124 @@
   </div>
 </div>
 
-<p-drawer [visible]="menuOpen" (visibleChange)="menuOpen = $event" [showCloseIcon]="true" header="Ali-Vet" [style]="{ width: '18rem' }">
+<p-drawer [visible]="menuOpen" (visibleChange)="setMenuOpen($event)" [showCloseIcon]="true" header="Ali-Vet" [style]="{ width: '18rem' }">
   <ng-container *ngTemplateOutlet="panel"></ng-container>
 </p-drawer>
 
+<ng-template #navItem let-link>
+  <div class="admin-nav-row">
+    <a
+      class="admin-nav-link"
+      [routerLink]="link.path"
+      routerLinkActive="is-active"
+      [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
+      [attr.title]="isCompactMenu() ? link.label : null"
+      (click)="onNavigate()"
+    >
+      <i [class]="link.icon" aria-hidden="true"></i>
+      <span class="admin-nav-link-label">{{ link.label }}</span>
+      @if (linkCount(link) > 0) { <span class="admin-nav-badge">{{ countLabel(linkCount(link)) }}</span> }
+    </a>
+    @if (!isCompactMenu()) {
+      <button class="admin-nav-favorite-toggle" type="button" [class.is-favorite]="favorites().includes(link.path)" [attr.aria-label]="favorites().includes(link.path) ? 'Quitar de favoritos: ' + link.label : 'Fijar en favoritos: ' + link.label" [attr.aria-pressed]="favorites().includes(link.path)" [title]="favorites().includes(link.path) ? 'Quitar de fijados' : 'Fijar en el menú'" (click)="toggleFavorite(link, $event)">
+        <i [class]="favorites().includes(link.path) ? 'pi pi-star-fill' : 'pi pi-star'" aria-hidden="true"></i>
+      </button>
+    }
+  </div>
+</ng-template>
+
 <ng-template #panel>
-  <div class="admin-panel">
+  <div class="admin-panel" [class.is-collapsed]="isCompactMenu()">
     <div class="admin-brand">
       <span class="admin-brand-mark" aria-hidden="true">A</span>
-      <div>
+      <div class="admin-brand-copy">
         <p class="admin-brand-name">Ali-Vet</p>
         <p class="admin-brand-caption">Panel de gestión</p>
       </div>
+      <button class="admin-sidebar-toggle" type="button" (click)="toggleSidebar()" [attr.aria-label]="sidebarCollapsed() ? 'Expandir menú' : 'Colapsar menú'" [title]="sidebarCollapsed() ? 'Expandir menú' : 'Colapsar menú'">
+        <i [class]="sidebarCollapsed() ? 'pi pi-angle-double-right' : 'pi pi-angle-double-left'" aria-hidden="true"></i>
+      </button>
+    </div>
+
+    <div class="admin-nav-tools">
+      @if (isCompactMenu()) {
+        <button class="admin-nav-search-icon" type="button" aria-label="Buscar en el menú (Ctrl+K)" title="Buscar (Ctrl+K)" (click)="focusNavigationSearch()"><i class="pi pi-search" aria-hidden="true"></i></button>
+      } @else {
+        <form class="admin-nav-search" role="search" (ngSubmit)="goToFirstResult()">
+          <i class="pi pi-search" aria-hidden="true"></i>
+          <input type="search" name="navSearch" [(ngModel)]="navQuery" placeholder="Buscar pantalla..." autocomplete="off" aria-label="Buscar pantalla en el menú" />
+          @if (navQuery) {
+            <button class="admin-search-clear" type="button" aria-label="Limpiar búsqueda" (click)="navQuery = ''"><i class="pi pi-times"></i></button>
+          } @else {
+            <kbd>Ctrl K</kbd>
+          }
+        </form>
+      }
     </div>
 
     <nav class="admin-nav" aria-label="Navegación del panel">
-      @for (section of menu; track section.label) {
-        <p class="admin-nav-label">{{ section.label }}</p>
-        @for (link of section.links; track link.path) {
-          <a
-            class="admin-nav-link"
-            [routerLink]="link.path"
-            routerLinkActive="is-active"
-            [routerLinkActiveOptions]="{ exact: link.exact ?? false }"
-            (click)="closeMenu()"
-          >
-            <i [class]="link.icon" aria-hidden="true"></i>
-            <span>{{ link.label }}</span>
-          </a>
-        }
+      @if (favoriteLinks.length > 0) {
+        <section class="admin-nav-section admin-nav-favorites">
+          <button class="admin-nav-section-toggle" type="button" [attr.aria-label]="isSectionOpen(favoritesSection) ? 'Contraer pantallas fijadas' : 'Expandir pantallas fijadas'" [attr.aria-expanded]="isSectionOpen(favoritesSection)" (click)="toggleSection(favoritesSection)">
+            <span>Fijados</span>
+            @if (!isSectionOpen(favoritesSection) && sectionCount(favoritesSection) > 0) { <span class="admin-nav-section-count">{{ countLabel(sectionCount(favoritesSection)) }}</span> }
+            <i [class]="isSectionOpen(favoritesSection) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" aria-hidden="true"></i>
+          </button>
+          @if (isSectionOpen(favoritesSection)) {
+            @for (link of favoriteLinks; track link.path) {
+              <ng-container *ngTemplateOutlet="navItem; context: { $implicit: link }" />
+            }
+          }
+        </section>
       }
+
+      @for (section of menu; track section.label) {
+        <section class="admin-nav-section">
+          <button class="admin-nav-section-toggle" type="button" [attr.aria-label]="isSectionOpen(section) ? 'Contraer grupo ' + section.label : 'Expandir grupo ' + section.label" [attr.aria-expanded]="isSectionOpen(section)" (click)="toggleSection(section)">
+            <span>{{ section.label }}</span>
+            @if (!isSectionOpen(section) && sectionCount(section) > 0) { <span class="admin-nav-section-count">{{ countLabel(sectionCount(section)) }}</span> }
+            <i [class]="isSectionOpen(section) ? 'pi pi-chevron-down' : 'pi pi-chevron-right'" aria-hidden="true"></i>
+          </button>
+          @if (isSectionOpen(section)) {
+            @for (link of section.links; track link.path) {
+              <ng-container *ngTemplateOutlet="navItem; context: { $implicit: link }" />
+            }
+          }
+        </section>
+      }
+      @if (navQuery && menu.length === 0) { <p class="admin-nav-empty">No encontramos pantallas con “{{ navQuery }}”.</p> }
     </nav>
 
-    <div class="admin-user">
-      <p-avatar [label]="(user?.name ?? 'A').charAt(0).toUpperCase()" shape="circle" />
-      <div class="admin-user-text">
-        <p class="admin-user-name">{{ user?.name ?? 'Administrador' }}</p>
-        <p class="admin-user-email">{{ user?.email }}</p>
-      </div>
-      <p-button icon="pi pi-key" [text]="true" [rounded]="true" (onClick)="openPassword()" ariaLabel="Cambiar contraseña" />
-      <p-button icon="pi pi-sign-out" [text]="true" [rounded]="true" (onClick)="logout()" ariaLabel="Cerrar sesión" />
+    <div class="admin-user-area">
+      <button class="admin-user" type="button" (click)="toggleUserMenu()" [attr.aria-expanded]="userMenuOpen()" aria-haspopup="true" aria-label="Abrir menú de usuario">
+        <p-avatar [label]="(user?.name ?? 'A').charAt(0).toUpperCase()" shape="circle" />
+        <span class="admin-user-text">
+          <span class="admin-user-name">{{ user?.name ?? 'Administrador' }}</span>
+          <span class="admin-user-email">{{ user?.email }}</span>
+        </span>
+        <i class="pi pi-ellipsis-v admin-user-more" aria-hidden="true"></i>
+      </button>
+      @if (userMenuOpen()) {
+        <div class="admin-user-menu" aria-label="Opciones de usuario">
+          <div class="admin-user-menu-heading">
+            <strong>{{ user?.name ?? 'Administrador' }}</strong>
+            <span>{{ user?.email }}</span>
+          </div>
+          <button type="button" (click)="openProfile()"><i class="pi pi-user" aria-hidden="true"></i>Mi perfil</button>
+          <button type="button" (click)="openPassword(); userMenuOpen.set(false)"><i class="pi pi-lock" aria-hidden="true"></i>Cambiar contraseña</button>
+          <button class="is-danger" type="button" (click)="logout()"><i class="pi pi-sign-out" aria-hidden="true"></i>Cerrar sesión</button>
+        </div>
+      }
     </div>
   </div>
 </ng-template>
+
+<p-dialog header="Mi perfil" [visible]="profileOpen()" (visibleChange)="profileOpen.set($event)" [modal]="true" [style]="{ width: 'min(26rem, calc(100vw - 2rem))' }">
+  <div class="admin-profile-details">
+    <p-avatar [label]="(user?.name ?? 'A').charAt(0).toUpperCase()" shape="circle" size="xlarge" />
+    <div><strong>{{ user?.name ?? 'Administrador' }}</strong><span>{{ user?.email }}</span><small>{{ roleLabel() }}</small></div>
+  </div>
+</p-dialog>
 
 <p-dialog header="Cambiar contraseña" [visible]="passwordOpen()" (visibleChange)="passwordOpen.set($event)" [modal]="true" [style]="{ width: '26rem' }">
   <form class="grid gap-3" (ngSubmit)="savePassword()">
