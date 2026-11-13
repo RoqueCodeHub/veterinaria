@@ -9,13 +9,13 @@
     }
   </header>
   <div class="list-kpis">
-    <article><small>Total</small><strong>{{ list.count('total') }}</strong></article>
-    <article><small>Activos</small><strong>{{ list.count('activos') }}</strong></article>
-    <article><small>Stock bajo</small><strong>{{ list.count('stock_bajo') }}</strong></article>
-    <article><small>Por vencer</small><strong>{{ list.count('por_vencer') }}</strong></article>
+    <article class="admin-card"><small>Total</small><strong>{{ list.count('total') }}</strong></article>
+    <article class="admin-card"><small>Activos</small><strong>{{ list.count('activos') }}</strong></article>
+    <article class="admin-card"><small>Stock bajo</small><strong>{{ list.count('stock_bajo') }}</strong></article>
+    <article class="admin-card"><small>Por vencer</small><strong>{{ list.count('por_vencer') }}</strong></article>
   </div>
   <div class="list-tools">
-    <label class="list-search">
+    <label class="list-search admin-control">
       <i class="pi pi-search"></i>
       <input type="search" placeholder="Buscar producto" [value]="list.q()" (input)="buscar($event)" />
     </label>

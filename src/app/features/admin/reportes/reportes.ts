@@ -25,6 +25,7 @@ export class Reportes implements OnInit {
   private readonly notify = inject(NotifyService);
   readonly auth = inject(AuthService);
   readonly tab = signal<Tab>('dia');
+  readonly rangoActivo = signal<'hoy' | 'semana' | 'mes' | null>('mes');
   readonly from = signal(new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10));
   readonly to = signal(new Date().toISOString().slice(0, 10));
   readonly loading = signal(false);
@@ -95,6 +96,7 @@ export class Reportes implements OnInit {
     if (clave === 'mes') desde.setDate(1);
     this.from.set(clave === 'hoy' ? hasta : desde.toISOString().slice(0, 10));
     this.to.set(hasta);
+    this.rangoActivo.set(clave);
     this.cargar();
   }
 

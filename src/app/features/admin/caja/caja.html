@@ -25,7 +25,7 @@
         </tr>
       </ng-template>
     </app-admin-table>
-    <aside class="list-panel caja-panel">
+    <aside class="list-panel caja-panel admin-card">
       @if (seleccion(); as venta) {
         <div class="caja-head">
           <div>
@@ -42,13 +42,13 @@
             </div>
           }
         </div>
-        <div class="caja-pays">
+        <div class="admin-choice-grid">
           @for (opcion of metodos; track opcion.id) {
-            <button type="button" class="caja-pay" [class.is-on]="metodo === opcion.id" (click)="metodo = opcion.id">{{ opcion.label }}</button>
+            <button type="button" [class.is-on]="metodo === opcion.id" [attr.aria-pressed]="metodo === opcion.id" (click)="metodo = opcion.id">{{ opcion.label }}</button>
           }
         </div>
         @if (metodo === 'efectivo') {
-          <label class="caja-soles">Recibido <input type="number" [(ngModel)]="recibido" /></label>
+          <label class="caja-soles admin-control">Recibido <input type="number" [(ngModel)]="recibido" /></label>
           <div class="caja-bills">
             @for (billete of billetes; track billete) {
               <button type="button" (click)="sumar(billete)">{{ billete }}</button>

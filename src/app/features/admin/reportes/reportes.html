@@ -11,43 +11,46 @@
       </div>
     }
   </header>
-  <div class="rep-filters">
-    <div class="rep-switch">
-      <button type="button" (click)="rango('hoy')">Hoy</button>
-      <button type="button" (click)="rango('semana')">7 días</button>
-      <button type="button" (click)="rango('mes')">Este mes</button>
+  <div class="rep-filters admin-control-row">
+    <div class="rep-switch admin-segmented">
+      <button type="button" [class.is-on]="rangoActivo() === 'hoy'" [attr.aria-pressed]="rangoActivo() === 'hoy'" (click)="rango('hoy')">Hoy</button>
+      <button type="button" [class.is-on]="rangoActivo() === 'semana'" [attr.aria-pressed]="rangoActivo() === 'semana'" (click)="rango('semana')">7 días</button>
+      <button type="button" [class.is-on]="rangoActivo() === 'mes'" [attr.aria-pressed]="rangoActivo() === 'mes'" (click)="rango('mes')">Este mes</button>
     </div>
-    <label class="rep-date">Desde <input type="date" [ngModel]="from()" (ngModelChange)="from.set($event); cargar()" /></label>
-    <label class="rep-date">Hasta <input type="date" [ngModel]="to()" (ngModelChange)="to.set($event); cargar()" /></label>
+    <label class="rep-date admin-control">Desde <input type="date" [ngModel]="from()" (ngModelChange)="from.set($event); rangoActivo.set(null); cargar()" /></label>
+    <label class="rep-date admin-control">Hasta <input type="date" [ngModel]="to()" (ngModelChange)="to.set($event); rangoActivo.set(null); cargar()" /></label>
   </div>
-  <div class="rep-switch rep-tabs">
-    <button type="button" [class.is-on]="tab() === 'dia'" (click)="tab.set('dia'); cargar()">Por día</button>
-    <button type="button" [class.is-on]="tab() === 'productos'" (click)="tab.set('productos'); cargar()">Productos</button>
-    <button type="button" [class.is-on]="tab() === 'categoria'" (click)="tab.set('categoria'); cargar()">Categoría</button>
-    <button type="button" [class.is-on]="tab() === 'cajero'" (click)="tab.set('cajero'); cargar()">Cajero</button>
-    <button type="button" [class.is-on]="tab() === 'utilidad'" (click)="tab.set('utilidad'); cargar()">Utilidad</button>
-    <button type="button" [class.is-on]="tab() === 'lentos'" (click)="tab.set('lentos'); cargar()">Baja rotación</button>
-    <button type="button" [class.is-on]="tab() === 'inventario'" (click)="tab.set('inventario'); cargar()">Inventario</button>
+  <div class="rep-switch rep-tabs admin-segmented">
+    <button type="button" [class.is-on]="tab() === 'dia'" [attr.aria-pressed]="tab() === 'dia'" (click)="tab.set('dia'); cargar()">Por día</button>
+    <button type="button" [class.is-on]="tab() === 'productos'" [attr.aria-pressed]="tab() === 'productos'" (click)="tab.set('productos'); cargar()">Productos</button>
+    <button type="button" [class.is-on]="tab() === 'categoria'" [attr.aria-pressed]="tab() === 'categoria'" (click)="tab.set('categoria'); cargar()">Categoría</button>
+    <button type="button" [class.is-on]="tab() === 'cajero'" [attr.aria-pressed]="tab() === 'cajero'" (click)="tab.set('cajero'); cargar()">Cajero</button>
+    <button type="button" [class.is-on]="tab() === 'utilidad'" [attr.aria-pressed]="tab() === 'utilidad'" (click)="tab.set('utilidad'); cargar()">Utilidad</button>
+    <button type="button" [class.is-on]="tab() === 'lentos'" [attr.aria-pressed]="tab() === 'lentos'" (click)="tab.set('lentos'); cargar()">Baja rotación</button>
+    <button type="button" [class.is-on]="tab() === 'inventario'" [attr.aria-pressed]="tab() === 'inventario'" (click)="tab.set('inventario'); cargar()">Inventario</button>
   </div>
 
   @if (profit(); as data) {
     <section class="rep-kpis">
-      <article class="rep-kpi"><span class="rep-kpi-icon is-green"><i class="pi pi-wallet"></i></span><div><small>Ventas</small><strong>S/ {{ data.sales_total | number:'1.2-2' }}</strong></div></article>
-      <article class="rep-kpi"><span class="rep-kpi-icon is-accent"><i class="pi pi-box"></i></span><div><small>Costo</small><strong>S/ {{ data.cost | number:'1.2-2' }}</strong></div></article>
-      <article class="rep-kpi"><span class="rep-kpi-icon is-amber"><i class="pi pi-undo"></i></span><div><small>Devoluciones</small><strong>S/ {{ data.refund_total | number:'1.2-2' }}</strong></div></article>
-      <article class="rep-kpi"><span class="rep-kpi-icon is-sage"><i class="pi pi-chart-line"></i></span><div><small>Utilidad</small><strong>S/ {{ data.profit | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-green"><i class="pi pi-wallet"></i></span><div><small>Ventas</small><strong>S/ {{ data.sales_total | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-accent"><i class="pi pi-box"></i></span><div><small>Costo</small><strong>S/ {{ data.cost | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-amber"><i class="pi pi-undo"></i></span><div><small>Devoluciones</small><strong>S/ {{ data.refund_total | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-sage"><i class="pi pi-chart-line"></i></span><div><small>Utilidad</small><strong>S/ {{ data.profit | number:'1.2-2' }}</strong></div></article>
     </section>
   }
   @if (inventory(); as data) {
     <section class="rep-kpis">
-      <article class="rep-kpi"><span class="rep-kpi-icon is-accent"><i class="pi pi-box"></i></span><div><small>Unidades</small><strong>{{ data.units }}</strong></div></article>
-      <article class="rep-kpi"><span class="rep-kpi-icon is-green"><i class="pi pi-wallet"></i></span><div><small>Valor</small><strong>S/ {{ data.value | number:'1.2-2' }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-accent"><i class="pi pi-box"></i></span><div><small>Unidades</small><strong>{{ data.units }}</strong></div></article>
+      <article class="rep-kpi admin-card"><span class="rep-kpi-icon is-green"><i class="pi pi-wallet"></i></span><div><small>Valor</small><strong>S/ {{ data.value | number:'1.2-2' }}</strong></div></article>
     </section>
   }
   @if (chart(); as grafico) {
-    <p-chart [type]="tab() === 'categoria' ? 'doughnut' : 'bar'" [data]="grafico" />
+    <article class="rep-card admin-card rep-chart">
+      <p-chart [type]="tab() === 'categoria' ? 'doughnut' : 'bar'" [data]="grafico" />
+    </article>
   }
   @if (rows().length) {
+    <div class="rep-card admin-card rep-table-wrap">
     <table class="rep-table">
       <thead>
         <tr>
@@ -70,6 +73,7 @@
         }
       </tbody>
     </table>
+    </div>
   } @else if (!loading() && tab() !== 'utilidad' && tab() !== 'inventario') {
     <p>No hay datos en este rango.</p>
   }
