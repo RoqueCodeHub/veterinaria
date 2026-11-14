@@ -1,6 +1,7 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, afterNextRender, computed, input, signal } from '@angular/core';
 import { GalleriaModule } from 'primeng/galleria';
 import { webpSrc } from '../../../shared/utils/webp-src';
+import { RevealDirective } from '../../../shared/directives/reveal';
 
 export interface GaleriaItem {
   src: string;
@@ -11,13 +12,47 @@ export interface GaleriaItem {
 
 @Component({
   selector: 'app-galeria',
-  imports: [GalleriaModule],
+  imports: [GalleriaModule, RevealDirective],
   templateUrl: './galeria.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class Galeria {
   readonly preview = input(false);
   readonly toWebp = webpSrc;
+  readonly activeIndex = signal(0);
+  readonly previewActiveIndex = signal(0);
+  readonly lightboxVisible = signal(false);
+  private readonly motionAllowed = signal(true);
+  readonly autoPlay = computed(() => this.motionAllowed() && !this.lightboxVisible());
+
+  constructor() {
+    afterNextRender(() => {
+      this.motionAllowed.set(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+    });
+  }
+
+  abrirImagen(index: number): void {
+    this.activeIndex.set(this.limitarIndice(index, this.fotos.length));
+    this.lightboxVisible.set(true);
+  }
+
+  actualizarImagen(index: number): void {
+    this.activeIndex.set(this.limitarIndice(index, this.fotos.length));
+  }
+
+  actualizarImagenInicio(index: number): void {
+    this.previewActiveIndex.set(this.limitarIndice(index, this.fotosInicio.length));
+  }
+
+  private limitarIndice(index: number, total: number): number {
+    if (!Number.isFinite(index) || total < 1) return 0;
+    return Math.min(Math.max(Math.trunc(index), 0), total - 1);
+  }
+
+  cambiarVisibilidad(visible: boolean): void {
+    this.lightboxVisible.set(visible);
+  }
+
   readonly responsive = [
     { breakpoint: '1024px', numVisible: 4 },
     { breakpoint: '768px', numVisible: 3 },
@@ -42,7 +77,7 @@ export class Galeria {
       label: 'Vacunación',
     },
     {
-      src: 'assets/img/img4.jpg',
+      src: 'assets/img/asesoria.jpg',
       alt: 'Asesoría ganadera – Alivet',
       label: 'Asesoría Ganadera',
     },

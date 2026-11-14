@@ -1,6 +1,6 @@
 <section id="contacto" class="scroll-mt-24 py-16" aria-labelledby="contacto-title">
   <div class="max-w-6xl mx-auto px-4">
-    <div class="bg-sage rounded-[1.75rem] px-6 py-10 md:px-10 md:py-12 grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
+    <div appReveal class="bg-sage rounded-[1.75rem] px-6 py-10 md:px-10 md:py-12 grid gap-8 lg:grid-cols-[1.3fr_1fr] lg:items-center">
       <div>
         <h2 id="contacto-title" class="text-3xl md:text-4xl m-0">¿Tu animal necesita atención?</h2>
         <p class="text-muted mt-3 mb-5 max-w-xl">
@@ -20,20 +20,21 @@
           <a routerLink="/contacto" class="alivet-link">Enviar un mensaje</a>
         </div>
       </div>
-      <div class="flex flex-wrap gap-3">
+      <nav class="alivet-social-links" aria-label="Redes sociales de AliVet">
         @for (red of redes; track red.id) {
           <a
-            pButton
-            class="min-h-11"
-            [rounded]="true"
-            [outlined]="true"
-            [label]="red.plataforma"
+            class="alivet-social-link"
+            [style.--social-color]="red.colorFrom"
+            [attr.aria-label]="'Visitar AliVet en ' + red.plataforma"
+            [title]="red.plataforma"
             [href]="red.url"
             target="_blank"
             rel="noopener noreferrer"
-          ></a>
+          >
+            <i [class]="'pi ' + red.icon" aria-hidden="true"></i>
+          </a>
         }
-      </div>
+      </nav>
     </div>
   </div>
 </section>

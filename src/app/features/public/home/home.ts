@@ -6,10 +6,11 @@ import { Especialidades } from '../especialidades/especialidades';
 import { Servicios } from '../servicios/servicios';
 import { Galeria } from '../galeria/galeria';
 import { RedesSocialesComponent } from '../redes-sociales/redes-sociales';
+import { RevealDirective } from '../../../shared/directives/reveal';
 
 @Component({
   selector: 'app-home',
-  imports: [ButtonDirective, Card, QuienesSomos, Especialidades, Servicios, Galeria, RedesSocialesComponent],
+  imports: [ButtonDirective, Card, QuienesSomos, Especialidades, Servicios, Galeria, RedesSocialesComponent, RevealDirective],
   templateUrl: './home.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -1,6 +1,6 @@
 <section class="max-w-6xl mx-auto px-4 pt-10 pb-6 md:pt-16" aria-labelledby="hero-title">
   <div class="grid gap-10 md:grid-cols-2 md:items-center">
-    <div class="flex flex-col gap-4">
+    <div appReveal class="flex flex-col gap-4">
       <p class="m-0">
         <span class="inline-flex items-center rounded-full bg-sage px-3 py-1 text-sm font-medium text-primary">Iberia · Tahuamanu · Madre de Dios</span>
       </p>
@@ -28,7 +28,7 @@
       </p>
     </div>
 
-    <div class="overflow-hidden rounded-[var(--radius-photo)] aspect-[5/4] bg-sage">
+    <div appReveal class="reveal-image overflow-hidden rounded-[var(--radius-photo)] aspect-[5/4] bg-sage">
       <picture>
         <source srcset="assets/img/mascota.webp" type="image/webp" />
         <img
@@ -46,9 +46,9 @@
 </section>
 
 <section class="max-w-6xl mx-auto px-4 pb-16" aria-label="Cómo te atendemos">
-  <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+  <div class="public-stagger grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
     @for (item of beneficios; track item.titulo) {
-      <p-card styleClass="alivet-card h-full">
+      <p-card appReveal styleClass="alivet-card h-full">
         <h3 class="text-lg m-0 mb-1">{{ item.titulo }}</h3>
         <p class="m-0 text-muted">{{ item.texto }}</p>
       </p-card>

@@ -1,46 +1,105 @@
 @if (preview()) {
   <section id="galeria" class="scroll-mt-24 py-16" aria-labelledby="gal-title">
     <div class="max-w-6xl mx-auto px-4">
-      <p class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Nuestro trabajo</p>
-      <h2 class="text-3xl md:text-4xl mt-2 mb-3" id="gal-title">Galería Alivet</h2>
-      <p class="m-0 text-muted max-w-2xl">Momentos reales de nuestro trabajo en campo y en la clínica.</p>
-      <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-8">
-        @for (foto of fotosInicio; track foto.src) {
-          <img
-            class="w-full aspect-[4/3] object-cover rounded-[var(--radius-photo)] bg-sage"
-            [src]="toWebp(foto.src)"
-            [alt]="foto.alt"
-            width="640"
-            height="480"
-            loading="lazy"
-            decoding="async"
-          />
-        }
-      </div>
+      <p appReveal class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Nuestro trabajo</p>
+      <h2 appReveal class="text-3xl md:text-4xl mt-2 mb-3" id="gal-title">Galería Alivet</h2>
+      <p appReveal class="m-0 text-muted max-w-2xl">Momentos reales de nuestro trabajo en campo y en la clínica.</p>
+      <p-galleria
+        appReveal
+        class="block mt-8 alivet-gallery alivet-gallery-preview"
+        [value]="fotosInicio"
+        [activeIndex]="previewActiveIndex()"
+        (activeIndexChange)="actualizarImagenInicio($event)"
+        [numVisible]="4"
+        [circular]="true"
+        [autoPlay]="autoPlay()"
+        [transitionInterval]="4500"
+        [showItemNavigators]="true"
+        [showThumbnailNavigators]="false"
+        [showIndicators]="true"
+        [showThumbnails]="true"
+      >
+        <ng-template #item let-foto>
+          @if (foto) {
+            <figure class="gallery-slide">
+              <button type="button" class="gallery-open-button" (click)="abrirImagen(previewActiveIndex())" [attr.aria-label]="'Ampliar foto: ' + foto.label">
+                <img class="gallery-slide-image" [src]="toWebp(foto.src)" [alt]="foto.alt" width="960" height="600" loading="lazy" decoding="async" />
+                <span class="gallery-open-hint"><i class="pi pi-search-plus" aria-hidden="true"></i> Ampliar foto</span>
+              </button>
+              <figcaption class="gallery-slide-caption">{{ foto.label }}</figcaption>
+            </figure>
+          }
+        </ng-template>
+        <ng-template #thumbnail let-foto>
+          @if (foto) { <img class="gallery-thumbnail" [src]="toWebp(foto.src)" [alt]="foto.alt" /> }
+        </ng-template>
+      </p-galleria>
     </div>
   </section>
 } @else {
   <section class="max-w-6xl mx-auto px-4 py-12" aria-labelledby="gal-title">
-    <p class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Nuestro trabajo</p>
-    <h1 class="text-3xl md:text-4xl mt-2 mb-3" id="gal-title">Galería Alivet</h1>
-    <p class="m-0 text-muted max-w-2xl">Momentos reales de nuestro trabajo en campo y en la clínica.</p>
+    <p appReveal class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Nuestro trabajo</p>
+    <h1 appReveal class="text-3xl md:text-4xl mt-2 mb-3" id="gal-title">Galería Alivet</h1>
+    <p appReveal class="m-0 text-muted max-w-2xl">Momentos reales de nuestro trabajo en campo y en la clínica.</p>
 
     <p-galleria
-      class="block mt-8"
+      appReveal class="block mt-8 alivet-gallery alivet-gallery-page"
       [value]="fotos"
+      [activeIndex]="activeIndex()"
+      (activeIndexChange)="actualizarImagen($event)"
       [numVisible]="5"
       [circular]="true"
       [showThumbnails]="true"
       [showItemNavigators]="true"
+      [showIndicators]="true"
+      [autoPlay]="autoPlay()"
+      [transitionInterval]="4500"
       [responsiveOptions]="responsive"
     >
       <ng-template #item let-foto>
-        <img class="w-full max-h-[28rem] object-cover" [src]="toWebp(foto.src)" [alt]="foto.alt" />
-        <p class="m-0 mt-2">{{ foto.label }}</p>
+          @if (foto) {
+            <figure class="gallery-slide">
+              <button type="button" class="gallery-open-button" (click)="abrirImagen(activeIndex())" [attr.aria-label]="'Ampliar foto: ' + foto.label">
+                <img class="gallery-slide-image" [src]="toWebp(foto.src)" [alt]="foto.alt" width="1200" height="720" loading="lazy" decoding="async" />
+                <span class="gallery-open-hint"><i class="pi pi-search-plus" aria-hidden="true"></i> Ampliar foto</span>
+              </button>
+              <figcaption class="gallery-slide-caption">{{ foto.label }}</figcaption>
+            </figure>
+          }
       </ng-template>
       <ng-template #thumbnail let-foto>
-        <img [src]="toWebp(foto.src)" [alt]="foto.alt" />
+          @if (foto) { <img [src]="toWebp(foto.src)" [alt]="foto.alt" /> }
       </ng-template>
     </p-galleria>
   </section>
 }
+
+<p-galleria
+  class="gallery-lightbox"
+  [value]="fotos"
+  [activeIndex]="activeIndex()"
+  (activeIndexChange)="actualizarImagen($event)"
+  [fullScreen]="true"
+  [visible]="lightboxVisible()"
+  (visibleChange)="cambiarVisibilidad($event)"
+  maskClass="alivet-gallery-mask"
+  [circular]="true"
+  [showItemNavigators]="true"
+  [showIndicators]="true"
+  [showThumbnails]="true"
+  [numVisible]="7"
+      [showThumbnailNavigators]="false"
+  containerClass="alivet-gallery-lightbox"
+>
+  <ng-template #item let-foto>
+    @if (foto) {
+      <figure class="gallery-lightbox-slide">
+        <img class="gallery-lightbox-image" [src]="toWebp(foto.src)" [alt]="foto.alt" width="1440" height="900" />
+        <figcaption class="gallery-lightbox-caption">{{ foto.label }}</figcaption>
+      </figure>
+    }
+  </ng-template>
+  <ng-template #thumbnail let-foto>
+    @if (foto) { <img class="gallery-thumbnail" [src]="toWebp(foto.src)" [alt]="foto.alt" /> }
+  </ng-template>
+</p-galleria>

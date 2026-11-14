@@ -3,6 +3,7 @@ import { RouterLink } from '@angular/router';
 import { Card } from 'primeng/card';
 import { Tag } from 'primeng/tag';
 import { webpSrc } from '../../../shared/utils/webp-src';
+import { RevealDirective } from '../../../shared/directives/reveal';
 
 export interface ServicioItem {
   titulo: string;
@@ -18,7 +19,7 @@ export interface ServicioItem {
 
 @Component({
   selector: 'app-servicios',
-  imports: [RouterLink, Card, Tag],
+  imports: [RouterLink, Card, Tag, RevealDirective],
   templateUrl: './servicios.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

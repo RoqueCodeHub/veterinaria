@@ -1,9 +1,9 @@
 @if (band()) {
   <section id="nosotros" class="scroll-mt-24 bg-primary text-white" aria-labelledby="qs-title">
     <div class="max-w-6xl mx-auto px-4 py-16 grid gap-10 md:grid-cols-2 md:items-center">
-      <div class="flex flex-col gap-4">
+      <div appReveal class="flex flex-col gap-4">
         <p class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-sage">Sobre nosotros</p>
-        <h2 id="qs-title" class="text-3xl md:text-4xl m-0 text-white">Una veterinaria de confianza en la selva</h2>
+        <h2 appReveal id="qs-title" class="text-3xl md:text-4xl m-0 text-white">Una veterinaria de confianza en la selva</h2>
         <p class="m-0 text-white/90">
           Somos Veterinaria Alivet, en Iberia, provincia de Tahuamanu. Nacimos para brindar atención integral a los
           animales de la región, apoyando a ganaderos, agricultores y familias.
@@ -12,7 +12,7 @@
           Nuestro equipo te acompaña con asesoría técnica, trabajo en campo y los mejores productos veterinarios.
         </p>
       </div>
-      <div class="overflow-hidden rounded-[var(--radius-photo)] aspect-[4/3] bg-primary-hover">
+      <div appReveal class="reveal-image overflow-hidden rounded-[var(--radius-photo)] aspect-[4/3] bg-primary-hover">
         <picture>
           <source srcset="assets/img/nosotros.webp" type="image/webp" />
           <img
@@ -31,11 +31,11 @@
 } @else {
   <section class="max-w-6xl mx-auto px-4 py-12" aria-labelledby="qs-title">
     <p class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Sobre nosotros</p>
-    <h1 id="qs-title" class="text-3xl md:text-4xl mt-2 mb-3">Una veterinaria de confianza en la selva</h1>
+    <h1 appReveal id="qs-title" class="text-3xl md:text-4xl mt-2 mb-3">Una veterinaria de confianza en la selva</h1>
     <p class="m-0 text-muted"><i class="pi pi-map-marker mr-2" aria-hidden="true"></i>Iberia, Tahuamanu – Madre de Dios, Perú</p>
 
     <div class="grid gap-8 md:grid-cols-2 mt-8">
-      <div class="flex flex-col gap-4">
+      <div appReveal class="flex flex-col gap-4">
         <p class="m-0">
           Somos <strong>Veterinaria Alivet</strong>, tu aliado de confianza ubicado en Iberia, provincia
           de Tahuamanu, en la exuberante selva amazónica peruana. Nacimos con el compromiso de brindar
@@ -56,17 +56,17 @@
       </div>
 
       <div class="flex flex-col gap-4">
-        <p-card styleClass="alivet-card overflow-hidden">
-          <picture>
+        <p-card appReveal styleClass="alivet-card overflow-hidden">
+          <picture appReveal class="reveal-image">
             <source srcset="assets/img/nosotros.webp" type="image/webp" />
             <img class="w-full rounded-[var(--radius-photo)]" src="assets/img/nosotros.png" alt="Veterinaria Alivet – Iberia, Perú" width="960" height="720" loading="lazy" decoding="async" />
           </picture>
           <p class="mt-3 mb-0"><i class="pi pi-shield mr-2" aria-hidden="true"></i>Alivet · Veterinaria de confianza</p>
         </p-card>
-        <div class="grid grid-cols-3 gap-3 text-center">
-          <div><strong class="block text-2xl font-heading">+500</strong><span class="text-sm text-muted">Clientes atendidos</span></div>
-          <div><strong class="block text-2xl font-heading">+10</strong><span class="text-sm text-muted">Años de experiencia</span></div>
-          <div><strong class="block text-2xl font-heading">100%</strong><span class="text-sm text-muted">Confianza garantizada</span></div>
+        <div class="public-stagger grid grid-cols-3 gap-3 text-center">
+          <div appReveal><strong class="block text-2xl font-heading">+500</strong><span class="text-sm text-muted">Clientes atendidos</span></div>
+          <div appReveal><strong class="block text-2xl font-heading">+10</strong><span class="text-sm text-muted">Años de experiencia</span></div>
+          <div appReveal><strong class="block text-2xl font-heading">100%</strong><span class="text-sm text-muted">Confianza garantizada</span></div>
         </div>
       </div>
     </div>

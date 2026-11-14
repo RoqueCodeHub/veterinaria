@@ -20,4 +20,18 @@ describe('Galeria', () => {
   it('should create', () => {
     expect(component).toBeTruthy();
   });
+
+  it('opens the selected photo in the lightbox', () => {
+    component.abrirImagen(3);
+
+    expect(component.activeIndex()).toBe(3);
+    expect(component.lightboxVisible()).toBe(true);
+  });
+
+  it('closes the lightbox when visibility changes', () => {
+    component.abrirImagen(1);
+    component.cambiarVisibilidad(false);
+
+    expect(component.lightboxVisible()).toBe(false);
+  });
 });

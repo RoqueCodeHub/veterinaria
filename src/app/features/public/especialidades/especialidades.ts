@@ -4,6 +4,7 @@ import { ButtonDirective } from 'primeng/button';
 import { Card } from 'primeng/card';
 import { Tag } from 'primeng/tag';
 import { webpSrc } from '../../../shared/utils/webp-src';
+import { RevealDirective } from '../../../shared/directives/reveal';
 
 /**
  * Una especialidad (especie animal) que atiende la veterinaria.
@@ -119,7 +120,7 @@ const ESPECIALIDADES: readonly Especialidad[] = [
 
 @Component({
   selector: 'app-especialidades',
-  imports: [RouterLink, ButtonDirective, Card, Tag],
+  imports: [RouterLink, ButtonDirective, Card, Tag, RevealDirective],
   templateUrl: './especialidades.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

@@ -8,6 +8,7 @@ import { Card } from 'primeng/card';
 import { InputText } from 'primeng/inputtext';
 import { Message } from 'primeng/message';
 import { Textarea } from 'primeng/textarea';
+import { RevealDirective } from '../../../shared/directives/reveal';
 
 interface ContactForm {
   nombre: string;
@@ -20,7 +21,7 @@ interface ContactForm {
 @Component({
   selector: 'app-contacto-page',
   standalone: true,
-  imports: [RouterLink, FormsModule, Button, Card, InputText, Message, Textarea],
+  imports: [RouterLink, FormsModule, Button, Card, InputText, Message, Textarea, RevealDirective],
   templateUrl: './contacto-page.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })

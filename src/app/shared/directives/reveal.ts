@@ -11,7 +11,7 @@ export class RevealDirective implements OnDestroy {
   constructor() {
     afterNextRender(() => {
       const node = this.el.nativeElement;
-      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
       if (reduce || typeof IntersectionObserver === 'undefined') {
         node.classList.add('is-visible');
         return;

@@ -1,18 +1,18 @@
 <section id="servicios" class="scroll-mt-24 bg-white py-16" aria-labelledby="srv-title">
   <div class="max-w-6xl mx-auto px-4">
-    <p class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Lo que ofrecemos</p>
+    <p appReveal class="m-0 text-xs font-semibold tracking-[0.14em] uppercase text-accent">Lo que ofrecemos</p>
     @if (featured()) {
-      <h2 class="text-3xl md:text-4xl mt-2 mb-3" id="srv-title">Nuestros servicios</h2>
+      <h2 appReveal class="text-3xl md:text-4xl mt-2 mb-3" id="srv-title">Nuestros servicios</h2>
     } @else {
-      <h1 class="text-3xl md:text-4xl mt-2 mb-3" id="srv-title">Nuestros servicios</h1>
+      <h1 appReveal class="text-3xl md:text-4xl mt-2 mb-3" id="srv-title">Nuestros servicios</h1>
     }
-    <p class="m-0 text-muted max-w-2xl">Soluciones para el cuidado de todos tus animales, en un solo lugar.</p>
+    <p appReveal class="m-0 text-muted max-w-2xl">Soluciones para el cuidado de todos tus animales, en un solo lugar.</p>
 
-    <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3 mt-8">
+    <div class="public-stagger grid gap-5 md:grid-cols-2 xl:grid-cols-3 mt-8">
       @for (item of visibles(); track item.titulo) {
-        <p-card styleClass="alivet-card h-full overflow-hidden">
+        <p-card appReveal styleClass="alivet-card h-full overflow-hidden">
           <ng-template #header>
-            <picture>
+            <picture appReveal class="reveal-image">
               <source [srcset]="toWebp(item.imagen)" type="image/webp" />
               <img
                 class="block w-full h-52 object-cover"

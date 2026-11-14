@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { ButtonDirective } from 'primeng/button';
+import { RevealDirective } from '../../../shared/directives/reveal';
 
 export interface RedSocial {
   id: number;
@@ -11,12 +12,13 @@ export interface RedSocial {
   url: string;
   colorFrom: string;
   colorTo: string;
+  icon: string;
 }
 
 @Component({
   selector: 'app-redes-sociales',
   standalone: true,
-  imports: [RouterLink, ButtonDirective],
+  imports: [RouterLink, ButtonDirective, RevealDirective],
   templateUrl: './redes-sociales.html',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
@@ -31,6 +33,7 @@ export class RedesSocialesComponent {
       url: 'https://instagram.com',
       colorFrom: '#833ab4',
       colorTo: '#fd1d1d',
+      icon: 'pi-instagram',
     },
     {
       id: 2,
@@ -41,6 +44,7 @@ export class RedesSocialesComponent {
       url: 'https://www.facebook.com/profile.php?id=61564744831448',
       colorFrom: '#1877f2',
       colorTo: '#0d5dbf',
+      icon: 'pi-facebook',
     },
     {
       id: 3,
@@ -51,6 +55,7 @@ export class RedesSocialesComponent {
       url: 'https://tiktok.com',
       colorFrom: '#010101',
       colorTo: '#69c9d0',
+      icon: 'pi-tiktok',
     },
     {
       id: 4,
@@ -61,6 +66,7 @@ export class RedesSocialesComponent {
       url: 'https://youtube.com',
       colorFrom: '#ff0000',
       colorTo: '#cc0000',
+      icon: 'pi-youtube',
     },
   ];
 }
